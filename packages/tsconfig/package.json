@@ -1,0 +1,10 @@
+{
+  "name": "@autional-cn/tsconfig",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared TypeScript configurations for Autional web monorepo",
+  "files": ["base.json", "nextjs.json", "react.json"],
+  "scripts": {
+    "clean": "echo 'nothing to clean'"
+  }
+}

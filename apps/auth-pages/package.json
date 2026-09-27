@@ -1,0 +1,48 @@
+{
+  "name": "@autional-cn/auth-pages",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Auth Pages - Login, Register, Forgot Password, MFA (Vite + React Router)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 13101",
+    "build": "vite build",
+    "preview": "vite preview --port 13101",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@autional-cn/shared": "workspace:*",
+    "@autional-cn/tailwind-preset": "workspace:*",
+    "@autional-cn/ui": "workspace:*",
+    "@hookform/resolvers": "3.10.0",
+    "@tanstack/react-query": "5.100.9",
+    "@zxcvbn-ts/core": "3.0.4",
+    "@zxcvbn-ts/language-common": "3.0.4",
+    "@zxcvbn-ts/language-en": "3.0.2",
+    "i18next": "26.0.10",
+    "i18next-browser-languagedetector": "8.2.1",
+    "lucide-react": "0.509.0",
+    "qrcode": "1.5.4",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "react-hook-form": "7.75.0",
+    "react-i18next": "17.0.7",
+    "react-router": "7.15.0",
+    "zod": "3.23.8",
+    "zustand": "5.0.13"
+  },
+  "devDependencies": {
+    "@autional-cn/tsconfig": "workspace:*",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "4.4.0",
+    "autoprefixer": "10.5.0",
+    "postcss": "8.5.14",
+    "tailwindcss": "3.4.19",
+    "typescript": "5.8.3",
+    "vite": "6.4.2"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "name": "@autional-cn/api-generated",
+  "version": "1.0.20260628.01",
+  "description": "Auto-generated TypeScript API client for Autional — generated from Swagger JSON annotations. Provides type-safe API functions, TypeScript types, and TanStack Query hooks for all 24 microservices.",
+  "type": "module",
+  "main": "./api.ts",
+  "types": "./api.ts",
+  "exports": {
+    ".": "./api.ts",
+    "./types": "./types.ts",
+    "./queries": "./queries.ts"
+  },
+  "files": [
+    "api.ts",
+    "types.ts",
+    "queries.ts",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.1266280.com/repository/npm-hosted/"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.101.2"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-query": {
+      "optional": true
+    }
+  },
+  "keywords": [
+    "authms",
+    "api",
+    "client",
+    "auto-generated",
+    "identity",
+    "swagger"
+  ],
+  "license": "UNLICENSED",
+  "private": false
+}

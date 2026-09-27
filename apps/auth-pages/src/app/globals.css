@@ -1,0 +1,20 @@
+@import '@autional-cn/tailwind-preset/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+  }
+}
+
+/* Dark mode variables are defined in @autional-cn/tailwind-preset/tokens.css (.dark selector).
+   ThemeProvider (packages/ui) toggles the `.dark` class + `data-theme="dark"` on <html>. */

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm --filter @autional-cn/auth-pages... build",
+  "outputDirectory": "apps/auth-pages/dist",
+  "rewrites": [
+    {
+      "source": "/bff/:path*",
+      "destination": "https://api.autional.cn/bff/:path*"
+    },
+    {
+      "source": "/api/v1/:path*",
+      "destination": "https://api.autional.cn/api/v1/:path*"
+    },
+    {
+      "source": "/oauth/:path*",
+      "destination": "https://api.autional.cn/oauth/:path*"
+    },
+    {
+      "source": "/tenant/:path*",
+      "destination": "https://api.autional.cn/tenant/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

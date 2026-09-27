@@ -1,0 +1,189 @@
+/* Autional Design Tokens — Autional Brand System */
+:root {
+  /* ── Primary Palette (Brand Anchor: #003153) ── */
+  --color-primary-50: #e8f1f8;
+  --color-primary-100: #d1e3f1;
+  --color-primary-200: #a3c7e3;
+  --color-primary-300: #75abd5;
+  --color-primary-400: #478fc7;
+  --color-primary-500: #235f84;
+  --color-primary-600: #004565;
+  --color-primary-700: #003153;
+  --color-primary-800: #002540;
+  --color-primary-900: #041d31;
+
+  /* ── Sky Palette (Supporting Accent: #87ceeb) ── */
+  --color-sky-50: #f2fafd;
+  --color-sky-100: #eef9fd;
+  --color-sky-200: #d5f0f9;
+  --color-sky-300: #bde6f5;
+  --color-sky-400: #a2dcf0;
+  --color-sky-500: #87ceeb;
+  --color-sky-600: #64b4d8;
+  --color-sky-700: #429bc5;
+  --color-sky-800: #2d7ca3;
+  --color-sky-900: #1c5d7e;
+
+  /* ── Amber Palette (Emphasis Accent: #ffbf00) ── */
+  --color-amber-50: #fffcf0;
+  --color-amber-100: #fff8e6;
+  --color-amber-200: #ffefb3;
+  --color-amber-300: #ffe480;
+  --color-amber-400: #ffd94d;
+  --color-amber-500: #ffbf00;
+  --color-amber-600: #d9a300;
+  --color-amber-700: #b38700;
+  --color-amber-800: #8c6b00;
+  --color-amber-900: #664f00;
+
+  /* ── Neutral Palette ── */
+  --color-neutral-0: #ffffff;
+  --color-neutral-50: #fafbfc;
+  --color-neutral-100: #f7fafd;
+  --color-neutral-200: #eef2f6;
+  --color-neutral-300: #dce3ea;
+  --color-neutral-400: #b0bcc8;
+  --color-neutral-500: #8896a6;
+  --color-neutral-600: #64748b;
+  --color-neutral-700: #475569;
+  --color-neutral-800: #334155;
+  --color-neutral-900: #1e293b;
+
+  /* ── Semantic Colors ── */
+  --color-success: #52c41a;
+  --color-warning: #faad14;
+  --color-danger: #ff4d4f;
+  --color-info: #1890ff;
+
+  /* ── Surface & Text ── */
+  --color-bg-primary: var(--color-neutral-50);
+  --color-bg-surface: var(--color-neutral-0);
+  --color-bg-elevated: var(--color-neutral-0);
+  --color-bg-muted: #f8fbfe;
+  --color-text-primary: var(--color-primary-900);
+  --color-text-secondary: var(--color-primary-600);
+  --color-text-muted: #64748d;
+  --color-border-subtle: var(--color-primary-200);
+  --color-border-strong: #9ec2db;
+  --color-border: var(--color-border-subtle);
+  --color-bg-developer: #031425;
+
+  /* ── Brand Semantic Aliases ── */
+  --color-brand-base: var(--color-primary-700);       /* 亮色 seed（注入目标） */
+  --color-brand-hover-base: var(--color-primary-600);
+  --color-brand-dark: var(--color-sky-500);           /* ⚠️ N1: 默认必须 = 现状 .dark 硬编码值 sky-500 */
+  --color-brand-dark-hover: var(--color-sky-400);
+  --color-on-brand-base: #ffffff;                     /* 亮色品牌底文字（注入目标） */
+  --color-on-brand: var(--color-on-brand-base);       /* 品牌底文字（亮色默认，由 base 派生） */
+  --color-on-brand-dark: #0a0f1a;                     /* 品牌底文字（暗色默认深字） */
+  --color-brand: var(--color-brand-base);             /* 从 var(--color-primary-700) 改 */
+  --color-brand-hover: var(--color-brand-hover-base); /* 从 var(--color-primary-600) 改 */
+  --color-brand-soft: var(--color-sky-300);
+  --color-brand-active: var(--color-primary-800);
+  --color-accent: var(--color-amber-500);
+
+  /* ── Typography ── */
+  --font-sans: 'Noto Sans SC', 'Segoe UI', -apple-system, 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  --font-serif: 'Source Han Serif SC', 'Noto Serif SC', 'Noto Sans SC', serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  /* ── Spacing ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ── Border Radius (6 levels) ── */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 28px;
+  --radius-xxl: 32px;
+  --radius-full: 9999px;
+
+  /* ── Shadows (3 levels) ── */
+  --shadow-soft: 0 8px 20px rgba(0, 49, 83, 0.08);
+  --shadow-card: 0 12px 36px rgba(0, 49, 83, 0.10);
+  --shadow-brand: 0 24px 80px rgba(0, 49, 83, 0.14);
+}
+
+/* ── End-User Portal theme override ── */
+[data-theme="portal"] {
+  --color-bg-primary: var(--color-neutral-0);
+  --color-brand: var(--color-brand-base, var(--color-primary-600));
+  --color-brand-hover: var(--color-brand-hover-base, var(--color-primary-500));
+  --color-brand-soft: var(--color-sky-400);
+}
+
+/* ── Auth Pages theme override ── */
+[data-theme="auth"] {
+  --color-bg-primary: var(--color-neutral-0);
+  --color-brand: var(--color-brand-base, var(--color-primary-600));
+  --color-brand-hover: var(--color-brand-hover-base, var(--color-primary-500));
+}
+
+/* ── Shared base styles ── */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    margin: 0;
+  }
+}
+
+/* ── Dark theme ── */
+.dark,
+[data-theme="dark"] {
+  /* Neutral palette inverted for dark mode */
+  --color-neutral-0: #0a0f1a;
+  --color-neutral-50: #0f1a2e;
+  --color-neutral-100: #142238;
+  --color-neutral-200: #1a2a42;
+  --color-neutral-300: #1f3350;
+  --color-neutral-400: #2a4060;
+  --color-neutral-500: #4a6585;
+  --color-neutral-600: #6b8caa;
+  --color-neutral-700: #8fb0cc;
+  --color-neutral-800: #b5d0e6;
+  --color-neutral-900: #e2edf5;
+
+  --color-bg-primary: var(--color-primary-900);
+  --color-bg-surface: #0a2940;
+  --color-bg-elevated: #0f3348;
+  --color-bg-muted: #0a1f30;
+  --color-text-primary: #f8fbfe;
+  --color-text-secondary: #87ceeb;
+  --color-text-muted: #64748d;
+  --color-border-subtle: #1a4a65;
+  --color-border-strong: #2d6a85;
+  --color-border: var(--color-border-strong);
+  --color-brand: var(--color-brand-dark);             /* 从硬编码 var(--color-sky-500) 改（根因修复） */
+  --color-brand-hover: var(--color-brand-dark-hover); /* 从 var(--color-sky-400) 改 */
+  --color-on-brand: var(--color-on-brand-dark);       /* 新增：暗色按钮自动深字 */
+  --color-brand-soft: var(--color-sky-700);
+  color-scheme: dark;
+}
+
+/* ── Authenticator App dark theme ── */
+[data-theme="authenticator"] {
+  --color-bg-primary: #0a0a0a;
+  --color-bg-surface: #141414;
+  --color-bg-elevated: #1f1f1f;
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #a3a3a3;
+  --color-border-subtle: #2a2a2a;
+  --color-border-strong: #3a3a3a;
+  --color-brand: var(--color-primary-500);
+  --color-brand-hover: var(--color-primary-400);
+  color-scheme: dark;
+}

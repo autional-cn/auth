@@ -1,0 +1,46 @@
+{
+  "name": "@autional-cn/ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Autional shared UI component library",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --external react --external react-dom --external tailwindcss --external antd",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch --external react --external react-dom --external tailwindcss --external antd",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@autional-cn/tailwind-preset": "workspace:*"
+  },
+  "devDependencies": {
+    "@autional-cn/tsconfig": "workspace:*",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "i18next": "26.0.10",
+    "lucide-react": "0.509.0",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "react-i18next": "17.0.7",
+    "tailwindcss": "3.4.19",
+    "tsup": "8.5.1",
+    "typescript": "5.8.3"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "antd": ">=6.0.0",
+    "i18next": ">=26.0.0",
+    "lucide-react": ">=0.500.0",
+    "react-i18next": ">=17.0.0"
+  }
+}
