@@ -7,7 +7,7 @@ window.__APP_CONFIG__ = {
     user: { host: "user", base: "" },
     authenticator: { host: "authenticator", base: "" },
     admin: { host: "admin", base: "" },
-    developer: { host: "developers", base: "" },
+    developer: { host: "developer", base: "" },
     security: { host: "security", base: "" },
     platform: { host: "platform", base: "" },
     status: { host: "status", base: "" },
