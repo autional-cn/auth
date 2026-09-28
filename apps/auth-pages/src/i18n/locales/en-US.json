@@ -313,6 +313,7 @@
   "login.noAccount": "Don't have an account?",
   "login.register": "Sign Up",
   "login.error.configLoading": "Security configuration is loading, please try again",
+  "login.error.tenantNotConfigured": "This organization's sign-in is not configured yet. Contact your administrator or try again later.",
   "login.error.credentials": "Invalid username or password",
   "login.error.locked": "Account locked, please try again later",
   "login.error.disabled": "Account disabled, contact administrator",

@@ -13,6 +13,7 @@ import { loginWithTokens } from './store';
 import { AuthService } from './service';
 import { generatePKCE } from './pkce';
 import { getPortalUrl } from '../config';
+import { persistOAuthClientId } from './oauth-client-id-store';
 import type { User } from '../types';
 
 function getAppConfig(): Record<string, string> | undefined {
@@ -141,6 +142,8 @@ export async function initiateOAuthLogin(
 
 	sessionStorage.setItem(SK.STATE, csrf);
 	sessionStorage.setItem(SK.CID, cid);
+	// 交棒时落持久层：刷新/登出在 React 上下文外，拿不到 slug 解析结果（TASK-09 / D8）
+	persistOAuthClientId(cid);
 
 	try {
 		const pkce = await generatePKCE();
@@ -250,6 +253,9 @@ export async function handleOAuthCallback(): Promise<void> {
 	if (!user) {
 		user = { id: '', username: '', email: '' } as User;
 	}
+
+	// 兑换成功后落持久层（同 TASK-09 / D8；兑换前的持久值可能来自旧租户）
+	persistOAuthClientId(cid);
 
 	// Clean up temporary OAuth flow storage
 	sessionStorage.removeItem(SK.STATE);

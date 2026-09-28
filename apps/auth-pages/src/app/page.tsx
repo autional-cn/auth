@@ -27,7 +27,7 @@ import IdentifierFirstInput from '@/components/auth/IdentifierFirstInput';
 import { type TenantOption } from '@/hooks/usePublicTenants';
 import { useTenantAuthConfig } from '@/hooks/use-tenant-auth-config';
 import { useAuthPageInit } from '@/hooks/useAuthPageInit';
-import { getPreloaded, getCached, CACHE_KEYS } from '@/lib/page-init-cache';
+import { resolveClientIdForRequireAuth } from '@/lib/from-requireauth';
 import { TenantSelector } from '@/components/auth/TenantSelector';
 const DEBUG_TAG = '[captcha]';
 function debug(...args: unknown[]) {
@@ -237,16 +237,13 @@ export default function LoginPage() {
 						setAutoRedirectChecking(false);
 						return;
 					}
-					// Read OAuth client ID from preloaded cache (avoids duplicate fetch)
-					const cachedConfig =
-						getPreloaded<Record<string, any>>(CACHE_KEYS.AUTH_CONFIG(slug)) ??
-						getPreloaded<Record<string, any>>(`auth-config:${slug}`) ??
-						getCached<Record<string, any>>(CACHE_KEYS.AUTH_CONFIG(slug)) ??
-						getCached<Record<string, any>>(`auth-config:${slug}`);
-					const clientId = cachedConfig?.oauthClientId || (cachedConfig as any)?.oauth_client_id;
+					// 缓存优先、未命中实时回源 by-slug（ADR-04；实现见 lib/from-requireauth）
+					const clientId = await resolveClientIdForRequireAuth(slug);
 					if (clientId) {
 						initiateOAuthLogin(clientId);
 					} else {
+						// 回源仍无（存量租户未回填）→ 停住不弹跳，并给出停机提示
+						setError(t('login.error.tenantNotConfigured'));
 						setAutoRedirectChecking(false);
 					}
 				} catch {

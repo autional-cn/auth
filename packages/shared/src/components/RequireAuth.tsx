@@ -55,8 +55,10 @@ export function RequireAuth({
 		}
 
 		// Cross-domain or no client: redirect to auth-pages login
+		// from_requireauth=1 与 service.ts 的 onUnauthorized 同口径：auth 侧据此先做会话复检
+		// （有会话直接回跳，避免「已登录还被要求再登一次」）
 		setTimeout(() => {
-			window.location.replace(buildLoginUrl(window.location.href));
+			window.location.replace(buildLoginUrl(window.location.href, true));
 		}, 0);
 	}, [machine.status, tenantRoute]);
 

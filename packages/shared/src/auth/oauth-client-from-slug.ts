@@ -18,6 +18,33 @@ export type SlugResolution =
 	| { status: 'resolved'; slug: string; clientId: string; config: PublicAuthConfigResponse }
 	| { status: 'not-found' };
 
+/**
+ * 拉取公开 auth-config（原始响应，snake/camel 混合未归一）；失败/非 2xx 返回 null。
+ * 用 raw fetch 绕过 apiClient 401 拦截器 —— 公开配置必须在 RequireAuth 跳转前解析完成。
+ */
+async function fetchPublicAuthConfig(slug: string): Promise<Record<string, any> | null> {
+	try {
+		const res = await fetch(
+			`/bff/identity/api/v1/public/auth-config/by-slug/${encodeURIComponent(slug)}`,
+		);
+		if (!res.ok) return null;
+		const json: any = await res.json();
+		return (json?.data || json || {}) as Record<string, any>;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * 按 slug 实时解析 OAuth client_id（非 hook 版本）。
+ * 供登录页 from_requireauth 分支缓存未命中时回源（TASK-09 / ADR-04）。
+ */
+export async function fetchOAuthClientIdBySlug(slug: string): Promise<string | null> {
+	const data = await fetchPublicAuthConfig(slug);
+	if (!data) return null;
+	return data.oauthClientId || data.oauth_client_id || null;
+}
+
 export function useOAuthClientIdFromUrl(): SlugResolution {
 	const [resolution, setResolution] = useState<SlugResolution>({ status: 'loading' });
 
@@ -48,32 +75,21 @@ export function useOAuthClientIdFromUrl(): SlugResolution {
 		}
 
 		let cancelled = false;
-		// Use raw fetch to bypass apiClient 401 interceptor — public auth config
-		// must resolve BEFORE RequireAuth redirects, otherwise OAuth PKCE never starts.
-		fetch(`/bff/identity/api/v1/public/auth-config/by-slug/${slug}`)
-			.then((res) => {
-				if (!res.ok) throw new Error(`HTTP ${res.status}`);
-				return res.json();
-			})
-			.then((json: any) => {
-				if (cancelled) return;
-				const data = json?.data || json || {};
-				// Raw fetch doesn't camelCase keys — handle both snake_case and camelCase
-				const clientId = data.oauthClientId || data.oauth_client_id;
-				if (clientId) {
-					setResolution({
-						status: 'resolved',
-						slug,
-						clientId,
-						config: data as PublicAuthConfigResponse,
-					});
-				} else {
-					setResolution({ status: 'not-found' });
-				}
-			})
-			.catch(() => {
-				if (!cancelled) setResolution({ status: 'not-found' });
-			});
+		void fetchPublicAuthConfig(slug).then((data) => {
+			if (cancelled) return;
+			// Raw fetch doesn't camelCase keys — handle both snake_case and camelCase
+			const clientId = data?.oauthClientId || data?.oauth_client_id;
+			if (clientId) {
+				setResolution({
+					status: 'resolved',
+					slug,
+					clientId,
+					config: data as PublicAuthConfigResponse,
+				});
+			} else {
+				setResolution({ status: 'not-found' });
+			}
+		});
 
 		return () => {
 			cancelled = true;

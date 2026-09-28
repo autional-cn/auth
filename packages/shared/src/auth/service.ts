@@ -24,6 +24,7 @@ import {
 } from './store';
 import { loginWithTokens } from './store';
 import { buildLoginUrl } from './roles';
+import { resolveClientIdForSession } from './oauth-client-id-store';
 import type { User } from '../types';
 
 // ============ Internal State ============
@@ -211,8 +212,8 @@ export const AuthService = {
 				const { getApiBaseUrl } = await import('../config');
 				const baseUrl = getApiBaseUrl();
 				// S9-A：撤销端点要求客户端认证；PKCE 公开客户端凭注册 client_id（对应 none）
-				const clientId =
-					typeof window !== 'undefined' ? (window as any).__APP_CONFIG__?.VITE_OAUTH_CLIENT_ID : '';
+				// 来源：会话内已解析值（持久化）→ env（TASK-09 / D8）
+				const clientId = resolveClientIdForSession();
 				const revokeParams = (token: string, hint: string) => {
 					const params = new URLSearchParams({ token, token_type_hint: hint });
 					if (clientId) params.set('client_id', clientId);
@@ -283,8 +284,8 @@ export const AuthService = {
 				// - JWT（三段式，identity 链签发）→ identity /auth/refresh（现状逻辑）
 				// - opaque（rt- 前缀，OAuth PKCE 链签发）→ oauth /oauth/refresh（扁平 JSON，轮换式）
 				const isJwtRefreshToken = rt.split('.').length === 3;
-				const clientId =
-					typeof window !== 'undefined' ? (window as any).__APP_CONFIG__?.VITE_OAUTH_CLIENT_ID : '';
+				// OAuth 链分流判据：会话内已解析值（持久化）→ env（TASK-09 / D8）
+				const clientId = resolveClientIdForSession();
 
 				let data: {
 					access_token?: string;

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'react-router';
 import { Button } from '@autional-cn/ui';
-import { getAccessToken, loginWithTokens, apiClient, extractItem } from '@autional-cn/shared';
+import { getAccessToken, apiClient, extractItem } from '@autional-cn/shared';
 import { getOAuthClient } from '@/lib/api.generated';
 import { PublicAuthConfigByAuthConfig } from '@autional-cn/shared/generated/api';
+import { buildTenantLoginUrl, fetchTenantSlugByClientId } from '@/lib/oauth-cold-start';
 import { useI18n } from '@/lib/i18n';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthHeader } from '@/components/auth/AuthHeader';
@@ -32,36 +33,23 @@ function OAuthAuthorizeContent() {
 	const [error, setError] = useState('');
 	const [userId, setUserId] = useState('');
 	const [tenantId, setTenantId] = useState('');
-	const formRef = useRef<HTMLFormElement>(null);
+
+	// 无会话时的出口：`<slug>/login?redirect=<本 authorize URL>`（TASK-07，短路 brand）。
+	// slug 解析失败回退旧交棒链（由 EntryRouter 决定落点），不白屏。
+	const redirectToLogin = async (): Promise<void> => {
+		const authorizeUrl = window.location.pathname + window.location.search;
+		const slug = clientId ? await fetchTenantSlugByClientId(clientId) : null;
+		if (slug) {
+			window.location.replace(buildTenantLoginUrl(slug, authorizeUrl));
+			return;
+		}
+		window.location.replace(`/?redirect=${encodeURIComponent(authorizeUrl)}`);
+	};
+
 	useEffect(() => {
 		const token = getAccessToken();
-		if (!token) {
-			const bt = localStorage.getItem('__oauth_bridge_token');
-			if (bt) {
-				localStorage.removeItem('__oauth_bridge_token');
-				try {
-					const payload = JSON.parse(atob(bt.split('.')[1]));
-					const user = {
-						id: (payload.sub || payload.user_id) as string,
-						username: ((payload as any).custom?.username || (payload as any).username) as string,
-						email: (payload.email as string) || '',
-						status: 'active',
-					} as any;
-					loginWithTokens(bt, null, user);
-					try {
-						const p2 = JSON.parse(atob(bt.split('.')[1]));
-						setUserId(p2.user_id || p2.sub || '');
-						setTenantId(p2.tenant_id || (p2 as any).tenantId || '');
-					} catch {
-						/* ignore */
-					}
-					return;
-				} catch {
-					/* invalid bridge token */
-				}
-			}
-			const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
-			window.location.href = `/?redirect=${returnUrl}`;
+		if (!token || token === 'undefined' || token === 'null') {
+			void redirectToLogin();
 			return;
 		}
 		try {
@@ -71,6 +59,7 @@ function OAuthAuthorizeContent() {
 		} catch {
 			/* ignore */
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	useEffect(() => {
@@ -101,6 +90,64 @@ function OAuthAuthorizeContent() {
 			});
 	}, [clientId]);
 
+	// 同意提交：带 Bearer 的 fetch（TASK-15 前端半）。
+	// 公开客户端的同意提交必须绑定会话 —— 表单裸 POST 不带凭据，会被服务端按
+	// login_required 拒绝（W1 后端半）；fetch 提交由 oauth 服务 OptionalAuth 解析
+	// Bearer 得到 user_id，与 body 断言交叉校验。Accept: application/json 时服务端回
+	// 200 {redirect_to}（fetch 读不到 302 的 Location），前端整页跳转。
+	const submitConsent = async (): Promise<void> => {
+		const token = getAccessToken();
+		if (!token || token === 'undefined' || token === 'null') {
+			await redirectToLogin(); // 会话中途失效 → 回登录页（redirect 指回本页）
+			return;
+		}
+		setLoading(true);
+		setError('');
+		try {
+			const body = new URLSearchParams({
+				client_id: clientId,
+				user_id: userId,
+				tenant_id: tenantId,
+				redirect_uri: redirectUri,
+				scope,
+				state,
+				approved: 'true',
+				response_type: 'code',
+				code_challenge: codeChallenge,
+				code_challenge_method: codeChallengeMethod,
+			});
+			const res = await fetch('/bff/oauth/api/v1/oauth/authorize', {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${token}`,
+					Accept: 'application/json',
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+				body: body.toString(),
+			});
+			const payload: any = await res.json().catch(() => null);
+			if (!res.ok) {
+				setError(
+					payload?.error_description ||
+						payload?.error ||
+						t('oauth.authorize.authorizeFailed', '授权失败，请稍后重试'),
+				);
+				setLoading(false);
+				return;
+			}
+			const target = payload?.redirect_to || payload?.data?.redirect_to;
+			if (!target) {
+				setError(t('oauth.authorize.invalidResponse', '授权响应异常，未获取到跳转地址'));
+				setLoading(false);
+				return;
+			}
+			window.location.href = target;
+		} catch {
+			setError(t('oauth.authorize.authorizeFailed', '授权失败，请稍后重试'));
+			setLoading(false);
+		}
+	};
+
 	useEffect(() => {
 		if (!clientId || !userId) return;
 		const token = getAccessToken();
@@ -111,13 +158,13 @@ function OAuthAuthorizeContent() {
 				// interceptor 后 res.data 为 camelCase；兼容嵌套与 snake_case
 				const d = extractItem<{ hasConsent?: boolean; has_consent?: boolean }>(res?.data);
 				if (d?.hasConsent || d?.has_consent) {
-					setLoading(true);
-					formRef.current?.submit();
+					void submitConsent();
 				}
 			})
 			.catch(() => {
 				/* proceed to manual consent */
 			});
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [clientId, userId]);
 
 	const scopes = scope.split(' ').filter(Boolean);
@@ -196,10 +243,12 @@ function OAuthAuthorizeContent() {
 			</div>
 
 			<form
-				ref={formRef}
 				method="POST"
 				action="/bff/oauth/api/v1/oauth/authorize"
-				onSubmit={() => setLoading(true)}
+				onSubmit={(e) => {
+					e.preventDefault();
+					void submitConsent();
+				}}
 			>
 				<input type="hidden" name="client_id" value={clientId} />
 				<input type="hidden" name="user_id" value={userId} />
