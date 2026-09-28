@@ -1,0 +1,17 @@
+# 生成物的换行必须固定为 LF。
+# packages/tailwind-preset/* 由 ui 仓库生成、经 `pnpm sync:consumers` 写入，
+# 校验方式是**逐字节比对**（ui 仓库的 scripts/check-consumers.mjs）。
+# 本机 core.autocrlf=true 时 git 会在检出时把 LF 转成 CRLF，
+# 于是「与权威一致」在下次检出后就失效了——这个坑此前已在 ui 仓库出现过一次。
+* text=auto eol=lf
+
+# 二进制资源不参与换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
