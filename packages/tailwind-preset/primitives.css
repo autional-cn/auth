@@ -58,10 +58,6 @@
     margin-block-start: 0;
   }
 
-  .page-hero {
-    padding-block: var(--space-hero-gap);
-  }
-
   /* 眉标**不在这里重复定义**：primitives 已有 .brand-kicker（胶囊徽标，带边框与底色），
      各站的小节眉标用的就是它。我一开始顺手加了个 .page-eyebrow，写完才发现它与
      .brand-kicker 是同一个角色——只是少了胶囊外壳。这正是我一路在批评的
@@ -80,19 +76,31 @@
     color: var(--color-text-primary);
   }
 
-  .page-title {
-    font-size: var(--font-size-display-lg);
-    line-height: var(--line-height-display-lg);
-    font-weight: 800;
-    letter-spacing: var(--letter-spacing-display-lg);
-    color: var(--color-text-primary);
-  }
+  /* .page-hero 与 .page-title 已删除 —— 它们是**没有落地过**的定义。
+     按我自己定的标准（「定义了一个类不等于统一了页面」），没有采用者就该删掉，
+     而不是留着等哪天有人误用。
 
+     删之前查了证据，不是凭感觉：
+       · .page-title 用 display-lg(40px)，而全舰队 h1 实际是 text-5xl(48px) +
+         sm:text-6xl(60px)——**没有任何站点用 40px 做 h1**。而且 60px 这一档
+         设计系统里根本没有（只有 48 和 72），要匹配得先补一档，那是另一个决定。
+       · .page-hero 设 padding-block，而 developer 的 hero 本来就不带上下内边距
+         （间距由布局给）。同样是凭空造的。
+
+     .page-lead 保留但**改了颜色**：原写 --color-text-secondary（= primary-600，偏蓝），
+     而全舰队 lead 段落用的是 text-neutral-600（灰）。设计系统里有 --color-text-muted
+     (#64748d)，与站点在用的 neutral-600 (#64748b) 几乎同色——按「把舰队已收敛的事实
+     定义下来」的原则，用后者。 */
+  /* 刻意**不设 max-width**：第一版设成了 prose-width(768px)，结果采用它的那个
+     引导段落从 max-w-2xl(672px) 被撑宽到 768px，整段重排，视觉回归差 8.385%。
+     而我在提交里把这次改动描述成「颜色肉眼看不出差」——**描述与事实不符**。
+     一个类该管排版（字号/行高/颜色），不该顺手替调用方决定行宽：
+     引导段落的行宽是编辑决策（短引导用更窄的行更易读），不是排版令牌能定的。
+     现在调用方自己带 max-w-*。 */
   .page-lead {
-    max-width: var(--layout-prose-width);
     font-size: var(--font-size-body-lg);
     line-height: var(--line-height-body-lg);
-    color: var(--color-text-secondary);
+    color: var(--color-text-muted);
   }
 
   /* ── 站点顶栏（P5.4）────────────────────────────────────────────────────────
