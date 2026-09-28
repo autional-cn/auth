@@ -72,17 +72,32 @@ export function tenantSlugFromPath(pathname: string): string | undefined {
 	return first;
 }
 
-/** 会话所属租户 slug：成员租户表优先，其次登录时写入的 sessionStorage 标记 */
+/**
+ * 会话所属租户 slug —— 唯一权威来源是**公开租户名单**（id ↔ slug）。
+ *
+ * ⚠ 不得改用 identity `/auth/me/tenants` 的 `name`：该字段是**展示名**
+ * （`auth_handler.go` GetMyTenants 显式优先 DisplayName），demo 租户实测为
+ * "Demo Tenant"。当 slug 用会拼出 `/Demo%20Tenant/dashboard`，连带
+ * branding / auth-config 全部 404。
+ */
 export function pickSessionSlug(
-	tenants: Array<{ id: string; name: string }>,
+	knownTenants: Array<{ id?: string; name?: string; slug?: string }> | undefined,
 	currentTenantId: string | null,
 ): string | undefined {
-	const fromMemberships = currentTenantId
-		? tenants.find((t) => t.id === currentTenantId)?.name
-		: undefined;
-	if (fromMemberships) return fromMemberships;
+	const list = knownTenants ?? [];
+	if (currentTenantId) {
+		const match = list.find((t) => t.id === currentTenantId);
+		const slug = match?.name || match?.slug;
+		if (slug) return slug;
+	}
+	// 名单里查不到（含名单为空＝接口挂）时回落登录时写入的 slug 标记；
+	// 名单非空而标记不在其中 ⇒ 视为陈旧标记，丢弃
 	try {
-		return sessionStorage.getItem('auth_dashboard_slug') ?? undefined;
+		const marker = sessionStorage.getItem('auth_dashboard_slug') ?? undefined;
+		if (!marker) return undefined;
+		return list.length === 0 || list.some((t) => (t.name || t.slug) === marker)
+			? marker
+			: undefined;
 	} catch {
 		return undefined;
 	}

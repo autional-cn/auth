@@ -9,7 +9,6 @@ import {
 	isValidRedirect,
 	useCurrentTenantId,
 	usePublicTenantSlugs,
-	useTenants,
 } from '@autional-cn/shared';
 import { pickSessionSlug } from '@/lib/tenant-store';
 
@@ -22,12 +21,14 @@ import { pickSessionSlug } from '@/lib/tenant-store';
  * 3. 其余（无租户上下文）→ 整页交棒 brand 选品牌。
  */
 
-function useSessionSlug(hasToken: boolean): string | undefined {
-	const tenants = useTenants();
+function useSessionSlug(
+	hasToken: boolean,
+	knownTenants: Array<{ id?: string; name?: string; slug?: string }> | undefined,
+): string | undefined {
 	const currentTenantId = useCurrentTenantId();
 	return useMemo(
-		() => (hasToken ? pickSessionSlug(tenants, currentTenantId) : undefined),
-		[hasToken, tenants, currentTenantId],
+		() => (hasToken ? pickSessionSlug(knownTenants, currentTenantId) : undefined),
+		[hasToken, knownTenants, currentTenantId],
 	);
 }
 
@@ -50,11 +51,11 @@ export function EntryRouter() {
 
 	const token = getAccessToken();
 	const hasToken = !!token && token !== 'undefined' && token !== 'null';
-	const sessionSlug = useSessionSlug(hasToken);
 
 	// 复用 shared 的公开租户名单（public-tenants 查询键与 TenantIndexGuard 共享缓存）。
 	// 该 hook 任何失败都回落空数组且置 isSuccess ⇒ ready 必达，不会卡加载态。
 	const { data: knownTenants, isSuccess: slugsLoaded } = usePublicTenantSlugs();
+	const sessionSlug = useSessionSlug(hasToken, knownTenants);
 
 	const knownSlugs = useMemo(
 		() =>
@@ -64,7 +65,9 @@ export function EntryRouter() {
 		[knownTenants],
 	);
 
-	const ready = !candidate || slugsLoaded;
+	// 有会话时也要等名单：会话租户 → slug 的唯一权威来源就是它，
+	// 等不到就跳 brand 会把已登录用户整页送走（名单必达，故等待有界）
+	const ready = slugsLoaded || (!hasToken && !candidate);
 	const redirectSlug = candidate && knownSlugs.includes(candidate) ? candidate : undefined;
 
 	useEffect(() => {

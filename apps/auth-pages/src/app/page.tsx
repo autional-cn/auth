@@ -42,7 +42,7 @@ import { CheckCircle2, Lock, QrCode, Mail, Fingerprint, Smartphone, Inbox } from
 import { initiateOAuth } from '@/lib/api.generated';
 import { useI18n } from '@/lib/i18n';
 import { usePageTitle } from '@/hooks/use-page-title';
-import { pickSessionSlug, useTenantStore } from '@/lib/tenant-store';
+import { useTenantStore } from '@/lib/tenant-store';
 import { PasskeyLoginButton } from '@/components/auth/PasskeyLoginButton';
 import { MagicLinkForm } from '@/components/auth/MagicLinkForm';
 import { PasswordInput } from '@/components/form/PasswordInput';
@@ -263,11 +263,19 @@ export default function LoginPage() {
 			}
 			try {
 				await authMe();
-				// 切换品牌：URL 租户与会话租户不一致 → 清旧会话，停在本租户登录态
+				// 切换品牌：本 tab 上次登录的租户 ≠ 当前 URL 租户 → 清旧会话，停在本租户登录态
 				// （唯一选择器已移交 brand 站，这里的旧兜底路径必须显式承接）
-				const { tenants: sessionTenants, currentTenantId } = useAuthStore.getState();
-				const sessionSlug = pickSessionSlug(sessionTenants, currentTenantId);
-				if (sessionSlug && sessionSlug !== tenantSlug) {
+				//
+				// 标记 `auth_dashboard_slug` 由登录成功时按 URL slug 写入，是**同步可用**的
+				// slug 来源；不能改用 `/auth/me/tenants` 的 `name`（那是展示名，会让同租户
+				// 访问自己登录页也误判为切换 → 静默清会话）
+				let lastSlug: string | null = null;
+				try {
+					lastSlug = sessionStorage.getItem('auth_dashboard_slug');
+				} catch {
+					lastSlug = null;
+				}
+				if (lastSlug && lastSlug !== tenantSlug) {
 					useAuthStore.getState().clearAuth();
 					setAutoRedirectChecking(false);
 					return;

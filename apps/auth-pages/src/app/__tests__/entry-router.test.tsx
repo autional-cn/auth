@@ -161,7 +161,8 @@ describe('EntryRouter', () => {
 
 	it('E4 无 redirect + 有会话 → /<会话租户>/dashboard（不经过 brand）', async () => {
 		mockSession.token = 'token-xyz';
-		mockSession.tenants = [{ id: 't1', name: 'demo', role: 'owner' }];
+		// 真实契约：/auth/me/tenants 的 name 是**展示名**（非 slug）—— 见 E10
+		mockSession.tenants = [{ id: 't1', name: 'Demo Tenant', role: 'owner' }];
 		mockSession.currentTenantId = 't1';
 		sessionStorage.setItem('auth_dashboard_slug', 'demo');
 		renderEntry();
@@ -169,6 +170,31 @@ describe('EntryRouter', () => {
 			expect(mockNavigate).toHaveBeenCalledWith('/demo/dashboard', { replace: true });
 		});
 		expect(mockReplace).not.toHaveBeenCalled();
+	});
+
+	it('E10 会话租户 slug 只认公开名单（id↔slug）—— 成员表展示名不得进 URL，无标记时也成立', async () => {
+		mockSession.token = 'token-xyz';
+		// identity GetMyTenants 显式优先 DisplayName ⇒ name="Demo Tenant"；
+		// 线上实测把它当 slug 会拼出 /Demo%20Tenant/dashboard（branding 全 404）
+		mockSession.tenants = [{ id: 't1', name: 'Demo Tenant', role: 'super_admin' }];
+		mockSession.currentTenantId = 't1';
+		// 不给 sessionStorage 标记：只能从公开名单（t1 → demo）解析
+		renderEntry();
+		await waitFor(() => {
+			expect(mockNavigate).toHaveBeenCalledWith('/demo/dashboard', { replace: true });
+		});
+		expect(mockNavigate).not.toHaveBeenCalledWith('/Demo Tenant/dashboard', { replace: true });
+		expect(mockReplace).not.toHaveBeenCalled();
+	});
+
+	it('E11 陈旧标记（不在名单内）→ 丢弃，不拿它当会话租户', async () => {
+		mockSession.token = 'token-xyz';
+		sessionStorage.setItem('auth_dashboard_slug', 'ghost-tenant');
+		renderEntry();
+		await waitFor(() => {
+			expect(mockReplace).toHaveBeenCalledWith('https://brand.autional.cn/');
+		});
+		expect(mockNavigate).not.toHaveBeenCalled();
 	});
 
 	it('E5 无 redirect + 无会话 → brand 裸根', async () => {
