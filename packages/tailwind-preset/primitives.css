@@ -1,0 +1,374 @@
+/**
+ * Autional canonical primitives — hand-maintained (not generated).
+ *
+ * Content-site brand surfaces and documentation patterns, consolidated from
+ * legacy/styles/{website,docs-site,developer-site}-global.css.
+ * Consumes only CSS variables from @autional-cn/tokens, so the visual result
+ * follows whichever profile stylesheet is loaded (docs / developer / marketing).
+ */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    text-rendering: optimizeLegibility;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Full-page wash. Sits on top of the body background-color set by tokens.css,
+     so the dark variant needs only .dark — no per-profile override. */
+  body {
+    background-image: var(--image-page-light);
+    font-size: var(--font-size-body-md);
+    line-height: var(--line-height-body-md);
+  }
+
+  .dark body {
+    background-image: var(--image-page-dark);
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-sky-500) 35%, transparent);
+    color: var(--color-text-primary);
+  }
+}
+
+@layer components {
+  /* ── Shared brand surfaces ── */
+  .brand-shell {
+    border-radius: var(--radius-xl);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    background-color: rgba(255, 255, 255, 0.9);
+    box-shadow: var(--shadow-brand);
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+  }
+
+  .dark .brand-shell {
+    border-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .brand-card {
+    border-radius: var(--radius-lg);
+    border: 1px solid color-mix(in srgb, var(--color-primary-100) 90%, transparent);
+    background-color: rgba(255, 255, 255, 0.95);
+    box-shadow: var(--shadow-card);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+
+  .dark .brand-card {
+    border-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .brand-button-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-primary-700);
+    padding: 12px 24px;
+    min-height: var(--a11y-touch-target);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-sm);
+    font-weight: 600;
+    color: #ffffff;
+    box-shadow: var(--shadow-soft);
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: var(--motion-duration-fast);
+  }
+
+  .brand-button-primary:hover {
+    transform: translateY(-2px);
+    background-color: var(--color-primary-600);
+  }
+
+  .brand-button-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--color-primary-200);
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 12px 24px;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-sm);
+    font-weight: 600;
+    color: var(--color-primary-700);
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: var(--motion-duration-fast);
+  }
+
+  .brand-button-secondary:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-primary-300);
+    background-color: var(--color-sky-50);
+  }
+
+  .dark .brand-button-secondary {
+    border-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+  }
+
+  .dark .brand-button-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .brand-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--color-primary-100);
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 6px 16px;
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-label-caps);
+    color: var(--color-primary-700);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .dark .brand-kicker {
+    border-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-sky-200);
+  }
+
+  .brand-grid {
+    background-image: var(--image-brand-grid);
+    background-position: center;
+    background-size: 28px 28px;
+  }
+
+  .dark .brand-grid {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  }
+
+  /* ── Documentation ──
+     Ported from the docs-site global sheet. These classes assume a light surface
+     (docs/reference/wiki ship light-only), so heading/link colors go through the
+     semantic text tokens — identical values in light, and they follow `.dark`. */
+  .docs-nav-link {
+    display: block;
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-sm);
+    font-weight: 500;
+    color: var(--color-neutral-600);
+    transition-property: color, background-color, border-color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  .docs-nav-link:hover {
+    background-color: var(--color-primary-50);
+    color: var(--color-primary-700);
+  }
+
+  .docs-nav-link[data-active='true'] {
+    background-color: var(--color-primary-700);
+    color: #ffffff;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .docs-prose > :first-child {
+    margin-top: 0;
+  }
+
+  .docs-prose {
+    max-width: var(--layout-prose-width);
+    color: var(--color-text-primary);
+  }
+
+  .docs-prose h1 {
+    margin-top: 0;
+    margin-bottom: 24px;
+    font-size: var(--font-size-4xl);
+    line-height: var(--line-height-display-lg);
+    font-weight: 800;
+    letter-spacing: var(--letter-spacing-display-xl);
+    color: var(--color-text-primary);
+  }
+
+  @media (min-width: 640px) {
+    .docs-prose h1 {
+      font-size: var(--font-size-display-xl);
+      line-height: var(--line-height-display-xl);
+    }
+  }
+
+  .docs-prose h2 {
+    margin-top: 48px;
+    margin-bottom: 16px;
+    font-size: var(--font-size-2xl);
+    line-height: var(--line-height-2xl);
+    font-weight: 700;
+    letter-spacing: var(--letter-spacing-heading-lg);
+    color: var(--color-text-primary);
+  }
+
+  .docs-prose h3 {
+    margin-top: 36px;
+    margin-bottom: 12px;
+    font-size: var(--font-size-xl);
+    line-height: var(--line-height-xl);
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .docs-prose p {
+    margin-top: 20px;
+    margin-bottom: 0;
+    font-size: var(--font-size-body-md);
+    line-height: var(--line-height-body-md);
+    color: var(--color-neutral-600);
+  }
+
+  .docs-prose ul,
+  .docs-prose ol {
+    margin-top: 16px;
+    padding-left: 24px;
+    font-size: var(--font-size-body-md);
+    line-height: var(--line-height-body-md);
+    color: var(--color-neutral-600);
+  }
+
+  .docs-prose li + li {
+    margin-top: 8px;
+  }
+
+  .docs-prose li::marker {
+    color: var(--color-primary-500);
+  }
+
+  .docs-prose a {
+    font-weight: 500;
+    color: var(--color-brand);
+    text-decoration-line: underline;
+    text-decoration-color: var(--color-primary-200);
+    text-underline-offset: 4px;
+  }
+
+  .docs-prose pre {
+    margin-top: 20px;
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+    background-color: var(--color-bg-developer);
+    padding: 16px 20px;
+    font-size: var(--font-size-code-md);
+    line-height: var(--line-height-code-md);
+    color: var(--color-text-inverse);
+    box-shadow: 0 24px 60px rgba(3, 20, 37, 0.18);
+  }
+
+  .docs-prose code:not(pre code) {
+    border-radius: var(--radius-sm);
+    background-color: var(--color-primary-50);
+    padding: 2px 6px;
+    font-size: 0.92em;
+    color: var(--color-primary-800);
+  }
+
+  .docs-prose table {
+    margin-top: 20px;
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-primary-100);
+    background-color: #ffffff;
+    text-align: left;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-sm);
+    box-shadow: var(--shadow-soft);
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .docs-prose thead tr {
+    background-color: var(--color-primary-900);
+    color: #ffffff;
+  }
+
+  .docs-prose th,
+  .docs-prose td {
+    border-bottom: 1px solid var(--color-primary-100);
+    padding: 12px 16px;
+    vertical-align: top;
+  }
+
+  .docs-prose tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .docs-prose blockquote {
+    margin-top: 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-sky-100);
+    background-color: color-mix(in srgb, var(--color-sky-50) 80%, transparent);
+    padding: 16px 20px;
+    font-size: var(--font-size-body-sm);
+    line-height: var(--line-height-lg);
+    color: var(--color-neutral-700);
+  }
+
+  /* ── Developer portal ── */
+  .developer-panel {
+    border-radius: var(--radius-xxl);
+    border: 1px solid color-mix(in srgb, var(--color-bg-developer) 90%, transparent);
+    background-color: var(--color-bg-developer);
+    color: var(--color-text-inverse);
+    box-shadow: 0 32px 120px rgba(3, 20, 37, 0.38);
+  }
+
+  .developer-code {
+    display: block;
+    overflow-x: auto;
+    border-radius: var(--radius-md);
+    background-color: var(--color-bg-developer);
+    padding: 16px 20px;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-code-md);
+    line-height: var(--line-height-lg);
+    color: var(--color-text-inverse);
+  }
+
+  .developer-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--color-primary-100);
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 4px 12px;
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-xs);
+    font-weight: 500;
+    color: var(--color-neutral-600);
+  }
+
+  .developer-nav-link {
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-sm);
+    font-weight: 500;
+    color: var(--color-neutral-500);
+    transition-property: color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  .developer-nav-link:hover,
+  .developer-nav-link[data-active='true'] {
+    color: var(--color-primary-700);
+  }
+}
