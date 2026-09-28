@@ -44,23 +44,29 @@
 
      这里给出页面级的三件事：节奏、hero 版式、三类文字角色。
      只吃令牌，所以跟着 profile 与主题走。 */
+  /* 用 margin-block-start 而不是 padding-block：
+     第一版写成 padding-block，结果是**相邻两节各留 48px = 96px**，
+     而各站原来的写法是 mt-16（64px 的间隙）。令牌的名字就叫 section-**gap**
+     ——它是「两节之间留多少」，不是「每节上下各留多少」。写成 padding 等于
+     把语义理解错了一次，而且方向是**变松**，与收敛的意图相反。
+     :first-child 清零，避免首节前面平白多一段。 */
   .page-section {
-    padding-block: var(--space-section-gap);
+    margin-block-start: var(--space-section-gap);
+  }
+
+  .page-section:first-child {
+    margin-block-start: 0;
   }
 
   .page-hero {
     padding-block: var(--space-hero-gap);
   }
 
-  /* 眉标：小节上方的全大写小字 */
-  .page-eyebrow {
-    font-size: var(--font-size-label-caps);
-    line-height: var(--line-height-label-caps);
-    font-weight: 600;
-    letter-spacing: var(--letter-spacing-label-caps);
-    text-transform: uppercase;
-    color: var(--color-text-secondary);
-  }
+  /* 眉标**不在这里重复定义**：primitives 已有 .brand-kicker（胶囊徽标，带边框与底色），
+     各站的小节眉标用的就是它。我一开始顺手加了个 .page-eyebrow，写完才发现它与
+     .brand-kicker 是同一个角色——只是少了胶囊外壳。这正是我一路在批评的
+     「同一个东西两种说法」，所以删掉自己刚加的那个，而不是留下两个。
+     真需要「无外壳的眉标」时再加，那时它会有实际使用场景。 */
 
   .page-title {
     font-size: var(--font-size-display-lg);
