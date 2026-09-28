@@ -84,6 +84,8 @@ module.exports = {
         inverse: 'var(--color-text-inverse)',
         surface: 'var(--color-bg-surface)',
         muted: 'var(--color-bg-muted)',
+        elevated: 'var(--color-bg-elevated)',
+        developer: 'var(--color-bg-developer)',
         'border-subtle': 'var(--color-border-subtle)',
         'border-strong': 'var(--color-border-strong)'
       },
