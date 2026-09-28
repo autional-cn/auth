@@ -175,6 +175,8 @@
 --space-8: 32px;
 --space-10: 40px;
 --space-12: 48px;
+--space-hero-gap: 40px;
+--space-section-gap: 48px;
 
 /* ── radius ── */
 --radius-sm: 8px;

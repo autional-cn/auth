@@ -33,6 +33,50 @@
 }
 
 @layer components {
+  /* ── 页面模式层（P6）────────────────────────────────────────────────────────
+     U66 的**根因项**：「canonical 只到 primitives ⇒ 10 个内容站各自重写一遍 =
+     漂移重新长出」。参考站的美全手写在 sites/web/src/pages/index.astro 里
+     （hero 版式 / 产品框 / 统计带 / 收尾 CTA），而 primitives 在此之前只有
+     按钮、卡片这类**零件**，没有「一页长什么样」。
+
+     零件统一了、页面没统一，各站就会用同样的零件搭出不同的页面——这正是
+     「看起来不像同一个产品」在最上层的原因。
+
+     这里给出页面级的三件事：节奏、hero 版式、三类文字角色。
+     只吃令牌，所以跟着 profile 与主题走。 */
+  .page-section {
+    padding-block: var(--space-section-gap);
+  }
+
+  .page-hero {
+    padding-block: var(--space-hero-gap);
+  }
+
+  /* 眉标：小节上方的全大写小字 */
+  .page-eyebrow {
+    font-size: var(--font-size-label-caps);
+    line-height: var(--line-height-label-caps);
+    font-weight: 600;
+    letter-spacing: var(--letter-spacing-label-caps);
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+  }
+
+  .page-title {
+    font-size: var(--font-size-display-lg);
+    line-height: var(--line-height-display-lg);
+    font-weight: 800;
+    letter-spacing: var(--letter-spacing-display-lg);
+    color: var(--color-text-primary);
+  }
+
+  .page-lead {
+    max-width: var(--layout-prose-width);
+    font-size: var(--font-size-body-lg);
+    line-height: var(--line-height-body-lg);
+    color: var(--color-text-secondary);
+  }
+
   /* ── 站点顶栏（P5.4）────────────────────────────────────────────────────────
      14 个门户此前各写各的顶栏。实测：高度跨度 48–117px、position 分 static/sticky
      两派、品牌标有三种形态（logo-mark.svg / 内联 svg / status 拿一枚 lucide 的
@@ -147,7 +191,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: var(--space-2);
     border-radius: var(--radius-full);
     background-color: var(--color-primary-700);
     padding: 12px 24px;
@@ -171,7 +215,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: var(--space-2);
     border-radius: var(--radius-full);
     border: 1px solid var(--color-primary-200);
     background-color: rgba(255, 255, 255, 0.9);
@@ -204,7 +248,7 @@
   .brand-kicker {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-2);
     border-radius: var(--radius-full);
     border: 1px solid var(--color-primary-100);
     background-color: rgba(255, 255, 255, 0.8);
