@@ -210,6 +210,8 @@
 --z-tooltip: 1080;
 
 /* ── layout ── */
+--layout-header-height: 64px;
+--layout-header-height-compact: 56px;
 --layout-max-width: 1280px;
 --layout-prose-width: 768px;
 --layout-breakpoint-sm: 640px;

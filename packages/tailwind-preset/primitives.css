@@ -33,6 +33,87 @@
 }
 
 @layer components {
+  /* ── 站点顶栏（P5.4）────────────────────────────────────────────────────────
+     14 个门户此前各写各的顶栏。实测：高度跨度 48–117px、position 分 static/sticky
+     两派、品牌标有三种形态（logo-mark.svg / 内联 svg / status 拿一枚 lucide 的
+     activity 状态图标当 logo）。
+
+     顶栏是每个页面都出现的第一条水平线——高度、位置、品牌标不一致，是最容易被
+     一眼看穿的「不像同一个产品」。图标套件已经统一（第 12 道闸门守住），顶栏是
+     紧接着的第二条。
+
+     这里统一的是**高度 / 位置 / 底边 / 品牌标尺寸**，不是内容：控制台的租户切换器
+     与文档站的导航链接本来就该不同，强行统一内容反而是错的。消费方挂 class 即可，
+     不要再各写 height 与 position。 */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    height: var(--layout-header-height);
+    display: flex;
+    align-items: center;
+    background-color: var(--color-bg-surface);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  .site-header__inner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    width: 100%;
+    max-width: var(--layout-max-width);
+    height: 100%;
+    margin-inline: auto;
+    padding-inline: var(--space-6);
+  }
+
+  /* 品牌标：唯一允许的形态是 logo-mark 资产。status 此前用 lucide 的 activity
+     图标充当 logo——那是状态图标，不是品牌标。 */
+  .site-header__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    height: 100%;
+    flex-shrink: 0;
+    text-decoration: none;
+  }
+
+  .site-header__brand img,
+  .site-header__brand > svg {
+    height: 32px;
+    width: auto;
+    display: block;
+  }
+
+  .site-header__title {
+    font-size: var(--font-size-body-md);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--color-text-primary);
+  }
+
+  .site-header__nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+    height: 100%;
+    margin-inline-start: auto;
+  }
+
+  /* 半透明毛玻璃变体：营销与文档站此前各写 bg-white/80 + backdrop-blur-xl。
+     观感保留，但底色与模糊量改由令牌给，不再每站手填。 */
+  .site-header--translucent {
+    background-color: color-mix(in srgb, var(--color-bg-surface) 80%, transparent);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+  }
+
+  @media (max-width: 767px) {
+    .site-header { height: var(--layout-header-height-compact); }
+    .site-header__inner { padding-inline: var(--space-4); }
+  }
+
   /* ── Shared brand surfaces ── */
   .brand-shell {
     border-radius: var(--radius-xl);
