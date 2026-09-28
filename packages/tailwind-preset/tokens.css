@@ -181,6 +181,8 @@
 --shadow-soft: 0 8px 20px rgba(0, 49, 83, 0.08);
 --shadow-card: 0 12px 36px rgba(0, 49, 83, 0.10);
 --shadow-brand: 0 24px 80px rgba(0, 49, 83, 0.14);
+--shadow-code: 0 24px 60px rgba(3, 20, 37, 0.18);
+--shadow-deep: 0 32px 120px rgba(3, 20, 37, 0.38);
 
 /* ── motion ── */
 --motion-duration-instant: 100ms;

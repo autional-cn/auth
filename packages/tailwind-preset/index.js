@@ -187,7 +187,10 @@ module.exports = {
       boxShadow: {
         soft: '0 8px 20px rgba(0, 49, 83, 0.08)',
         card: '0 12px 36px rgba(0, 49, 83, 0.10)',
-        brand: '0 24px 80px rgba(0, 49, 83, 0.14)'
+        brand: '0 24px 80px rgba(0, 49, 83, 0.14)',
+        code: '0 24px 60px rgba(3, 20, 37, 0.18)',
+        deep: '0 32px 120px rgba(3, 20, 37, 0.38)',
+        $note: 'code / deep 是从 primitives.css 里**收进来**的，不是新设计。primitives.css 声称「只消费 var()」，但代码块与开发者面板两处直接写死了 box-shadow（U66 第⑦项）。收进令牌后取值与原来**逐字相同**，所以是零视觉变化；意义在于这两处阴影从此可被集中调整，而不是散在组件的样式里。另外注意它们的色相与前三个不同：前三个用 primary-700 的 rgb(0,49,83)，这两个用 bg-developer 的 rgb(3,20,37)——深色面板上的阴影本就该更深。'
       },
       zIndex: {
         base: '0',

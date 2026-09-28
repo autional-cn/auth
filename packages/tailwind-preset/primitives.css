@@ -351,7 +351,7 @@
     font-size: var(--font-size-code-md);
     line-height: var(--line-height-code-md);
     color: var(--color-text-inverse);
-    box-shadow: 0 24px 60px rgba(3, 20, 37, 0.18);
+    box-shadow: var(--shadow-code);
   }
 
   .docs-prose code:not(pre code) {
@@ -410,7 +410,7 @@
     border: 1px solid color-mix(in srgb, var(--color-bg-developer) 90%, transparent);
     background-color: var(--color-bg-developer);
     color: var(--color-text-inverse);
-    box-shadow: 0 32px 120px rgba(3, 20, 37, 0.38);
+    box-shadow: var(--shadow-deep);
   }
 
   .developer-code {
