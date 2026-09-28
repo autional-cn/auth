@@ -58,6 +58,9 @@
 --color-danger: #ff4d4f;
 --color-danger-text: #c62828;
 --color-success-text: #2e7213;
+--color-success-soft: #ebfbe5;
+--color-warning-soft: #fef4e1;
+--color-danger-soft: #fce4e4;
 --color-warning-text: #966003;
 --color-text-disabled: var(--color-neutral-400);
 --color-info: #1890ff;
@@ -126,6 +129,10 @@
 --font-weight-3xl: 700;
 --font-size-4xl: 36px;
 --line-height-4xl: 40px;
+--font-size-display-2xl: 72px;
+--line-height-display-2xl: 1.16;
+--font-weight-display-2xl: 800;
+--letter-spacing-display-2xl: -0.02em;
 --font-size-display-xl: 48px;
 --line-height-display-xl: 1.16;
 --font-weight-display-xl: 800;
@@ -292,6 +299,9 @@
 --color-border: var(--color-border-strong);
 --color-danger-text: #ff4d4f;
 --color-success-text: var(--color-success);
+--color-success-soft: #1c460b;
+--color-warning-soft: #503302;
+--color-danger-soft: #490909;
 --color-warning-text: var(--color-warning);
 --color-text-disabled: var(--color-neutral-500);
 --color-brand: var(--color-brand-dark);
@@ -338,6 +348,9 @@
 --color-border: var(--color-border-strong);
 --color-danger-text: #ff4d4f;
 --color-success-text: var(--color-success);
+--color-success-soft: #1c460b;
+--color-warning-soft: #503302;
+--color-danger-soft: #490909;
 --color-warning-text: var(--color-warning);
 --color-text-disabled: var(--color-neutral-500);
 --color-brand: var(--color-primary-500);

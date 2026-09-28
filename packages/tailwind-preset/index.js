@@ -74,6 +74,9 @@ module.exports = {
         success: 'var(--color-success)',
         warning: 'var(--color-warning)',
         danger: 'var(--color-danger)',
+        'success-soft': 'var(--color-success-soft)',
+        'warning-soft': 'var(--color-warning-soft)',
+        'danger-soft': 'var(--color-danger-soft)',
         error: 'var(--color-danger)',
         info: 'var(--color-info)',
         brand: 'var(--color-brand)',
@@ -122,6 +125,11 @@ module.exports = {
         }],
         '4xl': ['36px', {
           lineHeight: '40px'
+        }],
+        'display-2xl': ['72px', {
+          lineHeight: '1.16',
+          fontWeight: '800',
+          letterSpacing: '-0.02em'
         }],
         'display-xl': ['48px', {
           lineHeight: '1.16',
