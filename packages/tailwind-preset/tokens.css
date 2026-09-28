@@ -58,14 +58,14 @@
 --color-danger: #ff4d4f;
 --color-danger-text: #c62828;
 --color-info: #1890ff;
---color-chart-1: var(--color-primary-700);
---color-chart-2: var(--color-amber-500);
---color-chart-3: var(--color-sky-500);
---color-chart-4: var(--color-amber-800);
---color-chart-5: var(--color-primary-300);
---color-chart-6: var(--color-amber-700);
---color-chart-7: var(--color-sky-700);
---color-chart-8: var(--color-primary-800);
+--color-chart-1: #003153;
+--color-chart-2: #235f84;
+--color-chart-3: #429bc5;
+--color-chart-4: #b38700;
+--color-chart-5: #664f00;
+--color-chart-6: #059669;
+--color-chart-7: #8b5cf6;
+--color-chart-8: #ef4444;
 --color-method-get: var(--color-primary-600);
 --color-method-post: var(--color-success);
 --color-method-put: var(--color-amber-600);
@@ -288,6 +288,14 @@
 --color-brand-hover: var(--color-brand-dark-hover);
 --color-on-brand: var(--color-on-brand-dark);
 --color-brand-soft: var(--color-sky-700);
+--color-chart-1: #75abd5;
+--color-chart-2: #bde6f5;
+--color-chart-3: #87ceeb;
+--color-chart-4: #ffe480;
+--color-chart-5: #ffbf00;
+--color-chart-6: #6ee7b7;
+--color-chart-7: #a78bfa;
+--color-chart-8: #f87171;
 
 /* ── focus ── */
 --focus-ring-color: var(--color-sky-500);
@@ -323,6 +331,14 @@
 --color-brand-hover: var(--color-primary-400);
 --color-on-brand: var(--color-on-brand-dark);
 --color-brand-soft: var(--color-sky-700);
+--color-chart-1: #75abd5;
+--color-chart-2: #bde6f5;
+--color-chart-3: #87ceeb;
+--color-chart-4: #ffe480;
+--color-chart-5: #ffbf00;
+--color-chart-6: #6ee7b7;
+--color-chart-7: #a78bfa;
+--color-chart-8: #f87171;
 
 /* ── focus ── */
 --focus-ring-color: var(--color-sky-500);
