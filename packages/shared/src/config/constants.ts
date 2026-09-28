@@ -13,7 +13,7 @@ function getEnv(key: string, fallback: string): string {
 }
 
 export const SITE_DOMAIN = getEnv('SITE_DOMAIN', 'iam.tianv.com');
-export const SITE_EMAIL = getEnv('SITE_EMAIL', 'tianv@tianv.com');
+export const SITE_EMAIL = getEnv('SITE_EMAIL', 'support@autional.net');
 export const SITE_BASE_URL = `https://${SITE_DOMAIN}`;
 export const AUTH_DOMAIN = `auth.${SITE_DOMAIN}`;
 export const USER_DOMAIN = `user.${SITE_DOMAIN}`;
