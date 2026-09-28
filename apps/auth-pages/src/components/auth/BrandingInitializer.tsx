@@ -85,7 +85,7 @@ export function BrandingInitializer() {
 			setBranding({
 				primaryColor: '',
 				logoUrl: name
-					? `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" fill="#003153" rx="4"/><text x="100" y="38" text-anchor="middle" fill="#fff" font-size="20" font-family="sans-serif">${name}</text></svg>`)}`
+					? `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" fill="var(--color-primary-700)" rx="4"/><text x="100" y="38" text-anchor="middle" fill="#fff" font-size="20" font-family="sans-serif">${name}</text></svg>`)}`
 					: '',
 				faviconUrl: '',
 				customCss: '',
