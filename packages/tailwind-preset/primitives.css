@@ -68,6 +68,18 @@
      「同一个东西两种说法」，所以删掉自己刚加的那个，而不是留下两个。
      真需要「无外壳的眉标」时再加，那时它会有实际使用场景。 */
 
+  /* 小节标题。实测 developer 一个站就手写了 6 遍
+     `mt-4 text-3xl font-bold tracking-[...] text-primary-900` —— 这正是
+     「canonical 只到 primitives，各站自己重写一遍」的样子。
+     heading-lg 是设计系统里为此准备的档位（30px / 1.35 / 700 / -0.01em）。 */
+  .page-heading {
+    font-size: var(--font-size-heading-lg);
+    line-height: var(--line-height-heading-lg);
+    font-weight: 700;
+    letter-spacing: var(--letter-spacing-heading-lg);
+    color: var(--color-text-primary);
+  }
+
   .page-title {
     font-size: var(--font-size-display-lg);
     line-height: var(--line-height-display-lg);
