@@ -3,45 +3,11 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useTenantStore } from '@/lib/tenant-store';
+import { tenantSlugFromPath, useTenantStore } from '@/lib/tenant-store';
 import { useTenantAuthConfigBySlug } from '@/hooks/use-tenant-auth-config';
 import { tenantPublicTenantsByTenants } from '@autional-cn/shared/generated/api';
 import { getCached, setCached, getPreloaded, CACHE_KEYS, TTL } from '@/lib/page-init-cache';
 import type { BrandingData } from '@/hooks/useAuthPageInit';
-
-function extractSlug(pathname: string): string | null {
-	const segments = pathname.split('/').filter(Boolean);
-	if (segments.length < 2) return null;
-	const first = segments[0];
-	const NON_TENANT = new Set([
-		'oauth',
-		'login',
-		'register',
-		'forgot-password',
-		'reset-password',
-		'terms',
-		'privacy',
-		'error',
-		'logout',
-		'passkey',
-		'reapply',
-		'mfa',
-		'account',
-		'dashboard',
-		'magic-link',
-		'verify-email',
-		'verify-phone',
-		'mfa-challenge',
-		'mfa-setup',
-		'change-password',
-		'recover-account',
-		'account-deletion',
-		'verify-identity',
-		'sso',
-	]);
-	if (NON_TENANT.has(first)) return null;
-	return first;
-}
 
 // Extract branding fields from API response (handles both snake_case and camelCase)
 function extractBranding(raw: unknown): BrandingData | null {
@@ -68,7 +34,7 @@ function extractBranding(raw: unknown): BrandingData | null {
 
 export function BrandingInitializer() {
 	const location = useLocation();
-	const tenantSlug = useMemo(() => extractSlug(location.pathname), [location.pathname]);
+	const tenantSlug = useMemo(() => tenantSlugFromPath(location.pathname) ?? null, [location.pathname]);
 	const { data: slugAuthConfig } = useTenantAuthConfigBySlug(tenantSlug);
 	const setBranding = useTenantStore((s) => s.setBranding);
 

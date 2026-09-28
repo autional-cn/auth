@@ -1,7 +1,8 @@
-import { Routes, Route, Navigate, useSearchParams } from 'react-router';
+import { Routes, Route, Navigate } from 'react-router';
 import {
 	useAuthStore,
 	RequireAuth,
+	TenantIndexGuard,
 	AUTH_PAGES_URL,
 	useLogout,
 	OAuthCallbackPage as OAuthLoginCallbackPage,
@@ -12,6 +13,8 @@ import { ThemeProvider, ThemeToggle, LanguageSwitcher, ErrorBoundary } from '@au
 import { useBranding } from '@/hooks/useBranding';
 import { BrandingInitializer } from '@/components/auth/BrandingInitializer';
 import { AuthCard } from '@/components/auth/AuthCard';
+import { EntryRouter } from '@/components/EntryRouter';
+import { TenantSwitchChip } from '@/components/TenantSwitchChip';
 
 // Pages — route-level code splitting via React.lazy
 const LoginPage = lazy(() => import('./app/page'));
@@ -34,7 +37,6 @@ const DashboardPage = lazy(() => import('./app/dashboard/page'));
 const ReapplyPage = lazy(() => import('./app/reapply/page'));
 const RecoverAccountPage = lazy(() => import('./app/recover-account/page'));
 const MagicLinkConfirmPage = lazy(() => import('./app/magic-link/confirm/page'));
-const SelectTenantPage = lazy(() => import('./app/select-tenant/page'));
 const VerifyIdentityPage = lazy(() => import('./app/verify-identity/page'));
 const TermsPage = lazy(() => import('./app/terms/page'));
 const PrivacyPage = lazy(() => import('./app/privacy/page'));
@@ -80,13 +82,6 @@ function NotFoundPage() {
 	);
 }
 
-function RedirectToSelectTenant() {
-	const [searchParams] = useSearchParams();
-	const qs = searchParams.toString();
-	const to = '/' + (qs ? '?' + qs : '');
-	return <Navigate to={to} replace />;
-}
-
 function DashboardSlugRedirect() {
 	const slug = sessionStorage.getItem('auth_dashboard_slug');
 	const to = slug ? `/${slug}/dashboard` : '/';
@@ -111,14 +106,20 @@ function SkipLink() {
 
 function AppHeader() {
 	const { lang, setLang } = useI18n();
+	const chromeButtonClass =
+		'rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 py-1 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-700';
 	return (
 		<>
-			<LanguageSwitcher
-				currentLang={lang}
-				onToggle={(next) => setLang(next as 'zh-CN' | 'en-US')}
-				className="fixed top-3 right-3 z-50 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 py-1 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-700"
-			/>
-			<ThemeToggle className="fixed top-3 right-16 z-50 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 py-1 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-700" />
+			{/* 右对齐浮层：chip 在左，主题/语言钉在右侧（新增 chip 不挪动既有按钮） */}
+			<div className="fixed top-3 right-3 z-50 flex items-center gap-2">
+				<TenantSwitchChip className={chromeButtonClass} />
+				<ThemeToggle className={chromeButtonClass} />
+				<LanguageSwitcher
+					currentLang={lang}
+					onToggle={(next) => setLang(next as 'zh-CN' | 'en-US')}
+					className={chromeButtonClass}
+				/>
+			</div>
 			<SkipLink />
 		</>
 	);
@@ -156,9 +157,9 @@ export default function App() {
 									path="/oauth/api/v1/oauth/callback/:provider"
 									element={<OAuthCallbackPage />}
 								/>
-								{/* Home */}
-								<Route path="/" element={<SelectTenantPage />} />
-								<Route path="/login" element={<RedirectToSelectTenant />} />
+								{/* 入口：裸根 / 与 /login 统一由 EntryRouter 三分支收口（选品牌一律交棒 brand 站） */}
+								<Route path="/" element={<EntryRouter />} />
+								<Route path="/login" element={<EntryRouter />} />
 								{/* Token-based routes (no slug needed) */}
 								<Route path="/reset-password" element={<ResetPasswordPage />} />
 								<Route path="/magic-link/confirm" element={<MagicLinkConfirmPage />} />
@@ -177,6 +178,16 @@ export default function App() {
 								<Route
 									path="/:tenantSlug/mfa"
 									element={<Navigate to="../mfa-challenge" replace />}
+								/>
+								{/* 裸 /<slug>（brand 落地目标）：先过租户白名单守卫，防未知 slug 被贪婪
+								    渲染成 dashboard；白名单为空（名单接口挂）时放行，与其余门户同口径 */}
+								<Route
+									path="/:tenantSlug"
+									element={
+										<TenantIndexGuard notFound={<NotFoundPage />}>
+											<Navigate to="dashboard" replace />
+										</TenantIndexGuard>
+									}
 								/>
 								<Route
 									path="/:tenantSlug/dashboard"

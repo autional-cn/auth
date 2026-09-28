@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth, extractItem, extractList } from '@autional-cn/shared';
@@ -58,6 +58,7 @@ interface PortalEntry {
 
 export default function DashboardPage() {
 	const navigate = useNavigate();
+	const { tenantSlug } = useParams<{ tenantSlug?: string }>();
 	const { user } = useAuth();
 	const accessToken = getAccessToken();
 	const role = useCurrentRole();
@@ -143,7 +144,7 @@ export default function DashboardPage() {
 		queryKey: ['system-portals', qTenantId],
 		queryFn: async () => {
 			const res = await fetch(
-				`${API_BASE_URL}/tenant/api/v1/admin/tenants/${qTenantId}/applications?type=portal&is_platform=true&status=active`,
+				`${API_BASE_URL}/tenant/api/v1/tenants/${qTenantId}/applications?type=portal&is_platform=true&status=active`,
 				{ headers: { Authorization: `Bearer ${qToken}` } },
 			).then((r) => r.json());
 			if (res.code !== 0) return [];
@@ -230,11 +231,12 @@ export default function DashboardPage() {
 
 		return visible.map((app: any) => ({
 			label: app.name,
-			url: getPortalUrl(app.code, meData?.tenant_id || user?.tenant_id || undefined),
+			// 门户入口一律带租户段：第二参是 slug，不是 tenant_id（ULID）
+			url: getPortalUrl(app.code, tenantSlug || undefined),
 			code: app.code,
 			icon: app.icon_url,
 		}));
-	}, [systemApps, meData, user, accessToken, prefs, role]);
+	}, [systemApps, meData, user, accessToken, prefs, role, tenantSlug]);
 
 	if (loading) {
 		return (

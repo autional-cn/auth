@@ -11,7 +11,8 @@ window.__APP_CONFIG__ = {
     security: { host: "security", base: "" },
     platform: { host: "platform", base: "" },
     status: { host: "status", base: "" },
-    trust: { host: "trust", base: "" }
+    trust: { host: "trust", base: "" },
+    brand: { host: "brand", base: "" }
   },
   VITE_COOKIE_DOMAIN: ".autional.cn",
   VITE_API_BASE_URL: "/bff"

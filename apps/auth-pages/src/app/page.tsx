@@ -42,7 +42,7 @@ import { CheckCircle2, Lock, QrCode, Mail, Fingerprint, Smartphone, Inbox } from
 import { initiateOAuth } from '@/lib/api.generated';
 import { useI18n } from '@/lib/i18n';
 import { usePageTitle } from '@/hooks/use-page-title';
-import { useTenantStore } from '@/lib/tenant-store';
+import { pickSessionSlug, useTenantStore } from '@/lib/tenant-store';
 import { PasskeyLoginButton } from '@/components/auth/PasskeyLoginButton';
 import { MagicLinkForm } from '@/components/auth/MagicLinkForm';
 import { PasswordInput } from '@/components/form/PasswordInput';
@@ -263,6 +263,15 @@ export default function LoginPage() {
 			}
 			try {
 				await authMe();
+				// 切换品牌：URL 租户与会话租户不一致 → 清旧会话，停在本租户登录态
+				// （唯一选择器已移交 brand 站，这里的旧兜底路径必须显式承接）
+				const { tenants: sessionTenants, currentTenantId } = useAuthStore.getState();
+				const sessionSlug = pickSessionSlug(sessionTenants, currentTenantId);
+				if (sessionSlug && sessionSlug !== tenantSlug) {
+					useAuthStore.getState().clearAuth();
+					setAutoRedirectChecking(false);
+					return;
+				}
 				const redirect = searchParams.get('redirect');
 				if (redirect && isValidRedirect(redirect)) {
 					window.location.href = redirect;
@@ -747,10 +756,6 @@ export default function LoginPage() {
 	const tenantRequired = !tenantSlug || slugConfigFailed;
 	const tenantSelected = !tenantRequired || !!watch('tenantId');
 
-	// Determine tenant display info for slug path
-	const tenantDisplayName =
-		tenantSlug && !slugConfigFailed ? slugAuthConfig?.tenantName || tenantSlug : null;
-
 	if (autoRedirectChecking) {
 		return (
 			<div className="flex min-h-screen items-center justify-center">
@@ -829,19 +834,6 @@ export default function LoginPage() {
 							variant="login"
 						/>
 					</>
-				)}
-
-				{/* Tenant info card for valid slug path */}
-				{tenantDisplayName && (
-					<div className="flex items-center justify-between rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] px-3 py-2 text-sm text-[var(--color-text-primary)]">
-						<span className="font-medium">{tenantDisplayName}</span>
-						<Link
-							to="/"
-							className="text-xs text-[var(--color-brand)] transition-all duration-200 hover:underline decoration-2 underline-offset-4"
-						>
-							{t('tenant.switchOrganization') || '切换组织'}
-						</Link>
-					</div>
 				)}
 
 				{/* Compliance profile badge */}

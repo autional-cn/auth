@@ -7,9 +7,14 @@ import React from 'react';
 const mockSetBranding = vi.fn();
 let mockStoreState: any = { branding: null, setBranding: mockSetBranding };
 
-vi.mock('@/lib/tenant-store', () => ({
-	useTenantStore: (selector: (s: any) => any) => selector(mockStoreState),
-}));
+// tenantSlugFromPath 走真实实现（slug 解析口径即被测行为的一部分），仅 store 侧打桩
+vi.mock('@/lib/tenant-store', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@/lib/tenant-store')>();
+	return {
+		...actual,
+		useTenantStore: (selector: (s: any) => any) => selector(mockStoreState),
+	};
+});
 
 vi.mock('@autional-cn/shared', () => ({
 	apiClient: { get: vi.fn() },

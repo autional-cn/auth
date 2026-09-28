@@ -32,41 +32,67 @@ interface TenantState {
 	reset: () => void;
 }
 
+/** 非租户首段（auth-pages 自身的静态路由）—— 首段命中则当前路径无租户上下文 */
+const NON_TENANT = new Set([
+	'oauth',
+	'login',
+	'register',
+	'forgot-password',
+	'reset-password',
+	'terms',
+	'privacy',
+	'error',
+	'logout',
+	'passkey',
+	'reapply',
+	'mfa',
+	'account',
+	'dashboard',
+	'magic-link',
+	'verify-email',
+	'verify-phone',
+	'mfa-challenge',
+	'mfa-setup',
+	'change-password',
+	'recover-account',
+	'account-deletion',
+	'verify-identity',
+	'sso',
+]);
+
+/**
+ * 从 auth-pages 自身路径解析租户 slug（`/{slug}/{route}` 形状，至少两段）。
+ * 与品牌预热同口径 —— 裸 `/{slug}` 视为无上下文（该路径会立即转向 dashboard）。
+ */
+export function tenantSlugFromPath(pathname: string): string | undefined {
+	const segments = pathname.split('/').filter(Boolean);
+	if (segments.length < 2) return undefined;
+	const first = segments[0];
+	if (NON_TENANT.has(first)) return undefined;
+	return first;
+}
+
+/** 会话所属租户 slug：成员租户表优先，其次登录时写入的 sessionStorage 标记 */
+export function pickSessionSlug(
+	tenants: Array<{ id: string; name: string }>,
+	currentTenantId: string | null,
+): string | undefined {
+	const fromMemberships = currentTenantId
+		? tenants.find((t) => t.id === currentTenantId)?.name
+		: undefined;
+	if (fromMemberships) return fromMemberships;
+	try {
+		return sessionStorage.getItem('auth_dashboard_slug') ?? undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 // 同步从 localStorage 读取缓存的品牌配置 → 在 React 首次渲染前初始化 store
 function loadInitialBranding(): Branding | null {
 	try {
-		const path = window.location.pathname;
-		const segments = path.split('/').filter(Boolean);
-		if (segments.length < 2) return null;
-		const first = segments[0];
-		const NON_TENANT = new Set([
-			'oauth',
-			'login',
-			'register',
-			'forgot-password',
-			'reset-password',
-			'terms',
-			'privacy',
-			'error',
-			'logout',
-			'passkey',
-			'reapply',
-			'mfa',
-			'account',
-			'dashboard',
-			'magic-link',
-			'verify-email',
-			'verify-phone',
-			'mfa-challenge',
-			'mfa-setup',
-			'change-password',
-			'recover-account',
-			'account-deletion',
-			'verify-identity',
-			'sso',
-		]);
-		if (NON_TENANT.has(first)) return null;
-		const slug = first;
+		const slug = tenantSlugFromPath(window.location.pathname);
+		if (!slug) return null;
 
 		// 优先用 tenant-branding cache（先读新 key，再读旧 key）
 		const newBrandKey = 'page-init:tenant-branding:' + slug;
