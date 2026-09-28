@@ -18,6 +18,14 @@
       "destination": "/index.html"
     },
     {
+      "source": "/oauth/callback",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/oauth/api/v1/oauth/callback/:provider",
+      "destination": "/index.html"
+    },
+    {
       "source": "/oauth/:path*",
       "destination": "https://api.autional.cn/oauth/:path*"
     },
