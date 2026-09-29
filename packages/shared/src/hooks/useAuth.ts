@@ -211,9 +211,9 @@ export function useAuthActions(): AuthActions {
 		// 在 clearAuth 前捕获 URL，避免时序竞争（与 useLogout 一致）
 		const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
 		await AuthService.logout();
-		const { buildLoginUrl } = await import('../auth/roles');
-		// 传当前 URL 作为 returnUrl，保留租户 slug（与 useLogout 一致）
-		window.location.href = buildLoginUrl(currentUrl);
+		const { buildLogoutUrl } = await import('../auth/roles');
+		// 传当前 URL 作为 returnUrl，保留租户 slug + 登出意图标记（与 useLogout 一致）
+		window.location.href = buildLogoutUrl(currentUrl);
 	}, []);
 
 	const setCurrentTenant = useCallback((tenantId: string): void => {

@@ -36,6 +36,21 @@ const AUTH_ROUTE_RESERVED = new Set([
 	'verify-identity',
 ]);
 
+/**
+ * 登出回程 URL：auth 域**裸根**入口 + `logout=1` 显式登出意图标记。
+ *
+ * 刻意不复用 buildLoginUrl：其租户 slug 保留会把 auth 域页面的登出落到
+ * `/<slug>/login`（登录页路由，不经入口路由），`logout=1` 在那里被静默忽略；
+ * 带会话回程甚至会被登录页 checkAndRedirect 直接放行成静默重登（F-W5c）。
+ * 裸根 = EntryRouter 唯一登出闸门：先终结 auth 域会话，再按「无会话」落 brand。
+ */
+export function buildLogoutUrl(returnUrl?: string): string {
+	const base = getPortalUrl('auth');
+	if (!base) return '/';
+	const redirect = returnUrl ? `redirect=${encodeURIComponent(returnUrl)}&` : '';
+	return `${base}/?${redirect}logout=1`;
+}
+
 export function buildLoginUrl(returnUrl?: string, fromRequireAuth?: boolean): string {
 	const base = getPortalUrl('auth');
 	if (!base) return '/';

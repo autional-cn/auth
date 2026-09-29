@@ -5,8 +5,6 @@
  * BFF 统一路由后：所有 API 通过 /bff/identity/api/v1/auth/* 访问。
  */
 
-import { getPortalUrl } from '../config';
-
 const BFF_LOGIN = '/bff/identity/api/v1/auth/login';
 const BFF_REFRESH = '/bff/identity/api/v1/auth/refresh';
 const BFF_LOGOUT = '/bff/identity/api/v1/auth/logout';
@@ -66,13 +64,13 @@ export async function bffRefresh(): Promise<BFFLoginResult> {
 }
 
 export async function bffLogout(): Promise<void> {
+	// BFF cookie 模式未启用时此调用无凭据可依（identity logout 必 401），不发起无意义请求。
+	// 导航归调用方（useLogout / useAuthActions.logout 自身跳转），此处只做会话吊销。
+	if (!isBFFAvailable()) return;
 	await fetch(BFF_LOGOUT, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 	});
-	if (typeof window !== 'undefined') {
-		window.location.href = getPortalUrl('auth');
-	}
 }
 
 /**

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
+	AuthService,
 	extractSlugFromPath,
 	getAccessToken,
 	getPortalUrl,
@@ -19,6 +20,10 @@ import { pickSessionSlug } from '@/lib/tenant-store';
  *    → 直达 `/<slug>/login?redirect=…`，由登录页自己判会话（有会话 authMe 后直接回跳）；
  * 2. 否则有会话且能解析出会话租户 → `/<slug>/dashboard`（不经过 brand）；
  * 3. 其余（无租户上下文）→ 整页交棒 brand 选品牌。
+ *
+ * 0（优先于三分支）：`logout=1` 登出回程（useLogout/buildLogoutUrl 打标）→ 先经唯一
+ * 登出实现终结 auth 域会话，再按「无会话」落 brand。若放行三分支，残余会话会被
+ * 登录页接管并静默重登（F-W5c）。
  */
 
 function useSessionSlug(
@@ -38,6 +43,7 @@ export function EntryRouter() {
 
 	const rawRedirect = searchParams.get('redirect');
 	const redirect = rawRedirect && isValidRedirect(rawRedirect) ? rawRedirect : null;
+	const logoutRequested = searchParams.get('logout') === '1';
 
 	// 回程目标首段（`/`、保留段一律 undefined；是否真租户交给下方名单校验）
 	const candidate = useMemo(() => {
@@ -49,7 +55,8 @@ export function EntryRouter() {
 		}
 	}, [redirect]);
 
-	const token = getAccessToken();
+	// 登出意图下强制按「无会话」分支：不得把带会话的回程当普通深链送 /<slug>/login
+	const token = logoutRequested ? null : getAccessToken();
 	const hasToken = !!token && token !== 'undefined' && token !== 'null';
 
 	// 复用 shared 的公开租户名单（public-tenants 查询键与 TenantIndexGuard 共享缓存）。
@@ -70,8 +77,23 @@ export function EntryRouter() {
 	const ready = slugsLoaded || (!hasToken && !candidate);
 	const redirectSlug = candidate && knownSlugs.includes(candidate) ? candidate : undefined;
 
+	// 登出回程不依赖名单/三分支：立即终结会话后落 brand（声明先于下方导航 effect）
+	const logoutFinalizedRef = useRef(false);
 	useEffect(() => {
-		if (!ready) return;
+		if (!logoutRequested || logoutFinalizedRef.current) return;
+		logoutFinalizedRef.current = true;
+		void (async () => {
+			await AuthService.logout();
+			const brand = getPortalUrl('brand');
+			if (!brand) return; // 未配置 brand 门户时保持当前页，避免死循环
+			window.location.replace(
+				redirect ? `${brand}/?redirect=${encodeURIComponent(redirect)}` : `${brand}/`,
+			);
+		})();
+	}, [logoutRequested, redirect]);
+
+	useEffect(() => {
+		if (!ready || logoutRequested) return;
 		const slug = redirectSlug ?? sessionSlug;
 		if (slug) {
 			const qs = redirect ? `?redirect=${encodeURIComponent(redirect)}` : '';
@@ -83,7 +105,7 @@ export function EntryRouter() {
 		window.location.replace(
 			redirect ? `${brand}/?redirect=${encodeURIComponent(redirect)}` : `${brand}/`,
 		);
-	}, [ready, redirectSlug, sessionSlug, redirect, navigate]);
+	}, [ready, logoutRequested, redirectSlug, sessionSlug, redirect, navigate]);
 
 	if (!ready) {
 		return (

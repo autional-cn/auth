@@ -15,15 +15,17 @@ const {
 	mockParamsMap,
 	mockReplace,
 	mockFetch,
+	mockLogout,
 	mockSession,
 } = vi.hoisted(() => {
-	const params: Record<string, string | null> = { redirect: null };
+	const params: Record<string, string | null> = { redirect: null, logout: null };
 	return {
 		mockNavigate: vi.fn(),
 		mockSearchParams: { get: vi.fn((key: string) => params[key] ?? null) },
 		mockParamsMap: params,
 		mockReplace: vi.fn(),
 		mockFetch: vi.fn(),
+		mockLogout: vi.fn(() => Promise.resolve()),
 		mockSession: {
 			token: null as string | null,
 			tenants: [] as Array<{ id: string; name: string; role: string }>,
@@ -46,6 +48,9 @@ vi.mock('@autional-cn/shared', async (importOriginal) => {
 	return {
 		...actual,
 		getAccessToken: () => mockSession.token,
+		// F-W5c：登出回程的会话终结走唯一登出实现（本用例只锁「被调用 + 落点」，
+		// 真实清理语义由 shared 侧测试与浏览器 E5 复验覆盖）
+		AuthService: { logout: mockLogout },
 		isValidRedirect: (url: string) => {
 			try {
 				const origin = new URL(url).origin;
@@ -95,6 +100,7 @@ beforeEach(() => {
 	// （不清则后续用例吃前一个用例的名单，失败路径用例永远测不到真实分支）
 	queryClient.clear();
 	mockParamsMap.redirect = null;
+	mockParamsMap.logout = null;
 	mockSession.token = null;
 	mockSession.tenants = [];
 	mockSession.currentTenantId = null;
@@ -254,5 +260,52 @@ describe('EntryRouter', () => {
 				{ replace: true },
 			);
 		});
+	});
+
+	// ── F-W5c 登出弹跳回归锁：logout=1 回程必须先终结会话再落 brand，
+	//    绝不把带会话的回程当普通深链送 /<slug>/login（会被登录页静默重登）──
+
+	it('E12 logout=1 + 有会话 + 回程带真实 slug → 终结会话后落 brand（不送 /<slug>/login）', async () => {
+		mockSession.token = 'token-xyz';
+		mockParamsMap.redirect = 'https://admin.autional.cn/demo/';
+		mockParamsMap.logout = '1';
+		renderEntry();
+		await waitFor(() => {
+			expect(mockLogout).toHaveBeenCalled();
+			expect(mockReplace).toHaveBeenCalledWith(
+				'https://brand.autional.cn/?redirect=' + encodeURIComponent('https://admin.autional.cn/demo/'),
+			);
+		});
+		// 会话终结必须先于导航（否则落点页面仍能读到残余会话）
+		expect(mockLogout.mock.invocationCallOrder[0]).toBeLessThan(
+			mockReplace.mock.invocationCallOrder[0],
+		);
+		expect(mockNavigate).not.toHaveBeenCalled();
+	});
+
+	it('E13 logout=1 + 有会话 + 无回程 → 终结会话后落 brand 裸根', async () => {
+		mockSession.token = 'token-xyz';
+		mockParamsMap.logout = '1';
+		renderEntry();
+		await waitFor(() => {
+			expect(mockLogout).toHaveBeenCalled();
+			expect(mockReplace).toHaveBeenCalledWith('https://brand.autional.cn/');
+		});
+		expect(mockNavigate).not.toHaveBeenCalled();
+	});
+
+	it('E14 logout=1 不等名单（名单失败也照常终结会话落 brand）', async () => {
+		mockSession.token = 'token-xyz';
+		mockParamsMap.redirect = 'https://admin.autional.cn/demo/';
+		mockParamsMap.logout = '1';
+		stubTenantsFetch({}, false);
+		renderEntry();
+		await waitFor(() => {
+			expect(mockLogout).toHaveBeenCalled();
+			expect(mockReplace).toHaveBeenCalledWith(
+				'https://brand.autional.cn/?redirect=' + encodeURIComponent('https://admin.autional.cn/demo/'),
+			);
+		});
+		expect(mockNavigate).not.toHaveBeenCalled();
 	});
 });

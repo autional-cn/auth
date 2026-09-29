@@ -5,7 +5,7 @@
  */
 
 import { useCallback } from 'react';
-import { buildLoginUrl } from '../auth/roles';
+import { buildLogoutUrl } from '../auth/roles';
 
 /**
  * 统一的登出 Hook
@@ -24,12 +24,9 @@ export function useLogout() {
 			const { AuthService } = await import('../auth/service');
 			await AuthService.logout();
 
-			// buildLoginUrl 统一处理登录页跳转与租户 slug 保留：
-			// - returnUrl 同属 auth 域且首段非保留路由 → {base}/{slug}/login（保留租户 slug）
-			// - 跨域（portal 域如 app.iam.tianv.com/admin）→ {base}?redirect=<portal-url>
-			//   （origin 不同不会误判为租户 slug，与 RequireAuth 未授权跳转语义一致）
-			// - 登录/登出页本身 → {base}（避免嵌套 redirect）
-			window.location.href = buildLoginUrl(currentUrl);
+			// buildLogoutUrl = auth 域裸根 + `logout=1` 登出意图标记：入口路由据此先
+			// 终结会话再落 brand，而不是把带会话的回程当普通深链直送登录页（会静默重登）。
+			window.location.href = buildLogoutUrl(currentUrl);
 		};
 		performLogout();
 	}, []);

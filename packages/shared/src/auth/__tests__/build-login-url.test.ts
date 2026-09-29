@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildLoginUrl } from '../roles';
+import { buildLoginUrl, buildLogoutUrl } from '../roles';
 
 const MOCK_CONFIG = {
 	VITE_PORTAL_CONFIG: {
@@ -179,6 +179,41 @@ describe('buildLoginUrl', () => {
 				'https://auth.autional.com?redirect=' +
 					encodeURIComponent('https://app.autional.com/admin'),
 			);
+		});
+	});
+
+	describe('buildLogoutUrl（F-W5c 登出意图标记）', () => {
+		const AUTH_CONFIG = {
+			VITE_PORTAL_CONFIG: {
+				auth: { host: 'auth', base: '' },
+			},
+		};
+
+		it('门户域登出：auth 裸根 + redirect 回程 + logout=1', () => {
+			mockWindow('app.autional.com', 'https:', 'https://app.autional.com', AUTH_CONFIG);
+			const url = buildLogoutUrl('https://app.autional.com/demo/');
+			expect(url).toBe(
+				'https://auth.autional.com/?redirect=' +
+					encodeURIComponent('https://app.autional.com/demo/') +
+					'&logout=1',
+			);
+		});
+
+		it('auth 域租户页登出也走裸根：不经 /<slug>/login（那里 logout=1 被静默忽略）', () => {
+			mockWindow('auth.autional.local', 'https:', 'https://auth.autional.local', AUTH_CONFIG);
+			const url = buildLogoutUrl('https://auth.autional.local/acme-corp/dashboard');
+			expect(url).toBe(
+				'https://auth.autional.local/?redirect=' +
+					encodeURIComponent('https://auth.autional.local/acme-corp/dashboard') +
+					'&logout=1',
+			);
+			expect(url).not.toContain('/acme-corp/login');
+		});
+
+		it('无回程：auth 裸根 + logout=1', () => {
+			mockWindow('auth.autional.local', 'https:', 'https://auth.autional.local', AUTH_CONFIG);
+			const url = buildLogoutUrl();
+			expect(url).toBe('https://auth.autional.local/?logout=1');
 		});
 	});
 });

@@ -46,6 +46,13 @@ export function useBootstrap(): BootstrapState {
 		}
 	}, [tentsQuery.data]);
 
+	// 无会话 = 无数据可引导：返回 'idle'，登录交棒由 RequireAuth/守卫决策（见上）。
+	// 不得返回 'loading'：Layout 消费者（platform-console）以 bootstrap==='loading'
+	// 挡 Outlet，而 RequireAuth 在 Outlet 里 ⇒ 无会话冷启动永停 Spin、守卫永不挂载（F-W5b）。
+	if (!hasToken) {
+		return 'idle';
+	}
+
 	// 已缓存数据 → 立即 ready
 	if (permissionsStore.length > 0 && tenantsStore.length > 0) {
 		return 'ready';
