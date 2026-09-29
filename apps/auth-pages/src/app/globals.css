@@ -1,4 +1,4 @@
-@import '@autional-cn/tailwind-preset/tokens.css';
+/* 令牌由 <head> 的 CDN <link> 提供（单一来源），不再在这里 @import。 */
 
 @tailwind base;
 @tailwind components;
