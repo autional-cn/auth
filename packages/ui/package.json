@@ -20,7 +20,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@autional-cn/tailwind-preset": "workspace:*"
+    "@autional-cn/tailwind-preset": "0.1.0-rc"
   },
   "devDependencies": {
     "@autional-cn/tsconfig": "workspace:*",

@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "@autional-cn/shared": "workspace:*",
-    "@autional-cn/tailwind-preset": "workspace:*",
+    "@autional-cn/tailwind-preset": "0.1.0-rc",
+    "@autional-cn/tokens": "0.1.0-rc",
     "@autional-cn/ui": "workspace:*",
     "@hookform/resolvers": "3.10.0",
     "@tanstack/react-query": "5.100.9",
