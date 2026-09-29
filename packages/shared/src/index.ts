@@ -130,7 +130,7 @@ export * from './seo';
 export { RequireAuth } from './components/RequireAuth';
 export { OAuthCallbackPage } from './components/OAuthCallbackPage';
 export { TenantSlugProvider, useTenantSlug } from './auth/tenant-slug-context';
-export { useTenantSlugFromUrl, extractSlugFromPath } from './auth/slug-from-url';
+export { useTenantSlugFromUrl, extractSlugFromPath, registerNonTenantSegments, clearNonTenantSegments } from './auth/slug-from-url';
 export { useOAuthClientIdFromUrl, fetchOAuthClientIdBySlug } from './auth/oauth-client-from-slug';
 export {
 	useTenantRoute,

@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ROUTER_BASENAME } from '@autional-cn/shared';
 import App from './App';
+import './non-tenant-segments';
 import './app/globals.css';
 
 const queryClient = new QueryClient({
