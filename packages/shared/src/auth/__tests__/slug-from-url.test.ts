@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { extractSlugFromPath } from '../slug-from-url';
+import { describe, it, expect, afterEach } from 'vitest';
+import { extractSlugFromPath, registerNonTenantSegments, clearNonTenantSegments } from '../slug-from-url';
 
 describe('extractSlugFromPath', () => {
 	describe('tenant slug patterns', () => {
@@ -72,6 +72,41 @@ describe('extractSlugFromPath', () => {
 		it('returns admin as slug candidate for /admin/settings (no portal prefix at root after domain migration)', () => {
 			// ADR-005: independent domains — no root portal prefixes
 			expect(extractSlugFromPath('/admin/settings')).toBe('admin');
+		});
+	});
+	describe('registerNonTenantSegments —— 各 portal 声明自己的业务路由', () => {
+		afterEach(() => clearNonTenantSegments());
+
+		it('未注册时行为与改动前一致（向后兼容，9 个应用无需同时改）', () => {
+			expect(extractSlugFromPath('/settings')).toBe('settings');
+			expect(extractSlugFromPath('/users/123')).toBe('users');
+		});
+
+		it('注册后业务路由不再被当成租户', () => {
+			registerNonTenantSegments(['settings', 'users', 'dashboard']);
+			expect(extractSlugFromPath('/settings')).toBeUndefined();
+			expect(extractSlugFromPath('/users/123')).toBeUndefined();
+			expect(extractSlugFromPath('/dashboard')).toBeUndefined();
+		});
+
+		it('注册后真实租户仍能识别 —— 这是本机制的关键不变量', () => {
+			registerNonTenantSegments(['settings', 'dashboard']);
+			expect(extractSlugFromPath('/acme')).toBe('acme');
+			expect(extractSlugFromPath('/acme/dashboard')).toBe('acme');
+		});
+
+		it('大小写不敏感，且容忍前后斜杠与空项', () => {
+			registerNonTenantSegments([' Settings ', '/MFA-Challenge/', '', 'sso']);
+			expect(extractSlugFromPath('/settings')).toBeUndefined();
+			expect(extractSlugFromPath('/mfa-challenge/x')).toBeUndefined();
+			expect(extractSlugFromPath('/sso')).toBeUndefined();
+		});
+
+		it('clearNonTenantSegments 可恢复（测试之间不串味）', () => {
+			registerNonTenantSegments(['settings']);
+			expect(extractSlugFromPath('/settings')).toBeUndefined();
+			clearNonTenantSegments();
+			expect(extractSlugFromPath('/settings')).toBe('settings');
 		});
 	});
 });
