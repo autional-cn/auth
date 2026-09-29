@@ -8,16 +8,7 @@ import { z } from 'zod';
 import { Button, Input, Label } from '@autional-cn/ui';
 import { authLoginPost, authCaptchaChallenge, authMe } from '@autional-cn/shared/generated/api';
 import { loadAuthExtras } from '@/lib/api';
-import {
-	loginWithTokens,
-	useAuthStore,
-	getAccessToken,
-	isValidRedirect,
-	initiateOAuthLogin,
-	extractSlugFromPath,
-	getPortalUrl,
-	getRootDomain,
-} from '@autional-cn/shared';
+import { loginWithTokens, useAuthStore, getAccessToken, isValidRedirect, initiateOAuthLogin, extractSlugFromPath, getPortalUrl, getRootDomain } from '@autional-cn/shared';
 import { createLoginSchema } from '@/lib/validators';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
 import QRLoginPanel from '@/components/auth/QRLoginPanel';
@@ -46,6 +37,7 @@ import { useTenantStore } from '@/lib/tenant-store';
 import { PasskeyLoginButton } from '@/components/auth/PasskeyLoginButton';
 import { MagicLinkForm } from '@/components/auth/MagicLinkForm';
 import { PasswordInput } from '@/components/form/PasswordInput';
+import { useTenantBrandingStore } from '@autional-cn/shared/branding';
 
 const ERROR_CODE_MAP: Record<string, string> = {
 	'40000001': 'login.error.credentials',
@@ -744,9 +736,9 @@ export default function LoginPage() {
 		[setValue],
 	);
 
-	const logoUrl = useTenantStore((s) => s.branding?.logoUrl);
-	const brandingTitle = useTenantStore((s) => s.branding?.loginPageTitle);
-	const brandingDesc = useTenantStore((s) => s.branding?.loginPageDescription);
+	const logoUrl = useTenantBrandingStore((s) => s.branding?.logoUrl);
+	const brandingTitle = useTenantBrandingStore((s) => s.branding?.loginPageTitle);
+	const brandingDesc = useTenantBrandingStore((s) => s.branding?.loginPageDescription);
 
 	const handleAuthConfigLoaded = useCallback((config: any) => {
 		if (config) {

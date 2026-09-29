@@ -18,13 +18,7 @@ import {
 import { checkPasswordBreached } from '@/lib/breach-check';
 import { fetchLegalDocumentVersion } from '@/lib/legal-document';
 import { loadAuthExtras } from '@/lib/api';
-import {
-	loginWithTokens,
-	bffLogin,
-	isBFFAvailable,
-	useAuthStore,
-	navigateTo,
-} from '@autional-cn/shared';
+import { loginWithTokens, bffLogin, isBFFAvailable, useAuthStore, navigateTo } from '@autional-cn/shared';
 import { processPasswordForTransmission } from '@/lib/password-transmission';
 import { createRegisterSchema } from '@/lib/validators';
 import { useI18n } from '@/lib/i18n';
@@ -44,6 +38,7 @@ import EmailCodeLoginForm from '@/components/auth/EmailCodeLoginForm';
 import PhoneCodeLoginForm from '@/components/auth/PhoneCodeLoginForm';
 import { type PasswordPolicy } from '@/hooks/use-tenant-auth-config';
 import { Lock, Mail, Smartphone, Inbox } from 'lucide-react';
+import { useTenantBrandingStore } from '@autional-cn/shared/branding';
 
 type CheckStatus = 'idle' | 'checking' | 'available' | 'taken';
 
@@ -156,7 +151,7 @@ export default function RegisterPage() {
 	const { tenantSlug: slugParam } = useParams();
 	const tenantSlug = slugParam || null;
 	usePageTitle('register.title');
-	const branding = useTenantStore((s) => s.branding);
+	const branding = useTenantBrandingStore((s) => s.branding);
 	const logoUrl = branding?.logoUrl;
 	const [error, setError] = useState<string>('');
 	const [loading, setLoading] = useState(false);

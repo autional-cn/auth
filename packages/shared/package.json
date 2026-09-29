@@ -9,6 +9,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./*": "./src/*",
+    "./branding": "./src/branding/index.ts",
+    "./slug-from-url": "./src/auth/slug-from-url.ts",
     "./generated/api": "./src/generated/api.ts",
     "./generated/types": "./src/generated/types.ts",
     "./generated/queries": "./src/generated/queries.ts",

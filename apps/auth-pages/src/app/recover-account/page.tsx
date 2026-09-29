@@ -16,11 +16,12 @@ import { useI18n } from '@/lib/i18n';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { useTenantStore } from '@/lib/tenant-store';
 import { PasswordInput } from '@/components/form/PasswordInput';
+import { useTenantBrandingStore } from '@autional-cn/shared/branding';
 
 export default function RecoverAccountPage() {
 	const { t } = useI18n();
 	usePageTitle('auth.recoverAccount.title');
-	const logoUrl = useTenantStore((s) => s.branding?.logoUrl);
+	const logoUrl = useTenantBrandingStore((s) => s.branding?.logoUrl);
 
 	const [step, setStep] = useState<'request' | 'verify' | 'reset' | 'success'>('request');
 	const [identity, setIdentity] = useState('');

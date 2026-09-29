@@ -157,6 +157,19 @@ export {
 export { AuditStatsOnly } from './components/AuditStatsOnly';
 export { TenantIndexGuard, usePublicTenantSlugs } from './components/TenantIndexGuard';
 export type { TenantIndexGuardProps } from './components/TenantIndexGuard';
+
+// Branding（租户品牌 → CSS 变量 / favicon / customCss）
+export {
+	useBranding,
+	applyBrandColors,
+	BrandingInitializer,
+	useTenantBrandingStore,
+	extractBranding,
+	readCachedBranding,
+	writeCachedBranding,
+	BRANDING_CACHE_PREFIX,
+} from './branding';
+export type { Branding } from './branding';
 export { buildTenantUrls } from './auth/build-tenant-urls';
 export { resolvePortalBasename } from './config/resolve-basename';
 

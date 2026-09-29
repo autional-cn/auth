@@ -1,17 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router';
-import {
-	useAuthStore,
-	RequireAuth,
-	TenantIndexGuard,
-	AUTH_PAGES_URL,
-	useLogout,
-	OAuthCallbackPage as OAuthLoginCallbackPage,
-} from '@autional-cn/shared';
+import { useAuthStore, RequireAuth, TenantIndexGuard, AUTH_PAGES_URL, useLogout, OAuthCallbackPage as OAuthLoginCallbackPage, useBranding } from '@autional-cn/shared';
 import { useEffect, lazy, Suspense } from 'react';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { ThemeProvider, ThemeToggle, LanguageSwitcher, ErrorBoundary } from '@autional-cn/ui';
-import { useBranding } from '@/hooks/useBranding';
-import { BrandingInitializer } from '@/components/auth/BrandingInitializer';
+import { AuthBrandingInitializer } from '@/components/auth/AuthBrandingInitializer';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { EntryRouter } from '@/components/EntryRouter';
 import { TenantSwitchChip } from '@/components/TenantSwitchChip';
@@ -135,7 +127,7 @@ export default function App() {
 		<I18nProvider>
 			<ThemeProvider storageKey="authms-auth-pages-theme">
 				<AppContent />
-				<BrandingInitializer />
+				<AuthBrandingInitializer />
 				<AppHeader />
 				{/* CookieConsentBanner 已隐藏 — 见 import 注释 */}
 				<AnalyticsInit />
