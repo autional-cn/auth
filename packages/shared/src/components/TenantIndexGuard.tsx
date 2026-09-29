@@ -80,7 +80,7 @@ function DefaultLoadingSkeleton() {
 			<div
 				role="status"
 				aria-live="polite"
-				aria-label="Loading"
+				aria-label={typeof document !== 'undefined' && (document.documentElement.lang || '').toLowerCase().startsWith('zh') ? '加载中' : 'Loading'}
 				style={{
 					display: 'flex',
 					alignItems: 'center',
