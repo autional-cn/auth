@@ -30,14 +30,16 @@ vi.mock('@autional-cn/shared', () => ({
 	getAccessToken: () => null,
 }));
 
-const mockComplianceGdprConsentPost = vi.fn();
+const mockAuthMeConsentPost = vi.fn();
+const mockCompliancePublicLegalDocuments = vi.fn();
 const mockVerificationOcrPost = vi.fn();
 const mockVerificationVerifyPost = vi.fn();
 vi.mock('@autional-cn/shared/generated/api', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('@autional-cn/shared/generated/api')>();
 	return {
 		...actual,
-		adminComplianceGdprConsentPost: (...args: any[]) => mockComplianceGdprConsentPost(...args),
+		authMeConsentPost: (...args: any[]) => mockAuthMeConsentPost(...args),
+		compliancePublicLegalDocuments: (...args: any[]) => mockCompliancePublicLegalDocuments(...args),
 		verificationOcrPost: (...args: any[]) => mockVerificationOcrPost(...args),
 		verificationVerifyPost: (...args: any[]) => mockVerificationVerifyPost(...args),
 	};
@@ -110,7 +112,8 @@ function setupOcrAndVerifyMocks(verificationResult?: any) {
 beforeEach(() => {
 	vi.clearAllMocks();
 	mockVerificationOcrPost.mockResolvedValue({ data: mockOcrResult });
-	mockComplianceGdprConsentPost.mockResolvedValue({ code: 1 });
+	mockAuthMeConsentPost.mockResolvedValue({ code: 1 });
+	mockCompliancePublicLegalDocuments.mockResolvedValue({ version: 'v2' });
 });
 
 describe('VerifyIdentityPage - Step 1 Upload', () => {
@@ -395,7 +398,7 @@ describe('VerifyIdentityPage - Step 3 GDPR Consent', () => {
 	});
 
 	it('submits GDPR consent to API and advances to verify step', async () => {
-		mockComplianceGdprConsentPost.mockResolvedValue({ code: 1 });
+		mockAuthMeConsentPost.mockResolvedValue({ code: 1 });
 
 		await advanceToConsentStep();
 		const checkboxes = document.querySelectorAll('input[type="checkbox"]');
@@ -407,14 +410,61 @@ describe('VerifyIdentityPage - Step 3 GDPR Consent', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'auth.verifyIdentity.consentContinue' }));
 
 		await waitFor(() => {
-			expect(mockComplianceGdprConsentPost).toHaveBeenCalledTimes(3);
+			expect(mockAuthMeConsentPost).toHaveBeenCalledTimes(3);
 		});
+		expect(mockAuthMeConsentPost.mock.calls.map((c) => c[0].scope)).toEqual([
+			'identity_verification_pii',
+			'identity_verification_third_party',
+			'identity_verification_face',
+		]);
+	});
+
+	it('stamps the consent with the version published by the API', async () => {
+		mockCompliancePublicLegalDocuments.mockResolvedValue({ version: 'v9' });
+
+		await advanceToConsentStep();
+		const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+		fireEvent.click(checkboxes[0]);
+		fireEvent.click(checkboxes[1]);
+		fireEvent.click(checkboxes[2]);
+
+		fireEvent.click(screen.getByRole('button', { name: 'auth.verifyIdentity.consentContinue' }));
+
+		await waitFor(() => {
+			expect(mockAuthMeConsentPost).toHaveBeenCalledTimes(3);
+		});
+		for (const call of mockAuthMeConsentPost.mock.calls) {
+			expect(call[0].metadata).toEqual({ version: 'v9' });
+		}
+		expect(mockCompliancePublicLegalDocuments).toHaveBeenCalledWith({
+			doc_type: 'privacy',
+			lang: 'zh-CN',
+		});
+	});
+
+	it('omits the version instead of guessing when the legal-document API fails', async () => {
+		mockCompliancePublicLegalDocuments.mockRejectedValue(new Error('502'));
+
+		await advanceToConsentStep();
+		const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+		fireEvent.click(checkboxes[0]);
+		fireEvent.click(checkboxes[1]);
+		fireEvent.click(checkboxes[2]);
+
+		fireEvent.click(screen.getByRole('button', { name: 'auth.verifyIdentity.consentContinue' }));
+
+		await waitFor(() => {
+			expect(mockAuthMeConsentPost).toHaveBeenCalledTimes(3);
+		});
+		for (const call of mockAuthMeConsentPost.mock.calls) {
+			expect(call[0].metadata).toBeUndefined();
+		}
 	});
 });
 
 describe('VerifyIdentityPage - Step 4 Verification', () => {
 	async function advanceToVerifyStep() {
-		mockComplianceGdprConsentPost.mockResolvedValue({ code: 1 });
+		mockAuthMeConsentPost.mockResolvedValue({ code: 1 });
 
 		renderVerifyIdentity();
 		const fileInputs = document.querySelectorAll('input[type="file"]');
@@ -467,7 +517,7 @@ describe('VerifyIdentityPage - Step 4 Verification', () => {
 describe('VerifyIdentityPage - Step 5 Result', () => {
 	async function advanceToResultStep(statusData: any) {
 		setupOcrAndVerifyMocks(statusData);
-		mockComplianceGdprConsentPost.mockResolvedValue({ code: 1 });
+		mockAuthMeConsentPost.mockResolvedValue({ code: 1 });
 
 		renderVerifyIdentity();
 		const fileInputs = document.querySelectorAll('input[type="file"]');

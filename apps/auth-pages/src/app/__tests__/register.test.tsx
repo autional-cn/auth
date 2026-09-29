@@ -49,6 +49,7 @@ const mockAuthRegisterCheckUsername = vi.fn();
 const mockAuthRegisterCheckEmail = vi.fn();
 const mockAuthLoginPost = vi.fn();
 const mockAuthMeConsentPost = vi.fn();
+const mockCompliancePublicLegalDocuments = vi.fn();
 
 vi.mock('@autional-cn/shared/generated/api', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('@autional-cn/shared/generated/api')>();
@@ -59,6 +60,7 @@ vi.mock('@autional-cn/shared/generated/api', async (importOriginal) => {
 		authRegisterCheckEmail: (...args: any[]) => mockAuthRegisterCheckEmail(...args),
 		authLoginPost: (...args: any[]) => mockAuthLoginPost(...args),
 		authMeConsentPost: (...args: any[]) => mockAuthMeConsentPost(...args),
+		compliancePublicLegalDocuments: (...args: any[]) => mockCompliancePublicLegalDocuments(...args),
 	};
 });
 
@@ -150,7 +152,7 @@ describe('RegisterPage', () => {
 		expect(await screen.findByText('邮箱已被注册')).toBeInTheDocument();
 	});
 
-	it('records terms consent after successful registration when agreeTerms checked', async () => {
+	it('records terms consent with the version published by the API', async () => {
 		mockAuthRegisterPost.mockResolvedValue({});
 		mockAuthLoginPost.mockResolvedValue({
 			accessToken: 'mock-access-token',
@@ -158,6 +160,7 @@ describe('RegisterPage', () => {
 			user: { id: 'user_01', username: 'newuser', email: 'new@example.com' },
 		});
 		mockAuthMeConsentPost.mockResolvedValue({});
+		mockCompliancePublicLegalDocuments.mockResolvedValue({ version: 'v2' });
 		const user = userEvent.setup();
 		renderRegister();
 		await user.type(screen.getByPlaceholderText('请输入用户名'), 'newuser');
@@ -175,9 +178,41 @@ describe('RegisterPage', () => {
 			expect(mockAuthMeConsentPost).toHaveBeenCalledWith({
 				scope: 'terms',
 				granted: true,
-				metadata: { version: 'v1' },
+				metadata: { version: 'v2' },
 			});
 		});
+		expect(mockCompliancePublicLegalDocuments).toHaveBeenCalledWith({
+			doc_type: 'terms',
+			lang: 'zh-CN',
+		});
+	});
+
+	it('omits the consent version instead of guessing when the legal-document API fails', async () => {
+		mockAuthRegisterPost.mockResolvedValue({});
+		mockAuthLoginPost.mockResolvedValue({
+			accessToken: 'mock-access-token',
+			refreshToken: 'mock-refresh-token',
+			user: { id: 'user_01', username: 'newuser', email: 'new@example.com' },
+		});
+		mockAuthMeConsentPost.mockResolvedValue({});
+		mockCompliancePublicLegalDocuments.mockRejectedValue(new Error('502'));
+		const user = userEvent.setup();
+		renderRegister();
+		await user.type(screen.getByPlaceholderText('请输入用户名'), 'newuser');
+		await user.type(screen.getByPlaceholderText('请输入邮箱地址'), 'new@example.com');
+		await user.type(screen.getByPlaceholderText('至少8个字符'), 'Str0ngPass!');
+		await user.type(screen.getByPlaceholderText('再次输入密码'), 'Str0ngPass!');
+		await user.click(screen.getByRole('checkbox'));
+
+		await user.click(screen.getByRole('button', { name: 'register.submit' }));
+
+		await waitFor(() => {
+			expect(mockAuthMeConsentPost).toHaveBeenCalled();
+		});
+		// 取不到版本就如实留空 —— 记一个猜的版本会让审计看到指向错误文本的"证据"
+		const payload = mockAuthMeConsentPost.mock.calls[0][0];
+		expect(payload.scope).toBe('terms');
+		expect(payload.metadata).toBeUndefined();
 	});
 
 	it('keeps tenant slug in login link when accessed under /:tenantSlug/register', () => {

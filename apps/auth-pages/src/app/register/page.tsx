@@ -16,6 +16,7 @@ import {
 	authCaptchaChallenge,
 } from '@autional-cn/shared/generated/api';
 import { checkPasswordBreached } from '@/lib/breach-check';
+import { fetchLegalDocumentVersion } from '@/lib/legal-document';
 import { loadAuthExtras } from '@/lib/api';
 import {
 	loginWithTokens,
@@ -422,18 +423,16 @@ export default function RegisterPage() {
 			// 合规闭环：注册成功后记录用户对条款的同意（best-effort，失败不阻塞注册）
 			// POST /auth/me/consent 需认证 — 此时 BFF cookie 或 accessToken 已就绪
 			if (watchedAgreeTerms) {
-				authMeConsentPost({
-					scope: 'terms',
-					granted: true,
-					// TODO(legal-document-versioning): 联动 legal_documents 最新 published version
-					// 方案（ADR-001/D-01 锁定）: 读取 compliance 公共接口
-					//   GET /compliance/public/legal-documents?doc_type=terms&lang=<locale>
-					//   取返回 version 传入下方 metadata.version，写入 identity user_consents.Version
-					// 本期保留 'v1'（零后端改动），版本 API 就绪后替换
-					metadata: { version: 'v1' },
-				}).catch(() => {
-					// consent 记录失败静默处理，不阻塞注册成功流程
-				});
+				// 版本取接口真值（= 用户在 /terms 读到的那一版）；取不到则不带 version
+				void fetchLegalDocumentVersion('terms', lang).then((version) =>
+					authMeConsentPost({
+						scope: 'terms',
+						granted: true,
+						metadata: version ? { version } : undefined,
+					}).catch(() => {
+						// consent 记录失败静默处理，不阻塞注册成功流程
+					}),
+				);
 			}
 
 			await loadAuthExtras().catch(() => {});

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PrivacyPage from '../privacy/page';
@@ -55,11 +55,16 @@ vi.mock('@autional-cn/shared/generated/api', async () => {
 
 const mockedGet = vi.mocked(compliancePublicLegalDocuments);
 
-const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+// retryDelay: 0 —— 页面自身设了 retry: 1（尽快给错误态），默认退避会让测试等满 1s
+const queryClient = new QueryClient({
+	defaultOptions: { queries: { retry: false, retryDelay: 0 } },
+});
 
 beforeEach(() => {
 	queryClient.clear();
 	mockedGet.mockReset();
+	// 基线 = 一份正常的已发布文档；各用例再按需 mockResolvedValueOnce / mockRejectedValue 偏离
+	mockedGet.mockResolvedValue(serverDoc);
 });
 
 const renderPage = () =>
@@ -71,16 +76,44 @@ const renderPage = () =>
 		</QueryClientProvider>,
 	);
 
+// 键名用 camelCase：真实响应经 api client 拦截器 unwrap + camelCase 转换后
+// 才是页面读到的形态（effectiveAt/updatedAt），这里必须与之一致。
+const serverDoc = {
+	id: 'doc-1',
+	docType: 'privacy',
+	version: 'v2',
+	title: '服务端隐私政策',
+	lang: 'zh-CN',
+	content: JSON.stringify([
+		{ title: '服务端标题一', body: ['服务端段落甲', '服务端段落乙'] },
+		{ title: '服务端标题二', body: '单字符串正文' },
+	]),
+	effectiveAt: '2026-09-29T00:00:00Z',
+	updatedAt: null,
+	status: 'published',
+};
+
 describe('PrivacyPage', () => {
-	it('renders title and all 10 section headings (i18n fallback)', () => {
+	it('renders the heading and an error state when the published document has unusable content', async () => {
+		// 行在但 content 不可解析（坏 seed）→ 必须错误态，而不是一张空白卡片
+		mockedGet.mockResolvedValueOnce({
+			id: 'doc-1',
+			docType: 'privacy',
+			version: 'v2',
+			title: '服务端隐私政策',
+			lang: 'zh-CN',
+			content: 'not-json',
+			effectiveAt: '2026-09-29T00:00:00Z',
+			updatedAt: null,
+			status: 'published',
+		});
+
 		renderPage();
 
 		expect(screen.getByText('privacy.title')).toBeInTheDocument();
-		expect(screen.getByText('privacy.lastUpdated')).toBeInTheDocument();
-
-		for (let i = 1; i <= 10; i++) {
-			expect(screen.getByText(`privacy.sections.section${i}.title`)).toBeInTheDocument();
-		}
+		expect(await screen.findByText('privacy.loadFailed')).toBeInTheDocument();
+		expect(screen.getByText('common.loadFailedDesc')).toBeInTheDocument();
+		expect(screen.getByText('common.retry')).toBeInTheDocument();
 	});
 
 	it('renders back link to login', () => {
@@ -92,21 +125,6 @@ describe('PrivacyPage', () => {
 	});
 
 	it('renders server sections when API succeeds (Array.isArray branch)', async () => {
-		mockedGet.mockResolvedValueOnce({
-			id: 'doc-1',
-			doc_type: 'privacy',
-			version: 'v1',
-			title: '服务端隐私政策',
-			lang: 'zh-CN',
-			content: JSON.stringify([
-				{ title: '服务端标题一', body: ['服务端段落甲', '服务端段落乙'] },
-				{ title: '服务端标题二', body: '单字符串正文' },
-			]),
-			effective_at: '2026-06-09T00:00:00Z',
-			updated_at: null,
-			status: 'published',
-		});
-
 		renderPage();
 
 		// 数组形态：逐条渲染
@@ -116,18 +134,45 @@ describe('PrivacyPage', () => {
 		// 字符串形态：直接渲染
 		expect(screen.getByText('服务端标题二')).toBeInTheDocument();
 		expect(screen.getByText('单字符串正文')).toBeInTheDocument();
-		// lastUpdated 保留 i18n 文案模板（mock t 返回 key，模板无日期则原样）
+		// lastUpdated 取 effectiveAt 的日期前缀（mock t 返回 key，插值不体现）
 		expect(screen.getByText('privacy.lastUpdated')).toBeInTheDocument();
 	});
 
-	it('falls back to i18n sections when API fails', async () => {
-		mockedGet.mockRejectedValueOnce(new Error('network down'));
+	it('shows an error state and no legal text at all when API fails', async () => {
+		mockedGet.mockRejectedValue(new Error('network down'));
 
 		renderPage();
 
-		expect(await screen.findByText('privacy.sections.section1.title')).toBeInTheDocument();
-		expect(screen.getByText('privacy.sections.section10.title')).toBeInTheDocument();
-		expect(screen.getByText('privacy.lastUpdated')).toBeInTheDocument();
+		expect(await screen.findByText('privacy.loadFailed')).toBeInTheDocument();
+		expect(screen.getByText('common.loadFailedDesc')).toBeInTheDocument();
+		// 架构断言：接口不可用时绝不回落本地文案 —— 页面不得出现任何法律正文。
+		// 读到一份可能非权威的文本（而同意记录指向另一版本）是合规风险。
+		expect(document.body.textContent).not.toContain('privacy.sections.');
+		expect(document.body.textContent).not.toContain('服务端标题');
+	});
+
+	it('refetches and renders the document when the retry action is clicked', async () => {
+		mockedGet.mockRejectedValue(new Error('network down'));
+
+		renderPage();
+
+		const retry = await screen.findByText('common.retry');
+		mockedGet.mockResolvedValueOnce({
+			id: 'doc-1',
+			docType: 'privacy',
+			version: 'v2',
+			title: '服务端隐私政策',
+			lang: 'zh-CN',
+			content: JSON.stringify([{ title: '重试后标题', body: '重试后正文' }]),
+			effectiveAt: '2026-09-29T00:00:00Z',
+			updatedAt: null,
+			status: 'published',
+		});
+
+		fireEvent.click(retry);
+
+		expect(await screen.findByText('重试后标题')).toBeInTheDocument();
+		expect(screen.queryByText('privacy.loadFailed')).toBeNull();
 	});
 
 	it('keeps tenant slug in back-to-login link when accessed under /:tenantSlug/privacy', () => {

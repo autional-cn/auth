@@ -3,15 +3,26 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
+import { ErrorState } from '@autional-cn/ui';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { useI18n } from '@/lib/i18n';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { compliancePublicLegalDocuments } from '@autional-cn/shared/generated/api';
 
+/**
+ * 服务端隐私政策的一节。
+ * body 双形态：privacy 为 string[]，terms 为 string（D-03 归一化约定）。
+ */
 interface Section {
 	title: string;
-	body: string[];
+	body: string[] | string;
+}
+
+/** 取 YYYY-MM-DD 前缀（不做 Date 转换，避免时区偏移导致日期跳变） */
+function formatLegalDate(dateStr: string): string {
+	const match = /^\d{4}-\d{2}-\d{2}/.exec(dateStr);
+	return match ? match[0] : dateStr;
 }
 
 export default function PrivacyPage() {
@@ -22,89 +33,53 @@ export default function PrivacyPage() {
 	const { tenantSlug: slugParam } = useParams();
 	const tenantSlug = slugParam || null;
 
-	const sections: Section[] = [
-		{
-			title: t('privacy.sections.section1.title'),
-			body: t('privacy.sections.section1.body', { returnObjects: true }) as unknown as string[],
-		},
-		{
-			title: t('privacy.sections.section2.title'),
-			body: t('privacy.sections.section2.body', { returnObjects: true }) as unknown as string[],
-		},
-		{
-			title: t('privacy.sections.section3.title'),
-			body: t('privacy.sections.section3.body', { returnObjects: true }) as unknown as string[],
-		},
-		{
-			title: t('privacy.sections.section4.title'),
-			body: t('privacy.sections.section4.body', { returnObjects: true }) as unknown as string[],
-		},
-		{
-			title: t('privacy.sections.section5.title'),
-			body: t('privacy.sections.section5.body', { returnObjects: true }) as unknown as string[],
-		},
-		{
-			title: t('privacy.sections.section6.title'),
-			body: t('privacy.sections.section6.body', { returnObjects: true }) as unknown as string[],
-		},
-		{
-			title: t('privacy.sections.section7.title'),
-			body: t('privacy.sections.section7.body', { returnObjects: true }) as unknown as string[],
-		},
-		{
-			title: t('privacy.sections.section8.title'),
-			body: t('privacy.sections.section8.body', { returnObjects: true }) as unknown as string[],
-		},
-		{
-			title: t('privacy.sections.section9.title'),
-			body: t('privacy.sections.section9.body', { returnObjects: true }) as unknown as string[],
-		},
-		{
-			title: t('privacy.sections.section10.title'),
-			body: t('privacy.sections.section10.body', { returnObjects: true }) as unknown as string[],
-		},
-	];
-
-	// AC-010 API 优先：doc_type='privacy'，lang=当前 locale；失败回落 i18n fallback（不抛错不白屏）
-	const { data: doc } = useQuery({
+	// 法律正文的唯一来源 = compliance 公共接口；本页不内置正文副本。
+	// 接口不可用时显示错误态而非回落本地文案：用户读到的文本必须与其同意记录
+	// 指向的版本一致，展示一份可能非权威的文本是合规风险。
+	// 正文事实源 = shared/service-compliance/db/seeds/legal_documents.go
+	const {
+		data: doc,
+		isLoading,
+		refetch,
+	} = useQuery({
 		queryKey: ['public-legal-document', 'privacy', lang],
-		queryFn: async () => {
-			try {
-				return await compliancePublicLegalDocuments({ doc_type: 'privacy', lang });
-			} catch {
-				return undefined; // fallback
-			}
-		},
+		queryFn: () => compliancePublicLegalDocuments({ doc_type: 'privacy', lang }),
 		staleTime: 5 * 60 * 1000,
+		// 法律页宁可尽快给出错误态 + 重试，也不让用户对着转圈等默认的 3 次退避重试
+		retry: 1,
 	});
 
-	// content 为 JSON string → [{title, body}]（D-03: body string | string[] 双形态，Array.isArray 守卫）
+	// content 为 JSON string → [{title, body}]；非法 JSON / 非数组 → undefined（按不可用处理）
 	const serverSections = useMemo<Section[] | undefined>(() => {
 		if (!doc?.content) return undefined;
 		try {
 			const parsed: unknown = JSON.parse(doc.content);
 			return Array.isArray(parsed) ? (parsed as Section[]) : undefined;
 		} catch {
-			return undefined; // 非法 JSON → fallback
+			return undefined;
 		}
 	}, [doc]);
 
-	// AC-011 lastUpdated：API 命中取 effectiveAt（缺省 updatedAt）格式化；失败保留 i18n 原文
+	// lastUpdated 取 effectiveAt（缺省 updatedAt）；取不到则不显示副标题
 	const lastUpdatedLabel = useMemo(() => {
 		const dateStr = doc?.effectiveAt ?? doc?.updatedAt;
-		if (!dateStr) return t('privacy.lastUpdated');
-		const formatted = dateStr.slice(0, 10); // YYYY-MM-DD，与 i18n 日期格式一致
-		// 保留 i18n 文案模板，仅替换日期（locale 键含硬编码日期，此处动态覆盖）
-		return t('privacy.lastUpdated').replace(/\d{4}-\d{2}-\d{2}/, formatted);
+		if (!dateStr) return undefined;
+		return t('privacy.lastUpdated', { date: formatLegalDate(dateStr) });
 	}, [doc, t]);
+
+	const hasContent = !!serverSections?.length;
 
 	return (
 		<AuthCard>
 			<AuthHeader title={t('privacy.title')} subtitle={lastUpdatedLabel} />
 
-			<div className="space-y-6">
-				{serverSections && serverSections.length > 0 ? (
-					serverSections.map((section, i) => (
+			{isLoading ? (
+				<p className="py-8 text-center text-sm text-[var(--color-text-secondary)]">
+					{t('common.loading')}
+				</p>
+			) : hasContent ? (
+				<div className="space-y-6">
+					{serverSections.map((section, i) => (
 						<section key={i} className="space-y-2">
 							<h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
 								{section.title}
@@ -128,22 +103,15 @@ export default function PrivacyPage() {
 								</p>
 							)}
 						</section>
-					))
-				) : (
-					sections.map((section, i) => (
-						<section key={i} className="space-y-2">
-							<h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
-								{section.title}
-							</h2>
-							{section.body.map((paragraph, j) => (
-								<p key={j} className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
-									{paragraph}
-								</p>
-							))}
-						</section>
-					))
-				)}
-			</div>
+					))}
+				</div>
+			) : (
+				<ErrorState
+					title={t('privacy.loadFailed')}
+					description={t('common.loadFailedDesc')}
+					action={{ label: t('common.retry'), onClick: () => void refetch() }}
+				/>
+			)}
 
 			<div className="pt-4 text-center text-sm">
 				<Link to={tenantSlug ? `/${tenantSlug}/login` : '/'} className="text-[var(--color-brand)] hover:underline">

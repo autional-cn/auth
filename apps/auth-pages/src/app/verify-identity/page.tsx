@@ -9,10 +9,11 @@ import { Button, Input, Label, showToast, ToastProvider, StatusBadge } from '@au
 import { useI18n } from '@/lib/i18n';
 import { createVerifyIdentityConfirmSchema } from '@/lib/validators';
 import {
-	adminComplianceGdprConsentPost,
+	authMeConsentPost,
 	verificationOcrPost,
 	verificationVerifyPost,
 } from '@autional-cn/shared/generated/api';
+import { fetchLegalDocumentVersion } from '@/lib/legal-document';
 import { AuthCard } from '@/components/auth/AuthCard';
 
 type Step = 'upload' | 'confirm' | 'consent' | 'verify' | 'result';
@@ -219,25 +220,22 @@ function VerifyIdentityContent() {
 		}
 		setConsentSubmitting(true);
 		try {
-			const consentPurposes = [
-				{ key: 'pii_collection', purpose: 'identity_verification_pii', method: 'explicit' },
-				{
-					key: 'third_party_transfer',
-					purpose: 'identity_verification_third_party',
-					method: 'explicit',
-				},
-				{ key: 'face_collection', purpose: 'identity_verification_face', method: 'explicit' },
+			const consentScopes = [
+				{ key: 'pii_collection', scope: 'identity_verification_pii' },
+				{ key: 'third_party_transfer', scope: 'identity_verification_third_party' },
+				{ key: 'face_collection', scope: 'identity_verification_face' },
 			];
+			// 版本取接口真值（= 用户在 /privacy 读到的那一版）；取不到则不带 version
+			const version = await fetchLegalDocumentVersion('privacy', lang);
 			await Promise.all(
-				consentPurposes
+				consentScopes
 					.filter((p) => consents[p.key])
 					.map((p) =>
-						adminComplianceGdprConsentPost({
-							purpose: p.purpose,
-							consentMethod: p.method,
+						authMeConsentPost({
+							scope: p.scope,
 							granted: true,
-							policyVersion: 'v1',
-						} as any),
+							metadata: version ? { version } : undefined,
+						}),
 					),
 			);
 		} catch {

@@ -17,156 +17,6 @@
     "alsoInAccountCenter": "Account deletion can also be performed from the Security settings in the Account Center",
     "goToAccountCenter": "Go to Account Center"
   },
-  "terms": {
-    "title": "Terms of Service",
-    "lastUpdated": "Last updated: 2026-06-09",
-    "sections": {
-      "1": {
-        "title": "Acceptance of Terms",
-        "body": "By accessing or using the Autional service, you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the service."
-      },
-      "2": {
-        "title": "Account Registration",
-        "body": "You must provide accurate, complete, and up-to-date registration information. You are responsible for safeguarding your account credentials and for all activities that occur under your account."
-      },
-      "3": {
-        "title": "User Responsibilities",
-        "body": "You agree not to misuse the service or help anyone else do so. You must not attempt to gain unauthorized access to any part of the service or interfere with its normal operation."
-      },
-      "4": {
-        "title": "Service Availability",
-        "body": "We strive to keep the service running smoothly, but do not guarantee uninterrupted availability. We reserve the right to temporarily limit or suspend the service for maintenance, security, or other operational reasons."
-      },
-      "5": {
-        "title": "Intellectual Property",
-        "body": "The service and all its contents (including but not limited to software, text, graphics, logos, and designs) are protected by intellectual property laws. You may not copy, modify, or distribute any part of the service without express permission."
-      },
-      "6": {
-        "title": "Limitation of Liability",
-        "body": "To the maximum extent permitted by law, Autional shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of or inability to use the service."
-      },
-      "7": {
-        "title": "Termination",
-        "body": "We reserve the right to suspend or terminate your account at any time for any reason. You may also stop using the service and request deletion of your account at any time."
-      },
-      "8": {
-        "title": "Governing Law",
-        "body": "These terms are governed by and construed in accordance with the laws of the People's Republic of China. Any disputes arising from these terms shall be submitted to the competent courts."
-      },
-      "9": {
-        "title": "Contact Us",
-        "body": "If you have any questions about these Terms of Service, please contact us at support@autional.net."
-      }
-    },
-    "backToSignIn": "Back to Sign In"
-  },
-  "privacy": {
-    "title": "Privacy Policy",
-    "lastUpdated": "Last updated: 2026-06-09",
-    "backToLogin": "Back to Sign In",
-    "sections": {
-      "section1": {
-        "title": "Introduction",
-        "body": [
-          "Autional is committed to protecting your privacy and personal data. This Privacy Policy explains how we collect, use, store, and share your information when you use our identity and access management services.",
-          "By using Autional, you consent to the data practices described in this policy. If you do not agree with any part of this policy, please discontinue use of our services."
-        ]
-      },
-      "section2": {
-        "title": "Information We Collect",
-        "body": [
-          "We collect the following categories of personal information to provide and improve our services:",
-          "Account Information: email address, username, phone number, and password (stored as a cryptographic hash).",
-          "Profile Information: display name, profile picture, language preference, and timezone.",
-          "Device & Technical Data: IP address, browser type, operating system, device identifiers, and user agent strings.",
-          "Login & Activity Data: login timestamps, authentication methods used, session duration, and security-related events such as failed login attempts."
-        ]
-      },
-      "section3": {
-        "title": "How We Use Information",
-        "body": [
-          "We use the collected information for the following purposes:",
-          "Authentication & Authorization: to verify your identity, manage access credentials, and enforce role-based access control.",
-          "Security & Fraud Prevention: to detect and prevent unauthorized access, account takeover attempts, and other malicious activities through real-time monitoring and anomaly detection.",
-          "Compliance & Legal Obligations: to comply with applicable laws and regulations (GDPR, PIPL, CCPA, SOC 2), respond to lawful requests from authorities, and maintain required audit trails.",
-          "Service Improvement: to analyze usage patterns, diagnose technical issues, and improve the reliability and performance of our platform."
-        ]
-      },
-      "section4": {
-        "title": "Data Retention",
-        "body": [
-          "We retain personal data only as long as necessary for the purposes described in this policy:",
-          "Account Data: retained for the lifetime of your account plus a grace period of up to 90 days following account deletion to allow for recovery requests.",
-          "Login & Session Logs: retained for 12 months for security auditing and then automatically anonymized or deleted.",
-          "Security Event Logs: retained for 24 months to support forensic investigations and compliance audits.",
-          "Email Communications: transactional emails are retained for 90 days; marketing communications are retained until you unsubscribe.",
-          "After the applicable retention period, personal data is securely deleted or irreversibly anonymized."
-        ]
-      },
-      "section5": {
-        "title": "Your Rights (GDPR / PIPL / CCPA)",
-        "body": [
-          "Depending on your jurisdiction, you may have the following rights regarding your personal data:",
-          "Right to Access: You can request a copy of the personal data we hold about you, including categories of data, processing purposes, and third-party recipients.",
-          "Right to Rectification: You can request correction of inaccurate or incomplete personal data at any time.",
-          "Right to Erasure: You can request deletion of your personal data under certain conditions (right to be forgotten). We will comply unless legal retention obligations apply.",
-          "Right to Data Portability: You can request your data in a structured, commonly used, machine-readable format to transfer to another service provider.",
-          "Right to Restrict Processing: You can request that we limit the processing of your data under certain circumstances.",
-          "Right to Object: You can object to processing based on legitimate interests, including profiling and automated decision-making.",
-          "To exercise any of these rights, please contact our Data Protection Officer at the address listed in Section 10."
-        ]
-      },
-      "section6": {
-        "title": "Data Sharing",
-        "body": [
-          "We do not sell your personal data. We share data only in the following limited circumstances:",
-          "Service Providers & Sub-processors: We engage trusted third-party vendors for infrastructure hosting, email delivery, SMS messaging, and security monitoring. All sub-processors are bound by data processing agreements (DPAs) that require equivalent data protection standards.",
-          "Legal Compliance: We may disclose personal data when required by law, court order, or governmental regulation. We will notify you of such disclosure where legally permitted.",
-          "Business Transfers: In the event of a merger, acquisition, or asset sale, your data may be transferred. You will be notified before your data becomes subject to a different privacy policy.",
-          "With Your Consent: We will ask for your explicit consent before sharing your data for any purpose not covered by this policy."
-        ]
-      },
-      "section7": {
-        "title": "Security Measures",
-        "body": [
-          "We implement industry-standard security measures to protect your data:",
-          "Encryption: All data in transit is encrypted using TLS 1.3. Sensitive data at rest is encrypted using AES-256-GCM. Passwords are hashed using bcrypt with a per-user salt.",
-          "Access Controls: We enforce role-based access control (RBAC), attribute-based access control (ABAC), and the principle of least privilege. All access to production data requires multi-factor authentication.",
-          "Audit Logging: Every data access, modification, and administrative action is recorded in tamper-evident audit logs with cryptographic integrity verification.",
-          "Monitoring: We maintain 24/7 security monitoring with automated intrusion detection, anomaly detection, and real-time alerting. We conduct regular penetration testing and vulnerability assessments.",
-          "We maintain SOC 2 Type II certification and undergo annual independent security audits."
-        ]
-      },
-      "section8": {
-        "title": "Cookie Policy",
-        "body": [
-          "Autional uses cookies and similar technologies to provide and improve our services:",
-          "Essential Cookies: These cookies are strictly necessary for the operation of our platform, including session management, authentication state, and security features such as CSRF protection. They cannot be disabled.",
-          "Functional Cookies: These cookies remember your preferences such as language selection and theme settings to improve your experience. You may disable these, but some features may not function properly.",
-          "Analytics Cookies: We use first-party analytics to understand how our platform is used and to identify performance issues. We do not use third-party advertising or tracking cookies.",
-          "You can manage your cookie preferences through your browser settings. Note that disabling essential cookies may prevent you from using core platform features."
-        ]
-      },
-      "section9": {
-        "title": "Children's Privacy",
-        "body": [
-          "Autional is not intended for use by individuals under the age of 16. We do not knowingly collect personal data from children.",
-          "In compliance with COPPA (Children's Online Privacy Protection Act) and GDPR Article 8, if we become aware that we have collected personal data from a child under the applicable age of consent without verifiable parental consent, we will take immediate steps to delete such data.",
-          "If you believe a child has provided us with personal data, please contact our Data Protection Officer immediately."
-        ]
-      },
-      "section10": {
-        "title": "Contact DPO",
-        "body": [
-          "If you have questions, concerns, or wish to exercise your data protection rights, please contact our Data Protection Officer:",
-          "Email: support@autional.net",
-          "Postal Address: Autional Data Protection Office, Shenzhen, China",
-          "You have the right to lodge a complaint with your local data protection supervisory authority if you believe your data protection rights have been violated. We encourage you to contact us first so we can address your concerns directly.",
-          "We will acknowledge your request within 72 hours and provide a substantive response within 30 calendar days."
-        ]
-      }
-    }
-  },
   "oauth": {
     "authorizeTitle": "Authorize Access",
     "requestAccess": "{{clientName}} requests access to your account",
@@ -299,6 +149,8 @@
     "save": "Save Preferences"
   },
   "common.loading": "Loading…",
+  "common.loadFailedDesc": "Unable to retrieve the current legal text. Please try again later; for the version in effect, contact support@autional.net.",
+  "common.retry": "Retry",
   "login.tenantNotFound": "Organization not found, please select a tenant",
   "login.selectTenantFirst": "Please select a tenant",
   "login.title": "Welcome back to Autional",
@@ -628,113 +480,13 @@
   "password.strength.minLength": "Password must be at least {{min}} characters",
   "verifyIdentity.title": "Real-Name Verification",
   "terms.title": "Terms of Service",
-  "terms.lastUpdated": "Last updated: 2026-06-09",
-  "terms.sections.1.title": "Acceptance of Terms",
-  "terms.sections.1.body": "By accessing or using the Autional service, you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the service.",
-  "terms.sections.2.title": "Account Registration",
-  "terms.sections.2.body": "You must provide accurate, complete, and up-to-date registration information. You are responsible for safeguarding your account credentials and for all activities that occur under your account.",
-  "terms.sections.3.title": "User Responsibilities",
-  "terms.sections.3.body": "You agree not to misuse the service or help anyone else do so. You must not attempt to gain unauthorized access to any part of the service or interfere with its normal operation.",
-  "terms.sections.4.title": "Service Availability",
-  "terms.sections.4.body": "We strive to keep the service running smoothly, but do not guarantee uninterrupted availability. We reserve the right to temporarily limit or suspend the service for maintenance, security, or other operational reasons.",
-  "terms.sections.5.title": "Intellectual Property",
-  "terms.sections.5.body": "The service and all its contents (including but not limited to software, text, graphics, logos, and designs) are protected by intellectual property laws. You may not copy, modify, or distribute any part of the service without express permission.",
-  "terms.sections.6.title": "Limitation of Liability",
-  "terms.sections.6.body": "To the maximum extent permitted by law, Autional shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of or inability to use the service.",
-  "terms.sections.7.title": "Termination",
-  "terms.sections.7.body": "We reserve the right to suspend or terminate your account at any time for any reason. You may also stop using the service and request deletion of your account at any time.",
-  "terms.sections.8.title": "Governing Law",
-  "terms.sections.8.body": "These terms are governed by and construed in accordance with the laws of the People's Republic of China. Any disputes arising from these terms shall be submitted to the competent courts.",
-  "terms.sections.9.title": "Contact Us",
-  "terms.sections.9.body": "If you have any questions about these Terms of Service, please contact us at support@autional.net.",
+  "terms.lastUpdated": "Last updated: {{date}}",
+  "terms.loadFailed": "Failed to load the Terms of Service",
   "terms.backToSignIn": "Back to Sign In",
-  "terms.externalNotice": "Some organizations host their terms of service with a third party. View the full document in a new tab, or read the summary below.",
-  "terms.externalLink": "View full terms in a new tab",
   "privacy.title": "Privacy Policy",
-  "privacy.lastUpdated": "Last updated: 2026-06-09",
+  "privacy.lastUpdated": "Last updated: {{date}}",
+  "privacy.loadFailed": "Failed to load the Privacy Policy",
   "privacy.backToLogin": "Back to Sign In",
-  "privacy.externalNotice": "Some organizations host their privacy policy with a third party. View the full document in a new tab, or read the summary below.",
-  "privacy.externalLink": "View full privacy policy in a new tab",
-  "privacy.sections.section1.title": "Introduction",
-  "privacy.sections.section1.body": [
-    "Autional is committed to protecting your privacy and personal data. This Privacy Policy explains how we collect, use, store, and share your information when you use our identity and access management services.",
-    "By using Autional, you consent to the data practices described in this policy. If you do not agree with any part of this policy, please discontinue use of our services."
-  ],
-  "privacy.sections.section2.title": "Information We Collect",
-  "privacy.sections.section2.body": [
-    "We collect the following categories of personal information to provide and improve our services:",
-    "Account Information: email address, username, phone number, and password (stored as a cryptographic hash).",
-    "Profile Information: display name, profile picture, language preference, and timezone.",
-    "Device & Technical Data: IP address, browser type, operating system, device identifiers, and user agent strings.",
-    "Login & Activity Data: login timestamps, authentication methods used, session duration, and security-related events such as failed login attempts."
-  ],
-  "privacy.sections.section3.title": "How We Use Information",
-  "privacy.sections.section3.body": [
-    "We use the collected information for the following purposes:",
-    "Authentication & Authorization: to verify your identity, manage access credentials, and enforce role-based access control.",
-    "Security & Fraud Prevention: to detect and prevent unauthorized access, account takeover attempts, and other malicious activities through real-time monitoring and anomaly detection.",
-    "Compliance & Legal Obligations: to comply with applicable laws and regulations (GDPR, PIPL, CCPA, SOC 2), respond to lawful requests from authorities, and maintain required audit trails.",
-    "Service Improvement: to analyze usage patterns, diagnose technical issues, and improve the reliability and performance of our platform."
-  ],
-  "privacy.sections.section4.title": "Data Retention",
-  "privacy.sections.section4.body": [
-    "We retain personal data only as long as necessary for the purposes described in this policy:",
-    "Account Data: retained for the lifetime of your account plus a grace period of up to 90 days following account deletion to allow for recovery requests.",
-    "Login & Session Logs: retained for 12 months for security auditing and then automatically anonymized or deleted.",
-    "Security Event Logs: retained for 24 months to support forensic investigations and compliance audits.",
-    "Email Communications: transactional emails are retained for 90 days; marketing communications are retained until you unsubscribe.",
-    "After the applicable retention period, personal data is securely deleted or irreversibly anonymized."
-  ],
-  "privacy.sections.section5.title": "Your Rights (GDPR / PIPL / CCPA)",
-  "privacy.sections.section5.body": [
-    "Depending on your jurisdiction, you may have the following rights regarding your personal data:",
-    "Right to Access: You can request a copy of the personal data we hold about you, including categories of data, processing purposes, and third-party recipients.",
-    "Right to Rectification: You can request correction of inaccurate or incomplete personal data at any time.",
-    "Right to Erasure: You can request deletion of your personal data under certain conditions (right to be forgotten). We will comply unless legal retention obligations apply.",
-    "Right to Data Portability: You can request your data in a structured, commonly used, machine-readable format to transfer to another service provider.",
-    "Right to Restrict Processing: You can request that we limit the processing of your data under certain circumstances.",
-    "Right to Object: You can object to processing based on legitimate interests, including profiling and automated decision-making.",
-    "To exercise any of these rights, please contact our Data Protection Officer at the address listed in Section 10."
-  ],
-  "privacy.sections.section6.title": "Data Sharing",
-  "privacy.sections.section6.body": [
-    "We do not sell your personal data. We share data only in the following limited circumstances:",
-    "Service Providers & Sub-processors: We engage trusted third-party vendors for infrastructure hosting, email delivery, SMS messaging, and security monitoring. All sub-processors are bound by data processing agreements (DPAs) that require equivalent data protection standards.",
-    "Legal Compliance: We may disclose personal data when required by law, court order, or governmental regulation. We will notify you of such disclosure where legally permitted.",
-    "Business Transfers: In the event of a merger, acquisition, or asset sale, your data may be transferred. You will be notified before your data becomes subject to a different privacy policy.",
-    "With Your Consent: We will ask for your explicit consent before sharing your data for any purpose not covered by this policy."
-  ],
-  "privacy.sections.section7.title": "Security Measures",
-  "privacy.sections.section7.body": [
-    "We implement industry-standard security measures to protect your data:",
-    "Encryption: All data in transit is encrypted using TLS 1.3. Sensitive data at rest is encrypted using AES-256-GCM. Passwords are hashed using bcrypt with a per-user salt.",
-    "Access Controls: We enforce role-based access control (RBAC), attribute-based access control (ABAC), and the principle of least privilege. All access to production data requires multi-factor authentication.",
-    "Audit Logging: Every data access, modification, and administrative action is recorded in tamper-evident audit logs with cryptographic integrity verification.",
-    "Monitoring: We maintain 24/7 security monitoring with automated intrusion detection, anomaly detection, and real-time alerting. We conduct regular penetration testing and vulnerability assessments.",
-    "We maintain SOC 2 Type II certification and undergo annual independent security audits."
-  ],
-  "privacy.sections.section8.title": "Cookie Policy",
-  "privacy.sections.section8.body": [
-    "Autional uses cookies and similar technologies to provide and improve our services:",
-    "Essential Cookies: These cookies are strictly necessary for the operation of our platform, including session management, authentication state, and security features such as CSRF protection. They cannot be disabled.",
-    "Functional Cookies: These cookies remember your preferences such as language selection and theme settings to improve your experience. You may disable these, but some features may not function properly.",
-    "Analytics Cookies: We use first-party analytics to understand how our platform is used and to identify performance issues. We do not use third-party advertising or tracking cookies.",
-    "You can manage your cookie preferences through your browser settings. Note that disabling essential cookies may prevent you from using core platform features."
-  ],
-  "privacy.sections.section9.title": "Children's Privacy",
-  "privacy.sections.section9.body": [
-    "Autional is not intended for use by individuals under the age of 16. We do not knowingly collect personal data from children.",
-    "In compliance with COPPA (Children's Online Privacy Protection Act) and GDPR Article 8, if we become aware that we have collected personal data from a child under the applicable age of consent without verifiable parental consent, we will take immediate steps to delete such data.",
-    "If you believe a child has provided us with personal data, please contact our Data Protection Officer immediately."
-  ],
-  "privacy.sections.section10.title": "Contact DPO",
-  "privacy.sections.section10.body": [
-    "If you have questions, concerns, or wish to exercise your data protection rights, please contact our Data Protection Officer:",
-    "Email: support@autional.net",
-    "Postal Address: Autional Data Protection Office, Shenzhen, China",
-    "You have the right to lodge a complaint with your local data protection supervisory authority if you believe your data protection rights have been violated. We encourage you to contact us first so we can address your concerns directly.",
-    "We will acknowledge your request within 72 hours and provide a substantive response within 30 calendar days."
-  ],
   "validation.passwordMinLength": "Password must be at least {{min}} characters",
   "validation.passwordMaxLength": "Password must be at most {{max}} characters",
   "validation.passwordUppercase": "Password must contain uppercase letters",
