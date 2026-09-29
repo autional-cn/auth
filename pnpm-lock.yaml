@@ -103,8 +103,8 @@ importers:
         version: 5.0.13(@types/react@19.2.14)(react@19.2.5)(use-sync-external-store@1.7.0(react@19.2.5))
     devDependencies:
       '@autional-cn/tsconfig':
-        specifier: workspace:*
-        version: link:../../packages/tsconfig
+        specifier: 0.1.0-rc
+        version: 0.1.0-rc
       '@types/react':
         specifier: 19.2.14
         version: 19.2.14
@@ -152,8 +152,8 @@ importers:
         version: 5.0.13(@types/react@19.2.14)(react@19.2.5)(use-sync-external-store@1.7.0(react@19.2.5))
     devDependencies:
       '@autional-cn/tsconfig':
-        specifier: workspace:*
-        version: link:../tsconfig
+        specifier: 0.1.0-rc
+        version: 0.1.0-rc
       '@types/lodash-es':
         specifier: 4.17.12
         version: 4.17.12
@@ -178,8 +178,6 @@ importers:
       typescript:
         specifier: 5.8.3
         version: 5.8.3
-
-  packages/tsconfig: {}
 
 packages:
 
@@ -255,6 +253,9 @@ packages:
 
   '@autional-cn/tokens@0.1.0-rc':
     resolution: {integrity: sha512-L0G4zxni+1jkpgNVdJ7cF6rAsEZeHoGXVGBM0YVlnw7pcB1NfoXyFNmm7yss0Jmu2eG9joIdbQh1EqVMipbSMg==}
+
+  '@autional-cn/tsconfig@0.1.0-rc':
+    resolution: {integrity: sha512-XY7N2lbMlR1D+OlkxDAw9Pz9CleV4UZ14RfWkkhGTZbbHvxT/d69H8GXWhyc9/634RoEUyVajYmjT75cZbKF4A==}
 
   '@autional-cn/ui@0.1.0-rc':
     resolution: {integrity: sha512-5M5SslaVnV3ilchTo+d18Vf2EBgtvgTQRtd1aGddAIUvra/S6Brnc+hiuuXiK/faoF4DqIKx9Pw79cva+uFq8A==}
@@ -2628,6 +2629,8 @@ snapshots:
       tailwindcss: 3.4.19
 
   '@autional-cn/tokens@0.1.0-rc': {}
+
+  '@autional-cn/tsconfig@0.1.0-rc': {}
 
   '@autional-cn/ui@0.1.0-rc(antd@6.6.5(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(i18next@26.0.10(typescript@5.8.3))(lucide-react@0.509.0(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react-i18next@17.0.7(i18next@26.0.10(typescript@5.8.3))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.8.3))(react@19.2.5)':
     dependencies:
