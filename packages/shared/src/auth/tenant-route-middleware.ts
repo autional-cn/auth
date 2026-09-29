@@ -29,8 +29,15 @@ export interface TenantRouteResult {
 	oauthClientId: string | null;
 	/** 是否正在加载（API 请求中） */
 	loading: boolean;
-	/** 未找到（无 slug 或无 OAuth 配置） */
+	/** 未找到（无 slug / 无 OAuth 配置 / slug 不存在） */
 	notFound: boolean;
+	/**
+	 * URL slug 确定性不存在（by-slug HTTP 404）。
+	 * 门户口径（F-W6）：本地渲染 404、不发弹跳 —— 否则与 auth 侧
+	 * 「有会话 → 回跳 redirect」构成无限整页往返。
+	 * 网络错误/5xx 不置本标记（fail-open，仍走原登录漏斗）。
+	 */
+	unknownSlug: boolean;
 }
 
 /**
@@ -59,12 +66,15 @@ export function useTenantRoute(): TenantRouteResult {
 	// 通过 SlugResolution.resolved.slug 传递，无需从 API 响应中读取。
 	const slug = slugResolution.status === 'resolved' ? slugResolution.slug : null;
 
+	const unknownSlug = slugResolution.status === 'unknown-slug';
+
 	return {
 		slug,
 		tenantId: slugResolution.status === 'resolved' ? slugResolution.config.tenantId || null : null,
 		oauthClientId: slugResolution.status === 'resolved' ? slugResolution.clientId : null,
 		loading: slugResolution.status === 'loading',
-		notFound: slugResolution.status === 'not-found',
+		notFound: slugResolution.status === 'not-found' || unknownSlug,
+		unknownSlug,
 	};
 }
 

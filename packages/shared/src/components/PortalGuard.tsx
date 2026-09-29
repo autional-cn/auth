@@ -25,6 +25,8 @@ interface PortalGuardProps {
 	allowedRoles?: readonly string[];
 	fallback?: React.ReactNode;
 	loadingFallback?: React.ReactNode;
+	/** 确定性未知 slug（by-slug HTTP 404）时渲染的 404 页（透传 RequireAuth） */
+	notFound?: React.ReactNode;
 }
 
 /**

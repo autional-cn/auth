@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
 
 // ============================================================
 // L6（D9 / ADR-04）：RequireAuth 的未登录出口
@@ -19,6 +19,7 @@ const { mockState } = vi.hoisted(() => ({
 			oauthClientId: null as string | null,
 			loading: false,
 			notFound: true,
+			unknownSlug: false,
 		},
 		token: null as string | null,
 		replace: vi.fn(),
@@ -63,6 +64,7 @@ beforeEach(() => {
 		oauthClientId: null,
 		loading: false,
 		notFound: true,
+		unknownSlug: false,
 	};
 	mockState.token = null;
 	delete (window as any).__APP_CONFIG__;
@@ -81,6 +83,8 @@ afterEach(() => {
 	if (window.location !== originalWindowLocation) {
 		Object.defineProperty(window, 'location', { value: originalWindowLocation, writable: true });
 	}
+	// vitest globals 未开启 ⇒ RTL 不会自动 cleanup，手动清理防跨用例 DOM 污染
+	cleanup();
 });
 
 describe('RequireAuth 未登录出口', () => {
@@ -108,6 +112,7 @@ describe('RequireAuth 未登录出口', () => {
 			oauthClientId: 'cid-from-slug',
 			loading: false,
 			notFound: false,
+			unknownSlug: false,
 		};
 
 		render(
@@ -149,5 +154,91 @@ describe('RequireAuth 未登录出口', () => {
 		await waitFor(() => {
 			expect(mockState.setBootstrapLock).toHaveBeenCalledWith(true);
 		});
+	});
+});
+
+// ============================================================
+// F-W6 闸门（verification-W5-patch §6）：未知 slug 死链 × auth 域有会话
+// 曾构成无限整页往返（门户 → buildLoginUrl → auth 回跳 redirect → 门户 → …）。
+// 修法：by-slug 确定性 404（unknownSlug）且本站未配 env client → 本地 404，不弹跳。
+// 约束：网络错误/5xx 不置 unknownSlug（fail-open 仍走漏斗）；env client 站点不触发。
+// ============================================================
+describe('RequireAuth F-W6 确定性 404 闸门', () => {
+	it('unknownSlug + 无 env client → 不发弹跳、渲染注入的 404', async () => {
+		mockState.tenantRoute = {
+			slug: null,
+			tenantId: null,
+			oauthClientId: null,
+			loading: false,
+			notFound: true,
+			unknownSlug: true,
+		};
+
+		render(
+			<RequireAuth notFound={<div data-testid="tenant-404">no such tenant</div>}>
+				<div>protected</div>
+			</RequireAuth>,
+		);
+
+		await waitFor(() => expect(screen.getByTestId('tenant-404')).toBeInTheDocument());
+		expect(mockState.replace).not.toHaveBeenCalled();
+		expect(mockState.initiate).not.toHaveBeenCalled();
+		expect(screen.queryByText('protected')).toBeNull();
+	});
+
+	it('unknownSlug + 无 notFound 注入 → 渲染内置极简 404（不空白）', async () => {
+		mockState.tenantRoute = {
+			slug: null,
+			tenantId: null,
+			oauthClientId: null,
+			loading: false,
+			notFound: true,
+			unknownSlug: true,
+		};
+
+		render(
+			<RequireAuth>
+				<div>protected</div>
+			</RequireAuth>,
+		);
+
+		await waitFor(() => expect(screen.getByText('404')).toBeInTheDocument());
+		expect(mockState.replace).not.toHaveBeenCalled();
+	});
+
+	it('unknownSlug + env client（admin-console 旁路）→ 闸门不生效，仍走 PKCE', async () => {
+		(window as any).__APP_CONFIG__ = { VITE_OAUTH_CLIENT_ID: 'cid-from-env' };
+		mockState.tenantRoute = {
+			slug: null,
+			tenantId: null,
+			oauthClientId: null,
+			loading: false,
+			notFound: true,
+			unknownSlug: true,
+		};
+
+		render(
+			<RequireAuth notFound={<div data-testid="tenant-404">no such tenant</div>}>
+				<div>protected</div>
+			</RequireAuth>,
+		);
+
+		await waitFor(() => expect(mockState.initiate).toHaveBeenCalledWith('cid-from-env'));
+		expect(screen.queryByTestId('tenant-404')).toBeNull();
+		expect(mockState.replace).not.toHaveBeenCalled();
+	});
+
+	it('非 unknownSlug（网络错误 fail-open）→ 维持原漏斗（回归锁）', async () => {
+		// 默认 tenantRoute: notFound=true, unknownSlug=false —— 即 by-slug 网络错误场景
+		render(
+			<RequireAuth notFound={<div data-testid="tenant-404">no such tenant</div>}>
+				<div>protected</div>
+			</RequireAuth>,
+		);
+
+		await waitFor(() => expect(mockState.replace).toHaveBeenCalled());
+		const url = String(mockState.replace.mock.calls[0][0]);
+		expect(url).toContain('from_requireauth=1');
+		expect(screen.queryByTestId('tenant-404')).toBeNull();
 	});
 });
