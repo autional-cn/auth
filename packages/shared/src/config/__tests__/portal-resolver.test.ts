@@ -172,4 +172,76 @@ describe('getPortalUrl', () => {
 			expect(getPortalUrl('unknown')).toBe('https://app.iam.tianv.local/unknown');
 		});
 	});
+
+	describe('tenant slug is gated by portal shape (F-W8)', () => {
+		const CN_CONFIG = {
+			VITE_PORTAL_CONFIG: {
+				auth: { host: 'auth', base: '' },
+				admin: { host: 'admin', base: '' },
+				developer: { host: 'developer', base: '' },
+				platform: { host: 'platform', base: '' },
+				status: { host: 'status', base: '' },
+				trust: { host: 'trust', base: '' },
+				user: { host: 'user', base: '' },
+				authenticator: { host: 'authenticator', base: '' },
+				security: { host: 'security', base: '' },
+				brand: { host: 'brand', base: '' },
+			},
+		};
+
+		beforeEach(() => {
+			vi.stubGlobal('window', {
+				location: {
+					hostname: 'auth.autional.cn',
+					protocol: 'https:',
+					origin: 'https://auth.autional.cn',
+				},
+				__APP_CONFIG__: CN_CONFIG,
+			});
+		});
+
+		it('appends /<slug> for tenant-scoped portals', () => {
+			expect(getPortalUrl('auth', 'demo')).toBe('https://auth.autional.cn/demo');
+			expect(getPortalUrl('admin', 'demo')).toBe('https://admin.autional.cn/demo');
+			expect(getPortalUrl('user', 'demo')).toBe('https://user.autional.cn/demo');
+			expect(getPortalUrl('security', 'demo')).toBe('https://security.autional.cn/demo');
+			expect(getPortalUrl('authenticator', 'demo')).toBe(
+				'https://authenticator.autional.cn/demo',
+			);
+		});
+
+		it('keeps domain-root portals at root even when a slug is passed', () => {
+			expect(getPortalUrl('platform', 'demo')).toBe('https://platform.autional.cn');
+			expect(getPortalUrl('status', 'demo')).toBe('https://status.autional.cn');
+			expect(getPortalUrl('trust', 'demo')).toBe('https://trust.autional.cn');
+			expect(getPortalUrl('developer', 'demo')).toBe('https://developer.autional.cn');
+			expect(getPortalUrl('brand', 'demo')).toBe('https://brand.autional.cn');
+		});
+	});
+
+	describe('tenant slug gate applies to legacy VITE_*_URL and default-table branches', () => {
+		beforeEach(() => {
+			vi.stubGlobal('window', {
+				location: {
+					hostname: 'app.iam.tianv.local',
+					protocol: 'https:',
+					origin: 'https://app.iam.tianv.local',
+				},
+				__APP_CONFIG__: {
+					VITE_AUTH_PAGES_URL: 'https://auth.iam.tianv.com',
+					VITE_PLATFORM_CONSOLE_URL: 'https://platform.iam.tianv.com',
+				},
+			});
+		});
+
+		it('legacy branch: slug appended for auth, not for platform', () => {
+			expect(getPortalUrl('auth', 'demo')).toBe('https://auth.iam.tianv.com/demo');
+			expect(getPortalUrl('platform', 'demo')).toBe('https://platform.iam.tianv.com');
+		});
+
+		it('default-table branch: slug appended for user, not for status', () => {
+			expect(getPortalUrl('user', 'demo')).toBe('https://user.iam.tianv.local/demo');
+			expect(getPortalUrl('status', 'demo')).toBe('https://status.iam.tianv.local');
+		});
+	});
 });

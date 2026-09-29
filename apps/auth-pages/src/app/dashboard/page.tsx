@@ -231,7 +231,8 @@ export default function DashboardPage() {
 
 		return visible.map((app: any) => ({
 			label: app.name,
-			// 门户入口一律带租户段：第二参是 slug，不是 tenant_id（ULID）
+			// 第二参是 slug（不是 tenant_id/ULID）；是否拼租户段由 shared config 的
+			// SLUG_PORTALS 白名单决定 —— 根门户（platform/status/trust/developer）自动回落根 URL
 			url: getPortalUrl(app.code, tenantSlug || undefined),
 			code: app.code,
 			icon: app.icon_url,

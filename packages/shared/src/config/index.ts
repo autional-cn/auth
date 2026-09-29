@@ -177,33 +177,51 @@ function resolvePortalUrl(entry: PortalEntry, hostname: string, slug?: string): 
 	return url;
 }
 
+// 租户段门户白名单：仅这些门户的入口带 /<tenantSlug>（门户 URL 统一方案 —— user/security/admin/authenticator，auth 一并统一）。
+// 其余门户（platform/status/trust/developer/brand/landing）是域根应用，拼租户段会命中不存在的路由 ⇒ 空白/404
+//（F-W8：auth dashboard 磁贴曾因此断 4/8）。新增租户段门户时须同步在此登记。
+const SLUG_PORTALS: ReadonlySet<string> = new Set([
+	'auth',
+	'admin',
+	'user',
+	'security',
+	'authenticator',
+]);
+
 export function getPortalUrl(portalId: string, slug?: string): string {
 	if (typeof window === 'undefined') return '';
 	const hostname = window.location.hostname;
+	const effectiveSlug = SLUG_PORTALS.has(portalId) ? slug : undefined;
 
 	// 1. env-driven VITE_PORTAL_CONFIG（构建期写入 env.js，多环境域名解析架构）
 	const envConfig = getPortalConfigFromEnv();
-	if (envConfig?.[portalId]) return resolvePortalUrl(envConfig[portalId], hostname, slug);
+	if (envConfig?.[portalId])
+		return resolvePortalUrl(envConfig[portalId], hostname, effectiveSlug);
 
 	// 2. 运行时 API 配置（initPortalConfig — platform tenant apps）
-	if (portalConfig?.[portalId]) return resolvePortalUrl(portalConfig[portalId], hostname, slug);
+	if (portalConfig?.[portalId])
+		return resolvePortalUrl(portalConfig[portalId], hostname, effectiveSlug);
 
 	// 3. 旧 env.js 直连 URL（VITE_*_URL，与 VITE_PORTAL_CONFIG 不共存）
 	const cfg = getRuntimeConfig();
 	const key = PORTAL_KEY_MAP[portalId];
 	if (cfg?.[key]) {
 		let url = cfg[key];
-		if (slug) url = url.replace(/\/+$/, '') + (slug.startsWith('/') ? slug : '/' + slug);
+		if (effectiveSlug)
+			url =
+				url.replace(/\/+$/, '') +
+				(effectiveSlug.startsWith('/') ? effectiveSlug : '/' + effectiveSlug);
 		return url;
 	}
 
 	// 4. 默认表
 	const def = PORTAL_DEFAULTS[portalId];
-	if (def) return resolvePortalUrl(def, hostname, slug);
+	if (def) return resolvePortalUrl(def, hostname, effectiveSlug);
 
-	// 5. 未知 portal：回退当前 origin + /portalId
+	// 5. 未知 portal：回退当前 origin + /portalId（未知门户不在白名单 ⇒ 不拼租户段）
 	let fallback = `${window.location.origin}/${portalId}`;
-	if (slug) fallback += slug.startsWith('/') ? slug : '/' + slug;
+	if (effectiveSlug)
+		fallback += effectiveSlug.startsWith('/') ? effectiveSlug : '/' + effectiveSlug;
 	return fallback;
 }
 
