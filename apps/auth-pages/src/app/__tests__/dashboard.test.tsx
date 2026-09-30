@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import DashboardPage from '../dashboard/page';
 
@@ -11,12 +11,19 @@ const {
 	mockGetMe,
 	mockAuthMeMemberships,
 	mockSessionsUserSessionsByUserId,
+	mockPublicTenants,
 } = vi.hoisted(() => ({
 	mockHandleLogout: vi.fn(),
 	mockApiClientGet: vi.fn(() => Promise.resolve({ data: { items: [] } })),
 	mockGetMe: vi.fn(),
 	mockAuthMeMemberships: vi.fn(() => Promise.resolve({ items: [] })),
 	mockSessionsUserSessionsByUserId: vi.fn(() => Promise.resolve({ items: [] })),
+	mockPublicTenants: vi.fn(
+		(): { data: Array<{ id: string; name: string }>; isSuccess: boolean } => ({
+			data: [],
+			isSuccess: true,
+		}),
+	),
 }));
 
 const state = vi.hoisted(() => ({
@@ -108,6 +115,7 @@ vi.mock('@autional-cn/shared', () => ({
 	AUTHENTICATOR_APP_URL: () => 'http://authenticator.example.com',
 	getPortalUrl: (code: string) => `http://${code}.example.com`,
 	crossAppUrl: (url: string) => url,
+	usePublicTenantSlugs: () => mockPublicTenants(),
 }));
 
 vi.mock('@autional-cn/shared/generated/api', () => ({
@@ -176,6 +184,8 @@ beforeEach(() => {
 	state.role = 'user';
 	mockGetMe.mockResolvedValue(state.user);
 	mockApiClientGet.mockResolvedValue({ data: { items: [] } });
+	// U93 缺省 fail-open（空名单 → 不拦截），单测按需覆盖
+	mockPublicTenants.mockReturnValue({ data: [], isSuccess: true });
 	mockFetch.mockResolvedValue({
 		ok: true,
 		json: () => Promise.resolve({ code: 0, data: mockSystemApps }),
@@ -279,5 +289,119 @@ describe('DashboardPage', () => {
 		await user.click(screen.getByText('dashboard.logout'));
 
 		expect(mockHandleLogout).toHaveBeenCalled();
+	});
+});
+
+// ============================================================
+// U93：URL 段 slug ↔ 会话租户一致性 —— 多标签/残留会话下 URL 可能指向另一租户，
+// 本页磁贴按 URL slug 拼链、数据按会话租户取（sessionTenantId），混用会导出错租户
+// 的入口。唯一权威映射 = 公开租户名单 id→name（name 即 slug）。名单不可用或会话租户
+// 不在名单 → fail-open。命中不一致 → 落会话租户自己的仪表盘（replace，非破坏）。
+// ============================================================
+
+const KNOWN_TENANTS = [
+	{ id: 'tenant-1', name: 'demo' },
+	{ id: 'tenant-9', name: 'acme' },
+];
+
+function renderSlugPage(slug: string) {
+	return render(
+		<QueryClientProvider client={queryClient}>
+			<MemoryRouter initialEntries={[`/${slug}/dashboard`]}>
+				<Routes>
+					<Route path="/:tenantSlug/dashboard" element={<DashboardPage />} />
+				</Routes>
+			</MemoryRouter>
+		</QueryClientProvider>,
+	);
+}
+
+describe('DashboardPage slug↔会话一致性（U93）', () => {
+	it('U93-1 URL slug ≠ 会话租户 → 重定向会话租户仪表盘（replace），不渲染内容', async () => {
+		// 会话租户 = tenant-1 = demo（state.user.tenant_id），URL 却指 acme
+		mockPublicTenants.mockReturnValue({ data: KNOWN_TENANTS, isSuccess: true });
+
+		renderSlugPage('acme');
+
+		await waitFor(() => {
+			expect(mockNavigate).toHaveBeenCalledWith('/demo/dashboard', { replace: true });
+		});
+		expect(screen.getByText('dashboard.loading')).toBeInTheDocument();
+		expect(screen.queryByText('dashboard.loggedIn')).not.toBeInTheDocument();
+	});
+
+	it('U93-2 URL slug = 会话租户 → 不重定向，正常渲染', async () => {
+		mockPublicTenants.mockReturnValue({ data: KNOWN_TENANTS, isSuccess: true });
+
+		renderSlugPage('demo');
+
+		await waitFor(() => {
+			expect(screen.getByText('dashboard.loggedIn')).toBeInTheDocument();
+		});
+		expect(mockNavigate).not.toHaveBeenCalled();
+	});
+
+	it('U93-3 名单为空（接口失败回落）→ fail-open 不拦截', async () => {
+		mockPublicTenants.mockReturnValue({ data: [], isSuccess: true });
+
+		renderSlugPage('acme');
+
+		await waitFor(() => {
+			expect(screen.getByText('dashboard.loggedIn')).toBeInTheDocument();
+		});
+		expect(mockNavigate).not.toHaveBeenCalled();
+	});
+
+	it('U93-4 会话租户不在名单 → fail-open 不拦截', async () => {
+		mockPublicTenants.mockReturnValue({
+			data: [{ id: 'tenant-9', name: 'acme' }],
+			isSuccess: true,
+		});
+
+		renderSlugPage('acme');
+
+		await waitFor(() => {
+			expect(screen.getByText('dashboard.loggedIn')).toBeInTheDocument();
+		});
+		expect(mockNavigate).not.toHaveBeenCalled();
+	});
+});
+
+// ============================================================
+// U94：平台租户在 auth 站 dashboard 的磁贴不可用 —— 磁贴数据面（user 受众端点，
+// api 平面）对 platform 平面会话命中网关平面守卫 403（平台租户操作员日常入口 =
+// platform.autional.cn）。裁定 = 平台租户隐藏磁贴区（配置按钮/偏好面板/磁贴网格），
+// 登出保留。判定 = 会话租户 ULID == 平台租户 well-known 常量。
+// ============================================================
+
+const PLATFORM_TENANT_ULID = '01KSQCBNVMS6SX64PJS937CE33';
+
+describe('DashboardPage 平台租户磁贴隐藏（U94）', () => {
+	it('U94-1 平台租户会话 → 磁贴区（配置按钮/磁贴）隐藏，登出保留', async () => {
+		state.user = { ...state.user, tenant_id: PLATFORM_TENANT_ULID };
+		mockGetMe.mockResolvedValue(state.user);
+
+		renderPage();
+
+		await waitFor(() => {
+			expect(screen.getByText('dashboard.logout')).toBeInTheDocument();
+		});
+
+		expect(screen.queryByText(/dashboard\.showPrefs/)).not.toBeInTheDocument();
+		expect(screen.queryByText('dashboard.userPortal')).not.toBeInTheDocument();
+		expect(screen.queryByText('dashboard.developerPortal')).not.toBeInTheDocument();
+	});
+
+	it('U94-2 非平台租户不受影响（回归）→ 磁贴与配置按钮照常渲染', async () => {
+		state.user = { ...state.user, tenant_id: 'tenant-1' };
+		mockGetMe.mockResolvedValue(state.user);
+
+		renderPage();
+
+		await waitFor(() => {
+			expect(screen.getByText('dashboard.userPortal')).toBeInTheDocument();
+		});
+		expect(screen.getByText(/dashboard\.showPrefs/)).toBeInTheDocument();
+		expect(screen.getByText('dashboard.logout')).toBeInTheDocument();
 	});
 });

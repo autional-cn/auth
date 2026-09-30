@@ -6,6 +6,7 @@ import { ThemeProvider, ThemeToggle, LanguageSwitcher, ErrorBoundary } from '@au
 import { AuthBrandingInitializer } from '@/components/auth/AuthBrandingInitializer';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { EntryRouter } from '@/components/EntryRouter';
+import { TenantIndexRedirect } from '@/components/TenantIndexRedirect';
 import { TenantSwitchChip } from '@/components/TenantSwitchChip';
 
 // Pages — route-level code splitting via React.lazy
@@ -172,12 +173,13 @@ export default function App() {
 									element={<Navigate to="../mfa-challenge" replace />}
 								/>
 								{/* 裸 /<slug>（brand 落地目标）：先过租户白名单守卫，防未知 slug 被贪婪
-								    渲染成 dashboard；白名单为空（名单接口挂）时放行，与其余门户同口径 */}
+								    渲染成 dashboard；白名单为空（名单接口挂）时放行，与其余门户同口径。
+								    携 redirect 时 search 整串透传给登录页（U88，见 TenantIndexRedirect） */}
 								<Route
 									path="/:tenantSlug"
 									element={
 										<TenantIndexGuard notFound={<NotFoundPage />}>
-											<Navigate to="dashboard" replace />
+											<TenantIndexRedirect />
 										</TenantIndexGuard>
 									}
 								/>

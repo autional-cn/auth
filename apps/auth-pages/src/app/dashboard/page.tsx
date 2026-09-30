@@ -16,6 +16,7 @@ import {
 	useCurrentRole,
 	getRootDomain,
 	getCurrentTenantId,
+	usePublicTenantSlugs,
 	API_BASE_URL,
 	END_USER_PORTAL_URL,
 } from '@autional-cn/shared';
@@ -138,13 +139,18 @@ export default function DashboardPage() {
 	}, []);
 
 	// 获取系统 Portal 列表（使用 @tanstack/react-query）
-	const qTenantId = meData?.tenant_id || user?.tenant_id || getCurrentTenantId();
+	const sessionTenantId = meData?.tenant_id || user?.tenant_id || getCurrentTenantId();
+	// U94：平台租户操作员的日常入口是 platform.autional.cn（platform 平面数据面）；auth 站
+	// 磁贴数据面走 user 受众端点，网关只接受 api 平面 token（§3.3 平面对照），platform
+	// 平面会话命中平面守卫 403 ⇒ 平台租户隐藏磁贴区。ULID 为平台租户 well-known 常量
+	// （service-core base/constant TenantPlatformID，全环境同值；admin 控制台同款先例）。
+	const isPlatformTenant = sessionTenantId === '01KSQCBNVMS6SX64PJS937CE33';
 	const qToken = getAccessToken();
 	const { data: systemApps = [], isLoading: appsLoading } = useQuery({
-		queryKey: ['system-portals', qTenantId],
+		queryKey: ['system-portals', sessionTenantId],
 		queryFn: async () => {
 			const res = await fetch(
-				`${API_BASE_URL}/tenant/api/v1/tenants/${qTenantId}/applications?type=portal&is_platform=true&status=active`,
+				`${API_BASE_URL}/tenant/api/v1/tenants/${sessionTenantId}/applications?type=portal&is_platform=true&status=active`,
 				{ headers: { Authorization: `Bearer ${qToken}` } },
 			).then((r) => r.json());
 			if (res.code !== 0) return [];
@@ -153,7 +159,7 @@ export default function DashboardPage() {
 			if (Array.isArray(res.items)) return res.items;
 			return [];
 		},
-		enabled: !!qTenantId && !!qToken,
+		enabled: !isPlatformTenant && !!sessionTenantId && !!qToken,
 		staleTime: 60000,
 	});
 
@@ -239,7 +245,25 @@ export default function DashboardPage() {
 		}));
 	}, [systemApps, meData, user, accessToken, prefs, role, tenantSlug]);
 
-	if (loading) {
+	// U93：URL 段 slug 必须与会话租户一致 —— 多标签/残留会话下 URL 可能指向另一租户，
+	// 本页磁贴按 URL slug 拼链、数据却按会话租户取，混用会导出错租户的入口。
+	// 会话租户 → slug 唯一权威 = 公开租户名单 id→name（name 即 slug；E10 教训：会话
+	// tenants[].name 是展示名，不能当 slug）。名单未就绪/查不到 → fail-open 不拦截。
+	const { data: knownTenants } = usePublicTenantSlugs();
+	const sessionSlug = useMemo(() => {
+		const match = (knownTenants ?? []).find((t) => !!t.id && t.id === sessionTenantId);
+		return match?.name || match?.slug || undefined;
+	}, [knownTenants, sessionTenantId]);
+	const slugMismatch = !!tenantSlug && !!sessionSlug && tenantSlug !== sessionSlug;
+
+	useEffect(() => {
+		if (!slugMismatch || !sessionSlug) return;
+		// 非登录意图场景：不清会话（区别于登录页「切换品牌」语义），改落会话租户自己的仪表盘
+		navigate(`/${sessionSlug}/dashboard`, { replace: true });
+	}, [slugMismatch, sessionSlug, navigate]);
+
+	// 不一致期间同样停在加载态，避免按错 slug 拼出的磁贴闪一帧
+	if (loading || slugMismatch) {
 		return (
 			<div className="flex min-h-screen items-center justify-center">
 				<div className="text-[var(--color-text-secondary)]">{t('dashboard.loading')}</div>
@@ -384,18 +408,20 @@ export default function DashboardPage() {
 				)}
 
 				<div className="space-y-4">
-					{/* Portal 配置按钮 */}
-					<button
-						onClick={() => setShowPrefs(!showPrefs)}
-						className="w-full rounded-md border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] px-4 py-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] transition-colors"
-					>
-						{showPrefs
-							? t('dashboard.hidePrefs', '收起配置')
-							: t('dashboard.showPrefs', '配置 Portal 显示')}
-					</button>
+					{/* U94：平台租户隐藏磁贴区（配置按钮/偏好面板/磁贴网格），登出保留 */}
+					{!isPlatformTenant && (
+						<button
+							onClick={() => setShowPrefs(!showPrefs)}
+							className="w-full rounded-md border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] px-4 py-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] transition-colors"
+						>
+							{showPrefs
+								? t('dashboard.hidePrefs', '收起配置')
+								: t('dashboard.showPrefs', '配置 Portal 显示')}
+						</button>
+					)}
 
 					{/* Portal 偏好面板 */}
-					{showPrefs && (
+					{!isPlatformTenant && showPrefs && (
 						<div className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] p-4 space-y-3">
 							<label className="flex items-center justify-between text-sm">
 								<span>{t('dashboard.showAllPortals', '显示全部 Portal')}</span>
@@ -457,17 +483,20 @@ export default function DashboardPage() {
 						</div>
 					)}
 
-					{allPortals.map((p) => {
-						const PortalIcon = PORTAL_ICONS[p.code];
-						return (
-							<a key={p.url} href={p.url}>
-								<button className="w-full rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] px-4 py-3 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] transition-colors flex items-center gap-3">
-									{PortalIcon && <PortalIcon className="h-5 w-5 text-[var(--color-text-muted)]" />}
-									{p.label}
-								</button>
-							</a>
-						);
-					})}
+					{!isPlatformTenant &&
+						allPortals.map((p) => {
+							const PortalIcon = PORTAL_ICONS[p.code];
+							return (
+								<a key={p.url} href={p.url}>
+									<button className="w-full rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] px-4 py-3 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] transition-colors flex items-center gap-3">
+										{PortalIcon && (
+											<PortalIcon className="h-5 w-5 text-[var(--color-text-muted)]" />
+										)}
+										{p.label}
+									</button>
+								</a>
+							);
+						})}
 
 					<button
 						onClick={handleLogout}

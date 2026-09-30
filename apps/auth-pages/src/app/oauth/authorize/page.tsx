@@ -16,6 +16,31 @@ function scopeToI18nKey(scope: string): string {
 	return `auth.oauth.scope${camel.charAt(0).toUpperCase() + camel.slice(1)}`;
 }
 
+/**
+ * 错误体归一化（U85）：`error` / `error_description` 在不同生产者手里可能是
+ * 字符串（OAuth 规范），也可能是对象 —— 如 Vercel 平台错误的
+ * `{"error":{"code":"…","message":"…"}}`。对象直接进 state 会被 JSX 当 child
+ * 渲染触发 React #31 整页崩溃（502 窗口线上实证）。
+ */
+function pickErrorText(...candidates: unknown[]): string | null {
+	for (const candidate of candidates) {
+		const text = flattenError(candidate, 0);
+		if (text) return text;
+	}
+	return null;
+}
+
+function flattenError(value: unknown, depth: number): string | null {
+	if (typeof value === 'string') return value || null;
+	if (!value || typeof value !== 'object' || depth >= 3) return null;
+	const o = value as Record<string, unknown>;
+	return (
+		flattenError(o.message, depth + 1) ??
+		flattenError(o.error_description, depth + 1) ??
+		flattenError(o.error, depth + 1)
+	);
+}
+
 function OAuthAuthorizeContent() {
 	const { t } = useI18n();
 	const [searchParams] = useSearchParams();
@@ -128,8 +153,7 @@ function OAuthAuthorizeContent() {
 			const payload: any = await res.json().catch(() => null);
 			if (!res.ok) {
 				setError(
-					payload?.error_description ||
-						payload?.error ||
+					pickErrorText(payload?.error_description, payload?.error, payload?.message) ??
 						t('oauth.authorize.authorizeFailed', '授权失败，请稍后重试'),
 				);
 				setLoading(false);

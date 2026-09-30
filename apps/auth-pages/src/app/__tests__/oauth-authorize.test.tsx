@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
@@ -205,4 +205,67 @@ describe('OAuthAuthorizePage', () => {
 		});
 		expect(screen.queryByText(/✓/)).toBeNull();
 	});
+});
+
+// ============================================================
+// U85：授权提交失败的错误体归一化 —— 错误对象（非字符串）直接进 JSX 会触发
+// React #31 整页崩溃（2026-09-30 线上 502 窗口实证：`{error:{code,message}}`
+// 形态被当 React child 渲染）。错误态一律先取 message 字符串再入 state。
+// ============================================================
+
+describe('OAuthAuthorizePage 授权失败错误态（U85）', () => {
+	function stubAuthorizeFetch(
+		body: unknown,
+		ok = false,
+		status = 502,
+		jsonImpl?: () => Promise<any>,
+	) {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok,
+				status,
+				json: jsonImpl ?? (async () => body),
+			}),
+		);
+	}
+
+	async function clickApprove() {
+		const user = userEvent.setup();
+		renderOAuthAuthorize();
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: 'auth.oauth.approve' })).toBeInTheDocument();
+		});
+		await user.click(screen.getByRole('button', { name: 'auth.oauth.approve' }));
+	}
+
+	it('U85-1 平台错误对象 {error:{code,message}} → 渲染 message 字符串（非整页崩溃）', async () => {
+		stubAuthorizeFetch({ error: { code: 'DEPLOYMENT_NOT_FOUND', message: '平台边缘错误 E1' } });
+		await clickApprove();
+		expect(await screen.findByText('平台边缘错误 E1')).toBeInTheDocument();
+	});
+
+	it('U85-2 平台错误信封 {code,message} → 渲染 message', async () => {
+		stubAuthorizeFetch({ code: 40000503, message: '服务端消息 M2' });
+		await clickApprove();
+		expect(await screen.findByText('服务端消息 M2')).toBeInTheDocument();
+	});
+
+	it('U85-3 响应体非 JSON（Vercel HTML 错误页）→ i18n 兜底文案，不崩', async () => {
+		stubAuthorizeFetch(null, false, 502, async () => {
+			throw new Error('not json');
+		});
+		await clickApprove();
+		expect(await screen.findByText(/oauth\.authorize\.authorizeFailed/)).toBeInTheDocument();
+	});
+
+	it('U85-4 OAuth 规范字符串 error_description → 原样展示（原行为不回归）', async () => {
+		stubAuthorizeFetch({ error: 'invalid_request', error_description: 'invalid client' });
+		await clickApprove();
+		expect(await screen.findByText('invalid client')).toBeInTheDocument();
+	});
+});
+
+afterEach(() => {
+	vi.unstubAllGlobals();
 });
