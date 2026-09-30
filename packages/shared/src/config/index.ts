@@ -177,15 +177,19 @@ function resolvePortalUrl(entry: PortalEntry, hostname: string, slug?: string): 
 	return url;
 }
 
-// 租户段门户白名单：仅这些门户的入口带 /<tenantSlug>（门户 URL 统一方案 —— user/security/admin/authenticator，auth 一并统一）。
-// 其余门户（platform/status/trust/developer/brand/landing）是域根应用，拼租户段会命中不存在的路由 ⇒ 空白/404
-//（F-W8：auth dashboard 磁贴曾因此断 4/8）。新增租户段门户时须同步在此登记。
+// 租户段门户白名单：仅这些门户的入口带 /<tenantSlug>（门户 URL 统一方案）。
+// platform 于 09-30 修订加入（F-W8 再修）：platform 控制台本就是租户段挂载应用
+// （legacy seed 049 requires_slug:true），且 OAuth client 按 slug 解析 —— 不拼租户段时
+// 控制台拿不到 client，裸根入口退化为登录死循环。其余门户（status/trust/developer/
+// brand/landing）是域根应用，拼租户段会命中不存在的路由 ⇒ 空白/404。
+// 新增租户段门户时须同步在此登记。
 const SLUG_PORTALS: ReadonlySet<string> = new Set([
 	'auth',
 	'admin',
 	'user',
 	'security',
 	'authenticator',
+	'platform',
 ]);
 
 export function getPortalUrl(portalId: string, slug?: string): string {

@@ -208,10 +208,10 @@ describe('getPortalUrl', () => {
 			expect(getPortalUrl('authenticator', 'demo')).toBe(
 				'https://authenticator.autional.cn/demo',
 			);
+			expect(getPortalUrl('platform', 'demo')).toBe('https://platform.autional.cn/demo');
 		});
 
 		it('keeps domain-root portals at root even when a slug is passed', () => {
-			expect(getPortalUrl('platform', 'demo')).toBe('https://platform.autional.cn');
 			expect(getPortalUrl('status', 'demo')).toBe('https://status.autional.cn');
 			expect(getPortalUrl('trust', 'demo')).toBe('https://trust.autional.cn');
 			expect(getPortalUrl('developer', 'demo')).toBe('https://developer.autional.cn');
@@ -234,9 +234,9 @@ describe('getPortalUrl', () => {
 			});
 		});
 
-		it('legacy branch: slug appended for auth, not for platform', () => {
+		it('legacy branch: slug appended for auth and platform', () => {
 			expect(getPortalUrl('auth', 'demo')).toBe('https://auth.iam.tianv.com/demo');
-			expect(getPortalUrl('platform', 'demo')).toBe('https://platform.iam.tianv.com');
+			expect(getPortalUrl('platform', 'demo')).toBe('https://platform.iam.tianv.com/demo');
 		});
 
 		it('default-table branch: slug appended for user, not for status', () => {
