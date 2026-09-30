@@ -8,6 +8,8 @@ import {
 	getAccessToken,
 	getPortalUrl,
 	isValidRedirect,
+	traceEvent,
+	traceRedirect,
 	useCurrentTenantId,
 	usePublicTenantSlugs,
 } from '@autional-cn/shared';
@@ -86,9 +88,9 @@ export function EntryRouter() {
 			await AuthService.logout();
 			const brand = getPortalUrl('brand');
 			if (!brand) return; // 未配置 brand 门户时保持当前页，避免死循环
-			window.location.replace(
-				redirect ? `${brand}/?redirect=${encodeURIComponent(redirect)}` : `${brand}/`,
-			);
+			traceRedirect(redirect ? `${brand}/?redirect=${encodeURIComponent(redirect)}` : `${brand}/`, {
+				reason: 'funnel-logout',
+			});
 		})();
 	}, [logoutRequested, redirect]);
 
@@ -97,14 +99,15 @@ export function EntryRouter() {
 		const slug = redirectSlug ?? sessionSlug;
 		if (slug) {
 			const qs = redirect ? `?redirect=${encodeURIComponent(redirect)}` : '';
+			traceEvent('entry-route', { to: `/${slug}/${redirect ? 'login' : 'dashboard'}` });
 			navigate(`/${slug}/${redirect ? 'login' : 'dashboard'}${qs}`, { replace: true });
 			return;
 		}
 		const brand = getPortalUrl('brand');
 		if (!brand) return; // 未配置 brand 门户时保持当前页，避免死循环
-		window.location.replace(
-			redirect ? `${brand}/?redirect=${encodeURIComponent(redirect)}` : `${brand}/`,
-		);
+		traceRedirect(redirect ? `${brand}/?redirect=${encodeURIComponent(redirect)}` : `${brand}/`, {
+			reason: 'funnel-brand',
+		});
 	}, [ready, logoutRequested, redirectSlug, sessionSlug, redirect, navigate]);
 
 	if (!ready) {

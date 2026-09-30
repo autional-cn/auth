@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import ErrorPage from '../error/page';
 
@@ -13,13 +13,19 @@ vi.mock('react-i18next', () => ({
 
 const mockNavigate = vi.fn();
 let mockSearchParamsType = '';
+let mockSearchParamsRedirect: string | null = null;
 
 vi.mock('react-router', async () => {
 	const actual = await vi.importActual('react-router');
 	return {
 		...actual,
 		useNavigate: () => mockNavigate,
-		useSearchParams: () => [{ get: (_k: string) => mockSearchParamsType }, vi.fn()],
+		useSearchParams: () => {
+			const params = new URLSearchParams();
+			if (mockSearchParamsType) params.set('type', mockSearchParamsType);
+			if (mockSearchParamsRedirect) params.set('redirect', mockSearchParamsRedirect);
+			return [params, vi.fn()];
+		},
 		Link: ({ to, children }: any) => <a href={to}>{children}</a>,
 	};
 });
@@ -35,6 +41,7 @@ function renderError() {
 beforeEach(() => {
 	vi.clearAllMocks();
 	mockSearchParamsType = '';
+	mockSearchParamsRedirect = null;
 });
 
 describe('ErrorPage', () => {
@@ -105,5 +112,58 @@ describe('ErrorPage', () => {
 		expect(screen.getByText('auth.error.genericErrorDesc')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'auth.error.refreshPage' })).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'auth.error.back' })).toBeInTheDocument();
+	});
+});
+
+// ============================================================
+// F-W8b 修复②：带 redirect 的回程目标透传
+//  - 倒计时结束与各返回按钮一律回到 /?redirect=…（入口路由消费），不再裸走 '/'
+//  - 无 redirect 时行为与旧口径一致（'/'，回归锁见上方用例）
+// ============================================================
+describe('ErrorPage redirect 透传（F-W8b 修复②）', () => {
+	const RETURN = 'https://user.autional.cn/demo/';
+	const EXPECTED = '/?redirect=' + encodeURIComponent(RETURN);
+
+	it('session_expired 倒计时结束 → /?redirect=<回程目标>', () => {
+		vi.useFakeTimers();
+		mockSearchParamsType = 'session_expired';
+		mockSearchParamsRedirect = RETURN;
+		renderError();
+
+		for (let i = 0; i < 6; i++) {
+			act(() => {
+				vi.advanceTimersByTime(1000);
+			});
+		}
+
+		expect(mockNavigate).toHaveBeenCalledWith(EXPECTED);
+		vi.useRealTimers();
+	});
+
+	it('session_expired 重登按钮 → 同回程目标', () => {
+		mockSearchParamsType = 'session_expired';
+		mockSearchParamsRedirect = RETURN;
+		renderError();
+
+		fireEvent.click(screen.getByRole('button', { name: 'auth.error.relogin' }));
+		expect(mockNavigate).toHaveBeenCalledWith(EXPECTED);
+	});
+
+	it('unauthorized 返回首页按钮 → 同回程目标', () => {
+		mockSearchParamsType = 'unauthorized';
+		mockSearchParamsRedirect = RETURN;
+		renderError();
+
+		fireEvent.click(screen.getByRole('button', { name: 'auth.error.backHome' }));
+		expect(mockNavigate).toHaveBeenCalledWith(EXPECTED);
+	});
+
+	it('generic 返回按钮 → 同回程目标', () => {
+		mockSearchParamsType = '';
+		mockSearchParamsRedirect = RETURN;
+		renderError();
+
+		fireEvent.click(screen.getByRole('button', { name: 'auth.error.back' }));
+		expect(mockNavigate).toHaveBeenCalledWith(EXPECTED);
 	});
 });

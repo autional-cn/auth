@@ -92,6 +92,13 @@ function renderEntry() {
 	);
 }
 
+/** 剥除 authTrace 面包屑（rt=）后的整页落点；rt 装饰由 E15/E16 专门锁定。 */
+function replaceUrlWithoutRt(): string {
+	const u = new URL(String(mockReplace.mock.calls[0][0]));
+	u.searchParams.delete('rt');
+	return u.toString();
+}
+
 const originalWindowLocation = window.location;
 
 beforeEach(() => {
@@ -148,7 +155,7 @@ describe('EntryRouter', () => {
 		mockParamsMap.redirect = 'https://admin.autional.cn/nosuch/';
 		renderEntry();
 		await waitFor(() => {
-			expect(mockReplace).toHaveBeenCalledWith(
+			expect(replaceUrlWithoutRt()).toBe(
 				'https://brand.autional.cn/?redirect=' + encodeURIComponent('https://admin.autional.cn/nosuch/'),
 			);
 		});
@@ -159,7 +166,7 @@ describe('EntryRouter', () => {
 		mockParamsMap.redirect = 'https://admin.autional.cn/';
 		renderEntry();
 		await waitFor(() => {
-			expect(mockReplace).toHaveBeenCalledWith(
+			expect(replaceUrlWithoutRt()).toBe(
 				'https://brand.autional.cn/?redirect=' + encodeURIComponent('https://admin.autional.cn/'),
 			);
 		});
@@ -198,7 +205,7 @@ describe('EntryRouter', () => {
 		sessionStorage.setItem('auth_dashboard_slug', 'ghost-tenant');
 		renderEntry();
 		await waitFor(() => {
-			expect(mockReplace).toHaveBeenCalledWith('https://brand.autional.cn/');
+			expect(replaceUrlWithoutRt()).toBe('https://brand.autional.cn/');
 		});
 		expect(mockNavigate).not.toHaveBeenCalled();
 	});
@@ -206,7 +213,7 @@ describe('EntryRouter', () => {
 	it('E5 无 redirect + 无会话 → brand 裸根', async () => {
 		renderEntry();
 		await waitFor(() => {
-			expect(mockReplace).toHaveBeenCalledWith('https://brand.autional.cn/');
+			expect(replaceUrlWithoutRt()).toBe('https://brand.autional.cn/');
 		});
 	});
 
@@ -214,7 +221,7 @@ describe('EntryRouter', () => {
 		mockSession.token = 'token-xyz';
 		renderEntry();
 		await waitFor(() => {
-			expect(mockReplace).toHaveBeenCalledWith('https://brand.autional.cn/');
+			expect(replaceUrlWithoutRt()).toBe('https://brand.autional.cn/');
 		});
 	});
 
@@ -226,7 +233,7 @@ describe('EntryRouter', () => {
 		stubTenantsFetch({}, false);
 		renderEntry();
 		await waitFor(() => {
-			expect(mockReplace).toHaveBeenCalledWith(
+			expect(replaceUrlWithoutRt()).toBe(
 				'https://brand.autional.cn/?redirect=' +
 					encodeURIComponent('https://admin.autional.cn/demo/'),
 			);
@@ -241,7 +248,7 @@ describe('EntryRouter', () => {
 		mockFetch.mockRejectedValue(new Error('network down'));
 		renderEntry();
 		await waitFor(() => {
-			expect(mockReplace).toHaveBeenCalledWith(
+			expect(replaceUrlWithoutRt()).toBe(
 				'https://brand.autional.cn/?redirect=' +
 					encodeURIComponent('https://admin.autional.cn/demo/'),
 			);
@@ -272,7 +279,7 @@ describe('EntryRouter', () => {
 		renderEntry();
 		await waitFor(() => {
 			expect(mockLogout).toHaveBeenCalled();
-			expect(mockReplace).toHaveBeenCalledWith(
+			expect(replaceUrlWithoutRt()).toBe(
 				'https://brand.autional.cn/?redirect=' + encodeURIComponent('https://admin.autional.cn/demo/'),
 			);
 		});
@@ -289,7 +296,7 @@ describe('EntryRouter', () => {
 		renderEntry();
 		await waitFor(() => {
 			expect(mockLogout).toHaveBeenCalled();
-			expect(mockReplace).toHaveBeenCalledWith('https://brand.autional.cn/');
+			expect(replaceUrlWithoutRt()).toBe('https://brand.autional.cn/');
 		});
 		expect(mockNavigate).not.toHaveBeenCalled();
 	});
@@ -302,10 +309,27 @@ describe('EntryRouter', () => {
 		renderEntry();
 		await waitFor(() => {
 			expect(mockLogout).toHaveBeenCalled();
-			expect(mockReplace).toHaveBeenCalledWith(
+			expect(replaceUrlWithoutRt()).toBe(
 				'https://brand.autional.cn/?redirect=' + encodeURIComponent('https://admin.autional.cn/demo/'),
 			);
 		});
 		expect(mockNavigate).not.toHaveBeenCalled();
+	});
+
+	// ── #48：整页落点带 authTrace 面包屑（rt=站.原因.时间），跨站取证链 ──
+
+	it('E15 交棒 brand 的落点带 rt=…funnel-brand（原因可辨）', async () => {
+		mockParamsMap.redirect = 'https://admin.autional.cn/nosuch/';
+		renderEntry();
+		await waitFor(() => expect(mockReplace).toHaveBeenCalled());
+		expect(String(mockReplace.mock.calls[0][0])).toMatch(/[?&]rt=localhost\.funnel-brand\.[0-9a-z]+$/);
+	});
+
+	it('E16 登出回程落点带 rt=…funnel-logout（原因可辨）', async () => {
+		mockSession.token = 'token-xyz';
+		mockParamsMap.logout = '1';
+		renderEntry();
+		await waitFor(() => expect(mockReplace).toHaveBeenCalled());
+		expect(String(mockReplace.mock.calls[0][0])).toMatch(/[?&]rt=localhost\.funnel-logout\.[0-9a-z]+$/);
 	});
 });

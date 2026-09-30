@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { traceEvent } from '@autional-cn/shared';
 import { AuthCard } from '@/components/auth/AuthCard';
 
 type ErrorType =
@@ -50,6 +51,23 @@ export default function ErrorPage() {
 
 	const [seconds, setSeconds] = useState(AUTO_REDIRECT_SECONDS);
 
+	// 回程目标透传：入口路由（`/`）消费 redirect 时会做白名单校验并落到
+	// /<slug>/login?redirect=…；无 redirect 时落默认裸根（→ brand / 会话直达）。
+	// 此前各出口一律 navigate('/')，把来时携带的 redirect 丢在中途（F-W8b 修复②）。
+	const rawRedirect = searchParams.get('redirect');
+	const backTarget = rawRedirect ? `/?redirect=${encodeURIComponent(rawRedirect)}` : '/';
+
+	// 此处只记 trace（SPA 内导航非整页跳转）：真正的整页漏斗在入口路由 `/` 执行，
+	// 由 EntryRouter 走 authTrace。
+	useEffect(() => {
+		traceEvent('error-render', { reason: type });
+	}, [type]);
+
+	const goBack = useCallback(() => {
+		traceEvent('error-exit', { reason: type, to: backTarget });
+		navigate(backTarget);
+	}, [navigate, backTarget, type]);
+
 	// session_expired: 5 秒倒计时后自动返回登录页
 	useEffect(() => {
 		if (type !== 'session_expired') return;
@@ -61,13 +79,9 @@ export default function ErrorPage() {
 
 	useEffect(() => {
 		if (type === 'session_expired' && seconds <= 0) {
-			navigate('/');
+			goBack();
 		}
-	}, [seconds, type, navigate]);
-
-	const handleBack = () => {
-		navigate('/');
-	};
+	}, [seconds, type, goBack]);
 
 	return (
 		<AuthCard title={t(ERROR_TITLE[type])} subtitle={t(ERROR_DESC[type])}>
@@ -79,7 +93,7 @@ export default function ErrorPage() {
 						</p>
 						<button
 							type="button"
-							onClick={() => navigate('/')}
+							onClick={goBack}
 							className="w-full rounded-md bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-[var(--color-on-brand)] hover:opacity-90 transition-opacity"
 						>
 							{t('auth.error.relogin')}
@@ -91,14 +105,14 @@ export default function ErrorPage() {
 					<>
 						<button
 							type="button"
-							onClick={() => navigate('/')}
+							onClick={goBack}
 							className="w-full rounded-md bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-[var(--color-on-brand)] hover:opacity-90 transition-opacity"
 						>
 							{t('auth.error.backHome')}
 						</button>
 						<button
 							type="button"
-							onClick={handleBack}
+							onClick={goBack}
 							className="w-full rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
 						>
 							{t('auth.error.back')}
@@ -110,14 +124,14 @@ export default function ErrorPage() {
 					<>
 						<button
 							type="button"
-							onClick={() => navigate('/')}
+							onClick={goBack}
 							className="w-full rounded-md bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-[var(--color-on-brand)] hover:opacity-90 transition-opacity"
 						>
 							{t('auth.error.backHome')}
 						</button>
 						<button
 							type="button"
-							onClick={handleBack}
+							onClick={goBack}
 							className="w-full rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
 						>
 							{t('auth.error.back')}
@@ -128,7 +142,7 @@ export default function ErrorPage() {
 				{type === 'account_locked' && (
 					<button
 						type="button"
-						onClick={() => navigate('/')}
+						onClick={goBack}
 						className="w-full rounded-md bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-[var(--color-on-brand)] hover:opacity-90 transition-opacity"
 					>
 						{t('auth.error.backHome')}
@@ -138,7 +152,7 @@ export default function ErrorPage() {
 				{type === 'oauth_failed' && (
 					<button
 						type="button"
-						onClick={() => navigate('/')}
+						onClick={goBack}
 						className="w-full rounded-md bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-[var(--color-on-brand)] hover:opacity-90 transition-opacity"
 					>
 						{t('auth.error.backHome')}
@@ -156,7 +170,7 @@ export default function ErrorPage() {
 						</button>
 						<button
 							type="button"
-							onClick={handleBack}
+							onClick={goBack}
 							className="w-full rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
 						>
 							{t('auth.error.back')}

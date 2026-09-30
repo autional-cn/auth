@@ -12,7 +12,16 @@ export function SessionExpiryBanner() {
 
 	useSessionTimeout(
 		() => setWarning(true),
-		() => navigate('/error?type=session_expired'),
+		() => {
+			// 回程目标 = 当前页（登录完成后应回到这里）。error 页倒计时结束经入口路由
+			// 落到 /<slug>/login?redirect=…，登录成功原路返回（F-W8b 修复②）。
+			const target = typeof window !== 'undefined' ? window.location.href : '';
+			navigate(
+				target
+					? `/error?type=session_expired&redirect=${encodeURIComponent(target)}`
+					: '/error?type=session_expired',
+			);
+		},
 	);
 
 	if (!warning) return null;
