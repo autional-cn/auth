@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import {
 	AuthService,
 	extractSlugFromPath,
@@ -19,7 +19,8 @@ import { pickSessionSlug } from '@/lib/tenant-store';
  * auth 入口路由（裸根 `/` 与 `/login`）。唯一选择器是 brand，这里只做三分支收口：
  *
  * 1. 回程目标自带租户（`?redirect=https://<门户>/<slug>/...` 且 slug 真实存在）
- *    → 直达 `/<slug>/login?redirect=…`，由登录页自己判会话（有会话 authMe 后直接回跳）；
+ *    → 直达 `/<slug>/login?<原查询串>`（整串透传，含 from_requireauth 等回程标记），
+ *    由登录页自己判会话（有会话 authMe 后直接回跳）；
  * 2. 否则有会话且能解析出会话租户 → `/<slug>/dashboard`（不经过 brand）；
  * 3. 其余（无租户上下文）→ 整页交棒 brand 选品牌。
  *
@@ -41,6 +42,7 @@ function useSessionSlug(
 
 export function EntryRouter() {
 	const navigate = useNavigate();
+	const location = useLocation();
 	const [searchParams] = useSearchParams();
 
 	const rawRedirect = searchParams.get('redirect');
@@ -98,9 +100,14 @@ export function EntryRouter() {
 		if (!ready || logoutRequested) return;
 		const slug = redirectSlug ?? sessionSlug;
 		if (slug) {
-			const qs = redirect ? `?redirect=${encodeURIComponent(redirect)}` : '';
 			traceEvent('entry-route', { to: `/${slug}/${redirect ? 'login' : 'dashboard'}` });
-			navigate(`/${slug}/${redirect ? 'login' : 'dashboard'}${qs}`, { replace: true });
+			// 整串透传（同 TenantIndexRedirect 先例）：回程参数由发起方打标
+			// （from_requireauth=1 等），登录页分支据此直接起 PKCE。
+			// 只重建 ?redirect= 会把「待授权回程」退化成裸弹跳 —— 循环根因。
+			navigate(
+				`/${slug}/${redirect ? 'login' : 'dashboard'}${redirect ? location.search : ''}`,
+				{ replace: true },
+			);
 			return;
 		}
 		const brand = getPortalUrl('brand');
@@ -108,7 +115,7 @@ export function EntryRouter() {
 		traceRedirect(redirect ? `${brand}/?redirect=${encodeURIComponent(redirect)}` : `${brand}/`, {
 			reason: 'funnel-brand',
 		});
-	}, [ready, logoutRequested, redirectSlug, sessionSlug, redirect, navigate]);
+	}, [ready, logoutRequested, redirectSlug, sessionSlug, redirect, navigate, location.search]);
 
 	if (!ready) {
 		return (

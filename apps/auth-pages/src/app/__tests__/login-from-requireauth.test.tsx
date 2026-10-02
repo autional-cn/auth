@@ -14,6 +14,9 @@ const { mockState } = vi.hoisted(() => ({
 		token: null as string | null,
 		clientId: null as string | null,
 		initiated: [] as string[],
+		targets: [] as Array<string | undefined>,
+		validRedirect: true,
+		fetches: 0,
 	},
 }));
 
@@ -38,10 +41,14 @@ vi.mock('react-router', async () => {
 vi.mock('@autional-cn/shared', () => ({
 	loginWithTokens: vi.fn(),
 	getAccessToken: () => mockState.token,
-	initiateOAuthLogin: (clientId: string) => {
+	initiateOAuthLogin: (clientId: string, target?: string) => {
 		mockState.initiated.push(clientId);
+		mockState.targets.push(target);
 	},
-	fetchOAuthClientIdBySlug: () => Promise.resolve(mockState.clientId),
+	fetchOAuthClientIdBySlug: () => {
+		mockState.fetches += 1;
+		return Promise.resolve(mockState.clientId);
+	},
 	extractSlugFromPath: (pathname: string) => pathname.split('/').filter(Boolean)[0] ?? null,
 	useAuthStore: {
 		getState: () => ({
@@ -52,7 +59,9 @@ vi.mock('@autional-cn/shared', () => ({
 		}),
 	},
 	apiClient: { get: vi.fn(() => Promise.resolve({ data: { items: [] } })) },
-	isValidRedirect: () => false,
+	// 只有 from_requireauth 分支会把回跳目标当 target 用（本文件测点）；
+	// 普通分支的弹跳不在覆盖范围 → 默认可信、按需置 false
+	isValidRedirect: () => mockState.validRedirect,
 	isSameDomainOAuth: () => false,
 	resolveEffectiveClientId: () => null,
 	processPasswordForTransmission: async (password: string, mode?: string) => ({
@@ -110,9 +119,13 @@ function renderPage() {
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	sessionStorage.clear();
 	mockState.token = 'session-token';
 	mockState.clientId = null;
 	mockState.initiated = [];
+	mockState.targets = [];
+	mockState.validRedirect = true;
+	mockState.fetches = 0;
 });
 
 describe('登录页 from_requireauth 回程分支', () => {
@@ -124,6 +137,8 @@ describe('登录页 from_requireauth 回程分支', () => {
 		await waitFor(() => {
 			expect(mockState.initiated).toEqual(['cid-acme']);
 		});
+		// F3：target 必须是回程目标本身（缺省 = 回跳登录页自身 → 自环）
+		expect(mockState.targets).toEqual([REDIRECT]);
 		expect(screen.queryByText('login.error.tenantNotConfigured')).toBeNull();
 		expect(mockNavigate).not.toHaveBeenCalled();
 	});
@@ -138,5 +153,33 @@ describe('登录页 from_requireauth 回程分支', () => {
 		});
 		expect(mockState.initiated).toEqual([]);
 		expect(mockNavigate).not.toHaveBeenCalled();
+	});
+
+	it('回跳目标非白名单（isValidRedirect=false）→ 不起握手，停住', async () => {
+		mockState.clientId = 'cid-acme';
+		mockState.validRedirect = false;
+
+		renderPage();
+
+		// 目标校验先于回源：连 fetch 都不应发生，更不得起握手
+		expect(mockState.fetches).toBe(0);
+		expect(mockState.initiated).toEqual([]);
+		expect(screen.queryByText('login.error.ssoLoopStopped')).toBeNull();
+	});
+
+	it('同目标窗口内多次回到本分支 → 达上限触发断路器停住报错', async () => {
+		mockState.clientId = 'cid-acme';
+
+		for (let i = 0; i < 3; i++) {
+			renderPage();
+			await waitFor(() => expect(mockState.initiated.length).toBe(i + 1));
+		}
+		renderPage();
+		await waitFor(() => {
+			expect(screen.getByText('login.error.ssoLoopStopped')).toBeInTheDocument();
+		});
+		// 第 4 次回程不再起握手（前 3 次已到上限）
+		expect(mockState.initiated).toEqual(['cid-acme', 'cid-acme', 'cid-acme']);
+		expect(mockState.targets).toEqual([REDIRECT, REDIRECT, REDIRECT]);
 	});
 });

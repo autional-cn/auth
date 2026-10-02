@@ -19,6 +19,7 @@ import { type TenantOption } from '@/hooks/usePublicTenants';
 import { useTenantAuthConfig } from '@/hooks/use-tenant-auth-config';
 import { useAuthPageInit } from '@/hooks/useAuthPageInit';
 import { resolveClientIdForRequireAuth } from '@/lib/from-requireauth';
+import { bumpRequireAuthLoop } from '@/lib/requireauth-loop-guard';
 import { TenantSelector } from '@/components/auth/TenantSelector';
 const DEBUG_TAG = '[captcha]';
 function debug(...args: unknown[]) {
@@ -229,15 +230,30 @@ export default function LoginPage() {
 						setAutoRedirectChecking(false);
 						return;
 					}
+					// 回跳目标必须是可信来源（EntryRouter 透传原始串，未再校验）：
+					// 不可信目标不起握手 —— 防开放重定向，也防目标不可达的重复往返
+					if (!isValidRedirect(redirect)) {
+						setAutoRedirectChecking(false);
+						return;
+					}
 					// 缓存优先、未命中实时回源 by-slug（ADR-04；实现见 lib/from-requireauth）
 					const clientId = await resolveClientIdForRequireAuth(slug);
-					if (clientId) {
-						initiateOAuthLogin(clientId);
-					} else {
+					if (!clientId) {
 						// 回源仍无（存量租户未回填）→ 停住不弹跳，并给出停机提示
 						setError(t('login.error.tenantNotConfigured'));
 						setAutoRedirectChecking(false);
+						return;
 					}
+					// 限次断路器：同一目标窗口内多次回到本分支 = 目标站点始终承接不了
+					// 会话（未配置/暂时故障），继续往返只是 JS 跳转循环 → 停住报错
+					if (bumpRequireAuthLoop(redirect)) {
+						setError(t('login.error.ssoLoopStopped'));
+						setAutoRedirectChecking(false);
+						return;
+					}
+					// 以回程目标为 state.redirect 起 PKCE：授权成功后直达目标站点，
+					// 由目标站点用自己的 client 完成会话建立（修复 target 缺省 = 回跳自身）
+					initiateOAuthLogin(clientId, redirect);
 				} catch {
 					setAutoRedirectChecking(false);
 				}

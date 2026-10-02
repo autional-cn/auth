@@ -167,6 +167,7 @@
   "login.passwordExpiredGrace": "您的密码将在 {{days}} 天后过期",
   "login.error.configLoading": "正在加载安全配置，请稍后再试",
   "login.error.tenantNotConfigured": "该组织的登录尚未完成配置，请联系管理员或稍后重试",
+  "login.error.ssoLoopStopped": "检测到登录反复跳转，已停止本次自动跳转。目标应用可能尚未完成配置或暂时不可用，请稍后重试或联系管理员",
   "login.error.credentials": "用户名或密码错误",
   "login.error.locked": "账号已被锁定，请稍后再试",
   "login.error.disabled": "账号已被禁用，请联系管理员",

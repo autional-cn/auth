@@ -13,6 +13,7 @@ const {
 	mockNavigate,
 	mockSearchParams,
 	mockParamsMap,
+	mockLocation,
 	mockReplace,
 	mockFetch,
 	mockLogout,
@@ -23,6 +24,8 @@ const {
 		mockNavigate: vi.fn(),
 		mockSearchParams: { get: vi.fn((key: string) => params[key] ?? null) },
 		mockParamsMap: params,
+		// useLocation().search 原始串（整串透传测试用；默认空 = 与旧断言等价）
+		mockLocation: { search: '' },
 		mockReplace: vi.fn(),
 		mockFetch: vi.fn(),
 		mockLogout: vi.fn(() => Promise.resolve()),
@@ -39,6 +42,7 @@ vi.mock('react-router', async () => {
 	return {
 		...actual,
 		useNavigate: () => mockNavigate,
+		useLocation: () => mockLocation,
 		useSearchParams: () => [mockSearchParams, vi.fn()],
 	};
 });
@@ -108,6 +112,7 @@ beforeEach(() => {
 	queryClient.clear();
 	mockParamsMap.redirect = null;
 	mockParamsMap.logout = null;
+	mockLocation.search = '';
 	mockSession.token = null;
 	mockSession.tenants = [];
 	mockSession.currentTenantId = null;
@@ -142,12 +147,23 @@ afterEach(() => {
 describe('EntryRouter', () => {
 	it('E1 回程带租户段（真实 slug）→ 直达 /<slug>/login 并透传 redirect', async () => {
 		mockParamsMap.redirect = 'https://admin.autional.cn/demo/';
+		mockLocation.search = '?redirect=' + encodeURIComponent('https://admin.autional.cn/demo/');
 		renderEntry();
 		await waitFor(() => {
 			expect(mockNavigate).toHaveBeenCalledWith(
 				'/demo/login?redirect=' + encodeURIComponent('https://admin.autional.cn/demo/'),
 				{ replace: true },
 			);
+		});
+	});
+
+	it('E17 回程带 from_requireauth=1 → 整串透传（含回程标记），不丢参', async () => {
+		mockParamsMap.redirect = 'https://admin.autional.cn/demo/';
+		mockLocation.search =
+			'?redirect=' + encodeURIComponent('https://admin.autional.cn/demo/') + '&from_requireauth=1';
+		renderEntry();
+		await waitFor(() => {
+			expect(mockNavigate).toHaveBeenCalledWith('/demo/login' + mockLocation.search, { replace: true });
 		});
 	});
 
@@ -259,6 +275,7 @@ describe('EntryRouter', () => {
 
 	it('E9 响应契约兼容：名单在 data 字段（非 items）时仍能识别真实 slug', async () => {
 		mockParamsMap.redirect = 'https://admin.autional.cn/demo/';
+		mockLocation.search = '?redirect=' + encodeURIComponent('https://admin.autional.cn/demo/');
 		stubTenantsFetch({ code: 0, data: [{ id: 't1', name: 'demo' }] });
 		renderEntry();
 		await waitFor(() => {
