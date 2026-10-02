@@ -50,6 +50,17 @@ const PORTAL_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
 	landing: Globe,
 };
 
+const PORTAL_LABELS: Record<string, string> = {
+	admin: 'dashboard.adminConsole',
+	security: 'dashboard.securityDashboard',
+	user: 'dashboard.userPortal',
+	authenticator: 'dashboard.authenticatorApp',
+	status: 'dashboard.statusPage',
+	trust: 'dashboard.trustCenter',
+	platform: 'dashboard.platformConsole',
+	developer: 'dashboard.developerPortal',
+};
+
 interface PortalEntry {
 	label: string;
 	url: string;
@@ -64,6 +75,11 @@ export default function DashboardPage() {
 	const accessToken = getAccessToken();
 	const role = useCurrentRole();
 	const { t } = useI18n();
+	// 门户显示名按 code 走 i18n（中文界面本地化）；未收录的 code 回落 API 原名
+	const portalLabel = (code: string, fallback: string) => {
+		const key = PORTAL_LABELS[code];
+		return key ? t(key) : fallback;
+	};
 	usePageTitle('dashboard.title');
 	const [loading, setLoading] = useState(true);
 	const [meData, setMeData] = useState<any>(null);
@@ -290,11 +306,11 @@ export default function DashboardPage() {
 				</div>
 
 				<div className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] p-6 space-y-4">
-					<div className="flex items-center justify-between">
-						<span className="text-sm text-[var(--color-text-secondary)]">
+					<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+						<span className="whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
 							{t('dashboard.userId')}
 						</span>
-						<span className="text-sm font-medium">{displayUser?.id || '-'}</span>
+						<span className="break-all text-sm font-medium max-sm:text-xs">{displayUser?.id || '-'}</span>
 					</div>
 					<div className="flex items-center justify-between">
 						<span className="text-sm text-[var(--color-text-secondary)]">
@@ -441,7 +457,7 @@ export default function DashboardPage() {
 											key={app.code}
 											className="flex items-center justify-between text-sm pl-4"
 										>
-											<span>{app.name}</span>
+											<span>{portalLabel(app.code, app.name)}</span>
 											<input
 												type="checkbox"
 												checked={prefs.visible.includes(app.code)}
@@ -468,7 +484,7 @@ export default function DashboardPage() {
 										.filter((a: any) => a.code !== 'auth' && a.code !== 'landing')
 										.map((app: any) => (
 											<option key={app.code} value={app.code}>
-												{app.name}
+												{portalLabel(app.code, app.name)}
 											</option>
 										))}
 								</select>
@@ -483,20 +499,27 @@ export default function DashboardPage() {
 						</div>
 					)}
 
-					{!isPlatformTenant &&
-						allPortals.map((p) => {
-							const PortalIcon = PORTAL_ICONS[p.code];
-							return (
-								<a key={p.url} href={p.url}>
-									<button className="w-full rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] px-4 py-3 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)] transition-colors flex items-center gap-3">
-										{PortalIcon && (
-											<PortalIcon className="h-5 w-5 text-[var(--color-text-muted)]" />
-										)}
-										{p.label}
-									</button>
-								</a>
-							);
-						})}
+					{!isPlatformTenant && allPortals.length > 0 && (
+						<div className="grid grid-cols-2 gap-3">
+							{allPortals.map((p) => {
+								const PortalIcon = PORTAL_ICONS[p.code] ?? Globe;
+								return (
+									<a
+										key={p.url}
+										href={p.url}
+										className="group flex min-h-[96px] flex-col items-center justify-center gap-2.5 rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] p-4 text-center transition-colors duration-150 hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-surface)]"
+									>
+										<span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-bg-surface)] text-[var(--color-brand)] transition-colors duration-150 group-hover:bg-[var(--color-bg-muted)]">
+											<PortalIcon className="h-6 w-6" aria-hidden="true" />
+										</span>
+										<span className="text-sm font-medium leading-tight text-[var(--color-text-primary)]">
+											{portalLabel(p.code, p.label)}
+										</span>
+									</a>
+								);
+							})}
+						</div>
+					)}
 
 					<button
 						onClick={handleLogout}
