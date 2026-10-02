@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router';
@@ -41,7 +41,7 @@ const state = vi.hoisted(() => ({
 	role: 'user' as string,
 }));
 
-// 模拟系统 Portal 列表（system-apps 接口返回，名称使用 i18n key 以便断言）
+// 模拟系统 Portal 列表（usePortalCatalog 接口返回，名称使用 i18n key 以便断言）
 const mockSystemApps = vi.hoisted(() => [
 	{
 		code: 'admin',
@@ -59,12 +59,6 @@ const mockSystemApps = vi.hoisted(() => [
 	{ code: 'developer', name: 'dashboard.developerPortal', order: 4, config: {} },
 ]);
 
-const mockFetch = vi.hoisted(() =>
-	vi.fn(() =>
-		Promise.resolve({ ok: true, json: () => Promise.resolve({ code: 0, data: mockSystemApps }) }),
-	),
-);
-
 vi.mock('react-i18next', () => ({
 	useTranslation: () => ({
 		t: (key: string, opts?: any) => (opts ? `${key} ${JSON.stringify(opts)}` : key),
@@ -73,17 +67,13 @@ vi.mock('react-i18next', () => ({
 	I18nextProvider: ({ children }: any) => children,
 }));
 
-// 直接 mock useQuery：绕过真实 React Query 管线，返回模拟的 system-apps 数据
+// 仅保留 Provider 透传：页面数据管线已全部由 @autional-cn/shared mock 提供
 vi.mock('@tanstack/react-query', () => ({
 	QueryClient: class {
 		clear = vi.fn();
 		defaultOptions = {};
 	},
 	QueryClientProvider: ({ children }: any) => children,
-	useQuery: ({ queryKey }: any) =>
-		queryKey?.[0] === 'system-portals'
-			? { data: mockSystemApps, isLoading: false }
-			: { data: undefined, isLoading: false },
 }));
 
 const mockNavigate = vi.fn();
@@ -96,27 +86,58 @@ vi.mock('react-router', async () => {
 	};
 });
 
-vi.mock('@autional-cn/shared', () => ({
-	useAuthStore: Object.assign(
-		vi.fn(() => ({ user: state.user, accessToken: state.accessToken })),
-		{ getState: vi.fn(() => ({ user: state.user, accessToken: state.accessToken })) },
-	),
-	useAuth: () => ({ user: state.user, isAuthenticated: true }),
-	apiClient: {
-		get: vi.fn().mockImplementation((...args: any[]) => (mockApiClientGet as any)(...args)),
-	},
-	getAccessToken: vi.fn(() => state.accessToken),
-	useLogout: () => mockHandleLogout,
-	useCurrentRole: () => state.role,
-	ADMIN_CONSOLE_URL: () => 'http://admin.example.com',
-	DEVELOPER_PORTAL_URL: () => 'http://dev.example.com',
-	END_USER_PORTAL_URL: () => 'http://user.example.com',
-	SECURITY_DASHBOARD_URL: () => 'http://security.example.com',
-	AUTHENTICATOR_APP_URL: () => 'http://authenticator.example.com',
-	getPortalUrl: (code: string) => `http://${code}.example.com`,
-	crossAppUrl: (url: string) => url,
-	usePublicTenantSlugs: () => mockPublicTenants(),
-}));
+vi.mock('@autional-cn/shared', () => {
+	const portalUrl = (code: string) => `http://${code}.example.com`;
+	return {
+		useAuthStore: Object.assign(
+			vi.fn(() => ({ user: state.user, accessToken: state.accessToken })),
+			{ getState: vi.fn(() => ({ user: state.user, accessToken: state.accessToken })) },
+		),
+		useAuth: () => ({ user: state.user, isAuthenticated: true }),
+		apiClient: {
+			get: vi.fn().mockImplementation((...args: any[]) => (mockApiClientGet as any)(...args)),
+		},
+		getAccessToken: vi.fn(() => state.accessToken),
+		useLogout: () => mockHandleLogout,
+		useCurrentRole: () => state.role,
+		ADMIN_CONSOLE_URL: () => 'http://admin.example.com',
+		DEVELOPER_PORTAL_URL: () => 'http://dev.example.com',
+		END_USER_PORTAL_URL: () => 'http://user.example.com',
+		SECURITY_DASHBOARD_URL: () => 'http://security.example.com',
+		AUTHENTICATOR_APP_URL: () => 'http://authenticator.example.com',
+		getPortalUrl: portalUrl,
+		crossAppUrl: (url: string) => url,
+		usePublicTenantSlugs: () => mockPublicTenants(),
+		// 镜像 shared usePortalCatalog 契约：exclude → 角色过滤（allowed_roles 缺省全员可见）→ order 升序
+		usePortalCatalog: (opts: any = {}) => {
+			const excluded = new Set(opts.exclude ?? ['auth', 'landing']);
+			const role = opts.role !== undefined ? opts.role : state.role;
+			const entry = (app: any) => ({
+				code: app.code,
+				name: app.name,
+				url: portalUrl(app.code),
+				order: app.order ?? 0,
+			});
+			const excludedApps =
+				opts.enabled === false
+					? []
+					: mockSystemApps.filter((a) => !excluded.has(a.code));
+			return {
+				allPortals: excludedApps.map(entry),
+				portals: excludedApps
+					.filter((a) => {
+						const allowed = (a.config as any)?.portal?.allowed_roles;
+						return !allowed || allowed.includes(role);
+					})
+					.map(entry)
+					.sort((a, b) => a.order - b.order),
+				isLoading: false,
+				isError: false,
+				refetch: vi.fn(),
+			};
+		},
+	};
+});
 
 vi.mock('@autional-cn/shared/generated/api', () => ({
 	authMeMemberships: (...args: any[]) => (mockAuthMeMemberships as any)(...args),
@@ -186,16 +207,7 @@ beforeEach(() => {
 	mockApiClientGet.mockResolvedValue({ data: { items: [] } });
 	// U93 缺省 fail-open（空名单 → 不拦截），单测按需覆盖
 	mockPublicTenants.mockReturnValue({ data: [], isSuccess: true });
-	mockFetch.mockResolvedValue({
-		ok: true,
-		json: () => Promise.resolve({ code: 0, data: mockSystemApps }),
-	});
-	globalThis.fetch = mockFetch as any;
 	queryClient.clear();
-});
-
-afterEach(() => {
-	vi.unstubAllGlobals();
 });
 
 describe('DashboardPage', () => {

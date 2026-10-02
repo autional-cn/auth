@@ -45,6 +45,14 @@ vi.mock('@autional-cn/shared', () => ({
 	useCurrentRole: () => 'admin',
 	// U93：dashboard 挂载即读公开租户名单做 slug↔会话校验；本套件测登出/渲染，空名单即 fail-open
 	usePublicTenantSlugs: () => ({ data: [], isSuccess: true }),
+	// 本套件不覆盖门户磁贴，空目录即可
+	usePortalCatalog: () => ({
+		portals: [],
+		allPortals: [],
+		isLoading: false,
+		isError: false,
+		refetch: vi.fn(),
+	}),
 	apiClient: {
 		get: vi.fn(() => Promise.resolve({ data: { items: [] } })),
 	},

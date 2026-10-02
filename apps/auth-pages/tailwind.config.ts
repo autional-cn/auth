@@ -6,7 +6,7 @@ const config: Config = {
   presets: [preset],
   content: [
     './src/**/*.{js,ts,jsx,tsx,mdx}',
-    '../../packages/ui/src/**/*.{js,ts,jsx,tsx}',
+    './node_modules/@autional-cn/ui/src/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {},

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Link } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
 import { useAuth, extractItem, extractList } from '@autional-cn/shared';
 import { sessionsUserSessionsByUser, authMeMemberships } from '@autional-cn/shared/generated/api';
 import { getMe } from '@/lib/api';
@@ -12,9 +11,7 @@ import {
 	getAccessToken,
 	useLogout,
 	crossAppUrl,
-	getPortalUrl,
-	useCurrentRole,
-	getRootDomain,
+	usePortalCatalog,
 	getCurrentTenantId,
 	usePublicTenantSlugs,
 	API_BASE_URL,
@@ -61,19 +58,11 @@ const PORTAL_LABELS: Record<string, string> = {
 	developer: 'dashboard.developerPortal',
 };
 
-interface PortalEntry {
-	label: string;
-	url: string;
-	code: string;
-	icon?: string;
-}
-
 export default function DashboardPage() {
 	const navigate = useNavigate();
 	const { tenantSlug } = useParams<{ tenantSlug?: string }>();
 	const { user } = useAuth();
 	const accessToken = getAccessToken();
-	const role = useCurrentRole();
 	const { t } = useI18n();
 	// 门户显示名按 code 走 i18n（中文界面本地化）；未收录的 code 回落 API 原名
 	const portalLabel = (code: string, fallback: string) => {
@@ -154,29 +143,17 @@ export default function DashboardPage() {
 		}
 	}, []);
 
-	// 获取系统 Portal 列表（使用 @tanstack/react-query）
+	// 获取系统 Portal 列表（shared usePortalCatalog：self 端点 + 容错口径内置）
 	const sessionTenantId = meData?.tenant_id || user?.tenant_id || getCurrentTenantId();
 	// U94：平台租户操作员的日常入口是 platform.autional.cn（platform 平面数据面）；auth 站
 	// 磁贴数据面走 user 受众端点，网关只接受 api 平面 token（§3.3 平面对照），platform
 	// 平面会话命中平面守卫 403 ⇒ 平台租户隐藏磁贴区。ULID 为平台租户 well-known 常量
 	// （service-core base/constant TenantPlatformID，全环境同值；admin 控制台同款先例）。
 	const isPlatformTenant = sessionTenantId === '01KSQCBNVMS6SX64PJS937CE33';
-	const qToken = getAccessToken();
-	const { data: systemApps = [], isLoading: appsLoading } = useQuery({
-		queryKey: ['system-portals', sessionTenantId],
-		queryFn: async () => {
-			const res = await fetch(
-				`${API_BASE_URL}/tenant/api/v1/tenants/${sessionTenantId}/applications?type=portal&is_platform=true&status=active`,
-				{ headers: { Authorization: `Bearer ${qToken}` } },
-			).then((r) => r.json());
-			if (res.code !== 0) return [];
-			// tenant-service 分页响应为 { items: [...] }，非 { data: [...] }
-			if (Array.isArray(res.data)) return res.data;
-			if (Array.isArray(res.items)) return res.items;
-			return [];
-		},
-		enabled: !isPlatformTenant && !!sessionTenantId && !!qToken,
-		staleTime: 60000,
+	const { portals: catalogPortals, allPortals: catalogAllPortals } = usePortalCatalog({
+		tenantId: sessionTenantId,
+		slug: tenantSlug,
+		enabled: !isPlatformTenant,
 	});
 
 	useEffect(() => {
@@ -231,35 +208,12 @@ export default function DashboardPage() {
 	// 确保这些计算在早返回之前执行，保证 Hook 调用顺序一致
 	const displayUser = meData || user;
 
-	// 动态 Portal 列表（替换原有的硬编码入口）
-	const allPortals: PortalEntry[] = useMemo(() => {
-		if (!systemApps || systemApps.length === 0) return [];
-
-		let visible = systemApps.filter((app: any) => {
-			// 排除不需要在 Dashboard 展示的 Portal
-			if (app.code === 'auth' || app.code === 'landing') return false;
-			// 角色过滤
-			const allowedRoles = app.config?.portal?.allowed_roles;
-			return !allowedRoles || allowedRoles.includes(role);
-		});
-
+	// 动态 Portal 列表（usePortalCatalog 已内置排除 auth/landing、order 排序与 URL 拼装）
+	const allPortals = useMemo(() => {
 		// 用户可见性偏好过滤
-		if (!prefs.show_all && prefs.visible?.length > 0) {
-			visible = visible.filter((a: any) => prefs.visible.includes(a.code));
-		}
-
-		// 按 order 字段排序
-		visible.sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
-
-		return visible.map((app: any) => ({
-			label: app.name,
-			// 第二参是 slug（不是 tenant_id/ULID）；是否拼租户段由 shared config 的
-			// SLUG_PORTALS 白名单决定 —— 根门户（platform/status/trust/developer）自动回落根 URL
-			url: getPortalUrl(app.code, tenantSlug || undefined),
-			code: app.code,
-			icon: app.icon_url,
-		}));
-	}, [systemApps, meData, user, accessToken, prefs, role, tenantSlug]);
+		if (prefs.show_all || !prefs.visible?.length) return catalogPortals;
+		return catalogPortals.filter((p) => prefs.visible.includes(p.code));
+	}, [catalogPortals, prefs]);
 
 	// U93：URL 段 slug 必须与会话租户一致 —— 多标签/残留会话下 URL 可能指向另一租户，
 	// 本页磁贴按 URL slug 拼链、数据却按会话租户取，混用会导出错租户的入口。
@@ -450,27 +404,25 @@ export default function DashboardPage() {
 							</label>
 
 							{!prefs.show_all &&
-								systemApps
-									.filter((a: any) => a.code !== 'auth' && a.code !== 'landing')
-									.map((app: any) => (
-										<label
-											key={app.code}
-											className="flex items-center justify-between text-sm pl-4"
-										>
-											<span>{portalLabel(app.code, app.name)}</span>
-											<input
-												type="checkbox"
-												checked={prefs.visible.includes(app.code)}
-												onChange={(e) => {
-													const next = e.target.checked
-														? [...prefs.visible, app.code]
-														: prefs.visible.filter((c: string) => c !== app.code);
-													setPrefs({ ...prefs, visible: next });
-												}}
-												className="h-4 w-4"
-											/>
-										</label>
-									))}
+								catalogAllPortals.map((app) => (
+									<label
+										key={app.code}
+										className="flex items-center justify-between text-sm pl-4"
+									>
+										<span>{portalLabel(app.code, app.name)}</span>
+										<input
+											type="checkbox"
+											checked={prefs.visible.includes(app.code)}
+											onChange={(e) => {
+												const next = e.target.checked
+													? [...prefs.visible, app.code]
+													: prefs.visible.filter((c: string) => c !== app.code);
+												setPrefs({ ...prefs, visible: next });
+											}}
+											className="h-4 w-4"
+										/>
+									</label>
+								))}
 
 							<div className="flex items-center justify-between text-sm pt-2 border-t border-[var(--color-border-subtle)]">
 								<span>{t('dashboard.defaultPortal', '默认跳转')}</span>
@@ -480,13 +432,11 @@ export default function DashboardPage() {
 									className="text-xs border border-[var(--color-border-subtle)] rounded px-2 py-1"
 								>
 									<option value="">{t('dashboard.roleDefault', '角色决定')}</option>
-									{systemApps
-										.filter((a: any) => a.code !== 'auth' && a.code !== 'landing')
-										.map((app: any) => (
-											<option key={app.code} value={app.code}>
-												{portalLabel(app.code, app.name)}
-											</option>
-										))}
+									{catalogAllPortals.map((app) => (
+										<option key={app.code} value={app.code}>
+											{portalLabel(app.code, app.name)}
+										</option>
+									))}
 								</select>
 							</div>
 
@@ -513,7 +463,7 @@ export default function DashboardPage() {
 											<PortalIcon className="h-6 w-6" aria-hidden="true" />
 										</span>
 										<span className="text-sm font-medium leading-tight text-[var(--color-text-primary)]">
-											{portalLabel(p.code, p.label)}
+											{portalLabel(p.code, p.name)}
 										</span>
 									</a>
 								);
