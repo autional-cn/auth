@@ -14,10 +14,10 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@autional-cn/shared": "0.1.0-rc.14",
-    "@autional-cn/tailwind-preset": "0.1.0-rc",
+    "@autional-cn/shared": "0.1.0-rc.15",
+    "@autional-cn/tailwind-preset": "0.1.0-rc.1",
     "@autional-cn/tokens": "0.1.0-rc.3",
-    "@autional-cn/ui": "0.1.0-rc.6",
+    "@autional-cn/ui": "0.1.0-rc.7",
     "@hookform/resolvers": "3.10.0",
     "@tanstack/react-query": "5.100.9",
     "@zxcvbn-ts/core": "3.0.4",
