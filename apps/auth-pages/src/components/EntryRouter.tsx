@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import {
 	AuthService,
@@ -25,8 +25,9 @@ import { pickSessionSlug } from '@/lib/tenant-store';
  * 3. 其余（无租户上下文）→ 整页交棒 brand 选品牌。
  *
  * 0（优先于三分支）：`logout=1` 登出回程（useLogout/buildLogoutUrl 打标）→ 先经唯一
- * 登出实现终结 auth 域会话，再按「无会话」落 brand。若放行三分支，残余会话会被
- * 登录页接管并静默重登（F-W5c）。
+ * 登出实现终结 auth 域会话；随后回程能解析出真实租户 → 落 `/<slug>/login?redirect=…`
+ * （剥除 logout/rt 标记，登录页展示表单）；否则落 brand。若放行三分支，残余会话
+ * 会被登录页接管并静默重登（F-W5c）。
  */
 
 function useSessionSlug(
@@ -81,20 +82,37 @@ export function EntryRouter() {
 	const ready = slugsLoaded || (!hasToken && !candidate);
 	const redirectSlug = candidate && knownSlugs.includes(candidate) ? candidate : undefined;
 
-	// 登出回程不依赖名单/三分支：立即终结会话后落 brand（声明先于下方导航 effect）
+	// 登出回程：先终结会话（唯一登出实现），落点后定（声明先于下方导航 effect）。
+	// 落点等待有界：无 redirect/无候选 slug 时无需名单即刻可定；反之等名单到
+	//（hook 任何失败都置 isSuccess ⇒ 必达，不会卡加载态）。
+	const [logoutSettled, setLogoutSettled] = useState(false);
 	const logoutFinalizedRef = useRef(false);
 	useEffect(() => {
 		if (!logoutRequested || logoutFinalizedRef.current) return;
 		logoutFinalizedRef.current = true;
-		void (async () => {
-			await AuthService.logout();
-			const brand = getPortalUrl('brand');
-			if (!brand) return; // 未配置 brand 门户时保持当前页，避免死循环
-			traceRedirect(redirect ? `${brand}/?redirect=${encodeURIComponent(redirect)}` : `${brand}/`, {
-				reason: 'funnel-logout',
-			});
-		})();
-	}, [logoutRequested, redirect]);
+		void AuthService.logout().finally(() => setLogoutSettled(true));
+	}, [logoutRequested]);
+
+	const logoutReady = logoutSettled && (!redirect || !candidate || slugsLoaded);
+
+	useEffect(() => {
+		if (!logoutRequested || !logoutReady) return;
+		if (redirectSlug && redirect) {
+			// 剥除回程标记再进登录页：logout 重放会再次登出，rt 是上一跳的面包屑
+			const params = new URLSearchParams(location.search);
+			params.delete('logout');
+			params.delete('rt');
+			const qs = params.toString();
+			traceEvent('entry-route', { to: `/${redirectSlug}/login` });
+			navigate(`/${redirectSlug}/login${qs ? `?${qs}` : ''}`, { replace: true });
+			return;
+		}
+		const brand = getPortalUrl('brand');
+		if (!brand) return; // 未配置 brand 门户时保持当前页，避免死循环
+		traceRedirect(redirect ? `${brand}/?redirect=${encodeURIComponent(redirect)}` : `${brand}/`, {
+			reason: 'funnel-logout',
+		});
+	}, [logoutRequested, logoutReady, redirectSlug, redirect, navigate, location.search]);
 
 	useEffect(() => {
 		if (!ready || logoutRequested) return;
