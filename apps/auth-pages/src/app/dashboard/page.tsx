@@ -334,7 +334,7 @@ export default function DashboardPage() {
 							</div>
 						))}
 						<a
-							href={crossAppUrl(END_USER_PORTAL_URL(), '/session/api/v1/sessions')}
+							href={crossAppUrl(END_USER_PORTAL_URL(), '/sessions')}
 							className="text-xs text-[var(--color-brand)] transition-all duration-200 hover:underline decoration-2 underline-offset-4 block mt-2"
 						>
 							{t('dashboard.viewAllSessions')}

@@ -34,13 +34,13 @@ const links = [
 		icon: ShieldCheck,
 	},
 	{
-		href: `${userPortalOrigin}/session/api/v1/sessions`,
+		href: `${userPortalOrigin}/sessions`,
 		labelKey: 'account.sessions',
 		descKey: 'account.sessionsDesc',
 		icon: Monitor,
 	},
 	{
-		href: `${userPortalOrigin}/notification/api/v1/notifications/preferences`,
+		href: `${userPortalOrigin}/notifications/preferences`,
 		labelKey: 'account.notifPrefs',
 		descKey: 'account.notifPrefsDesc',
 		icon: Bell,
