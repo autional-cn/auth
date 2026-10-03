@@ -2,6 +2,11 @@
 import { useEffect, useRef } from 'react';
 import { useAccessToken, AuthService, buildLoginUrl } from '@autional-cn/shared';
 
+/**
+ * onWarning：预警点（到期前 5 分钟）**静默续期失败**时回调——会话此刻仍有效，
+ *   让消费方提示用户处理；续期成功则全程无感（token 更新自动重调度，不再触发预警）。
+ * onExpired：到点续期仍失败时回调（消费方负责唯一导航出口）。
+ */
 export function useSessionTimeout(
 	onWarning?: (minutesLeft: number) => void,
 	onExpired?: () => void,
@@ -49,10 +54,12 @@ export function useSessionTimeout(
 			const WARNING_BEFORE = 5 * 60 * 1000;
 			if (timeLeft > WARNING_BEFORE) {
 				warningRef.current = setTimeout(() => {
-					onWarning?.(5);
-					// 提前续期尝试：失败零副作用静默（会话此刻仍有效，不清理不打断；
-					// 真正过期由下方 timer 的 handleExpired 统一处置）
-					AuthService.refreshToken({ onFailure: 'none' });
+					// 到预警点先静默续期（零副作用，会话此刻仍有效）：
+					// 成功零打扰——token 更新触发本 effect 重调度到新到期时间；
+					// 失败才回调 onWarning（提示用户处理），真正过期由下方 handleExpired 统一处置
+					AuthService.refreshToken({ onFailure: 'none' }).then((newToken) => {
+						if (!newToken) onWarning?.(5);
+					});
 				}, timeLeft - WARNING_BEFORE);
 			}
 
