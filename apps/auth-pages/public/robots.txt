@@ -1,0 +1,4 @@
+# auth.autional.cn — 身份认证页（登录/注册/OAuth）：不收录。
+# 不用 Disallow：保持可抓取，搜索引擎才能读到 index.html 里的 robots noindex。
+User-agent: *
+Allow: /
