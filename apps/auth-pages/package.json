@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@autional-cn/shared": "0.1.0-rc.15",
-    "@autional-cn/tailwind-preset": "0.1.0-rc.1",
+    "@autional-cn/tailwind-preset": "0.1.0-rc.2",
     "@autional-cn/tokens": "0.1.0-rc.3",
     "@autional-cn/ui": "0.1.0-rc.7",
     "@hookform/resolvers": "3.10.0",

@@ -49,8 +49,8 @@ importers:
         specifier: 0.1.0-rc.15
         version: 0.1.0-rc.15(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(use-sync-external-store@1.7.0(react@19.2.5))
       '@autional-cn/tailwind-preset':
-        specifier: 0.1.0-rc.1
-        version: 0.1.0-rc.1(tailwindcss@3.4.19)
+        specifier: 0.1.0-rc.2
+        version: 0.1.0-rc.2(tailwindcss@3.4.19)
       '@autional-cn/tokens':
         specifier: 0.1.0-rc.3
         version: 0.1.0-rc.3
@@ -199,8 +199,8 @@ packages:
       react: 19.2.5
       react-dom: 19.2.5
 
-  '@autional-cn/tailwind-preset@0.1.0-rc.1':
-    resolution: {integrity: sha512-/YrpttvCy6R9L97QYhiNpnmlEmCqueEt6wjc0O/0q+T5A9fS8/d7R1QZW6O2J+O/a+b50u9cFHLEv/RlH80LTg==}
+  '@autional-cn/tailwind-preset@0.1.0-rc.2':
+    resolution: {integrity: sha512-tXxZXmFycbQuklCJa+wVDD6zFOXUaRV07QHHjAnFyYHjG6kSTVdx/dweG1pxVQfemBwwga7LQARMdNzKuMFyCg==}
     peerDependencies:
       tailwindcss: '>=3.0.0'
 
@@ -2352,7 +2352,7 @@ snapshots:
       - immer
       - use-sync-external-store
 
-  '@autional-cn/tailwind-preset@0.1.0-rc.1(tailwindcss@3.4.19)':
+  '@autional-cn/tailwind-preset@0.1.0-rc.2(tailwindcss@3.4.19)':
     dependencies:
       '@autional-cn/tokens': 0.1.0-rc.3
       tailwindcss: 3.4.19
