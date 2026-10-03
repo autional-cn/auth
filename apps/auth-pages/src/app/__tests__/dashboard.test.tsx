@@ -391,30 +391,27 @@ describe('DashboardPage slug↔会话一致性（U93）', () => {
 });
 
 // ============================================================
-// U94：平台租户在 auth 站 dashboard 的磁贴不可用 —— 磁贴数据面（user 受众端点，
-// api 平面）对 platform 平面会话命中网关平面守卫 403（平台租户操作员日常入口 =
-// platform.autional.cn）。裁定 = 平台租户隐藏磁贴区（配置按钮/偏好面板/磁贴网格），
-// 登出保留。判定 = 会话租户 ULID == 平台租户 well-known 常量。
-// page 侧常量单源 = @autional-cn/shared PLATFORM_TENANT_ID（mock 经 state.platformTenantId 供值）。
+// 平台租户磁贴回归（原 U94 特判已移除）：2026-10-03 线上实测 self 端点对 platform
+// 会话 200 可用（旧"平面守卫 403"前提不复现）→ 平台租户与其他租户同口径渲染磁贴；
+// 可见性仍按角色镜像入口门禁（mock 测试由 state.role 驱动 admin/security 门槛）。
 // ============================================================
 
-describe('DashboardPage 平台租户磁贴隐藏（U94）', () => {
-	it('U94-1 平台租户会话 → 磁贴区（配置按钮/磁贴）隐藏，登出保留', async () => {
+describe('DashboardPage 平台租户磁贴（U94 特判已移除）', () => {
+	it('T1 平台租户会话 → 磁贴与配置按钮照常渲染（不再整体隐藏）', async () => {
 		state.user = { ...state.user, tenant_id: state.platformTenantId };
 		mockGetMe.mockResolvedValue(state.user);
 
 		renderPage();
 
 		await waitFor(() => {
-			expect(screen.getByText('dashboard.logout')).toBeInTheDocument();
+			expect(screen.getByText('dashboard.userPortal')).toBeInTheDocument();
 		});
-
-		expect(screen.queryByText(/dashboard\.showPrefs/)).not.toBeInTheDocument();
-		expect(screen.queryByText('dashboard.userPortal')).not.toBeInTheDocument();
-		expect(screen.queryByText('dashboard.developerPortal')).not.toBeInTheDocument();
+		expect(screen.getByText('dashboard.developerPortal')).toBeInTheDocument();
+		expect(screen.getByText(/dashboard\.showPrefs/)).toBeInTheDocument();
+		expect(screen.getByText('dashboard.logout')).toBeInTheDocument();
 	});
 
-	it('U94-2 非平台租户不受影响（回归）→ 磁贴与配置按钮照常渲染', async () => {
+	it('T2 非平台租户不受影响（回归）→ 磁贴与配置按钮照常渲染', async () => {
 		state.user = { ...state.user, tenant_id: 'tenant-1' };
 		mockGetMe.mockResolvedValue(state.user);
 

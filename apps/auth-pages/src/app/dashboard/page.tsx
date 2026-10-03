@@ -16,7 +16,6 @@ import {
 	usePublicTenantSlugs,
 	API_BASE_URL,
 	END_USER_PORTAL_URL,
-	PLATFORM_TENANT_ID,
 } from '@autional-cn/shared';
 import {
 	Shield,
@@ -146,15 +145,12 @@ export default function DashboardPage() {
 
 	// 获取系统 Portal 列表（shared usePortalCatalog：self 端点 + 容错口径内置）
 	const sessionTenantId = meData?.tenant_id || user?.tenant_id || getCurrentTenantId();
-	// U94：平台租户操作员的日常入口是 platform.autional.cn（platform 平面数据面）；auth 站
-	// 磁贴数据面走 user 受众端点，网关只接受 api 平面 token（§3.3 平面对照），platform
-	// 平面会话命中平面守卫 403 ⇒ 平台租户隐藏磁贴区。ULID 常量单源 = @autional-cn/shared
-	// PLATFORM_TENANT_ID（service-core base/constant TenantPlatformID，全环境同值）。
-	const isPlatformTenant = sessionTenantId === PLATFORM_TENANT_ID;
+	// 平台租户不再特判隐藏（U94 移除）：2026-10-03 线上实测 self 端点对 platform 会话
+	// 200 可用，当时"platform 平面会话 403"的前提已不复现；拉取失败/空列表时磁贴区
+	// （allPortals.length > 0 条件）自然不渲染，无需按租户特判。
 	const { portals: catalogPortals, allPortals: catalogAllPortals } = usePortalCatalog({
 		tenantId: sessionTenantId,
 		slug: tenantSlug,
-		enabled: !isPlatformTenant,
 	});
 
 	useEffect(() => {
@@ -379,20 +375,17 @@ export default function DashboardPage() {
 				)}
 
 				<div className="space-y-4">
-					{/* U94：平台租户隐藏磁贴区（配置按钮/偏好面板/磁贴网格），登出保留 */}
-					{!isPlatformTenant && (
-						<button
-							onClick={() => setShowPrefs(!showPrefs)}
-							className="w-full rounded-md border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] px-4 py-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] transition-colors"
-						>
-							{showPrefs
-								? t('dashboard.hidePrefs', '收起配置')
-								: t('dashboard.showPrefs', '配置 Portal 显示')}
-						</button>
-					)}
+					<button
+						onClick={() => setShowPrefs(!showPrefs)}
+						className="w-full rounded-md border border-dashed border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] px-4 py-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] transition-colors"
+					>
+						{showPrefs
+							? t('dashboard.hidePrefs', '收起配置')
+							: t('dashboard.showPrefs', '配置 Portal 显示')}
+					</button>
 
 					{/* Portal 偏好面板 */}
-					{!isPlatformTenant && showPrefs && (
+					{showPrefs && (
 						<div className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] p-4 space-y-3">
 							<label className="flex items-center justify-between text-sm">
 								<span>{t('dashboard.showAllPortals', '显示全部 Portal')}</span>
@@ -450,7 +443,7 @@ export default function DashboardPage() {
 						</div>
 					)}
 
-					{!isPlatformTenant && allPortals.length > 0 && (
+					{allPortals.length > 0 && (
 						<div className="grid grid-cols-2 gap-3">
 							{allPortals.map((p) => {
 								const PortalIcon = PORTAL_ICONS[p.code] ?? Globe;
