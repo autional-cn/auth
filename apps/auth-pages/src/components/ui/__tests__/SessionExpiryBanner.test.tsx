@@ -56,10 +56,10 @@ afterEach(() => {
 	vi.useRealTimers();
 });
 
-/** 推进到预警点（到期前 5 分钟）并冲刷回调链的微任务 */
+/** 推进到预警点（到期前 60 秒；10 分钟 token → 第 9 分钟处）并冲刷回调链的微任务 */
 async function advanceToWarning() {
 	await act(async () => {
-		vi.advanceTimersByTime(5 * 60 * 1000);
+		vi.advanceTimersByTime(9 * 60 * 1000);
 	});
 }
 
@@ -170,5 +170,24 @@ describe('SessionExpiryBanner', () => {
 		});
 
 		expect(mockNavigate).not.toHaveBeenCalled();
+	});
+
+	// 回归锁（2026-10-03 线上缺陷：预警点 5 分钟 == AT 寿命 5 分钟 ⇒ 续期后毫秒级时钟差
+	// 立即再触发一次静默刷新，每次续期双倍刷新/双倍 RT 轮换）：预警点必须严格早于
+	// 「寿命 - 预警差」，此处锁 10 分钟 token 在 8 分钟处不动、9 分钟处（到期前 60 秒）才续期
+	it('B9 预警点 = 到期前 60 秒：8 分钟处不续期，第 9 分钟才触发静默续期', async () => {
+		session.token = makeToken(10 * 60 * 1000);
+		mockRefresh.mockResolvedValue('new-token');
+		render(<SessionExpiryBanner />);
+
+		await act(async () => {
+			vi.advanceTimersByTime(8 * 60 * 1000);
+		});
+		expect(mockRefresh).not.toHaveBeenCalled();
+
+		await act(async () => {
+			vi.advanceTimersByTime(60 * 1000);
+		});
+		expect(mockRefresh).toHaveBeenCalledWith({ onFailure: 'none' });
 	});
 });

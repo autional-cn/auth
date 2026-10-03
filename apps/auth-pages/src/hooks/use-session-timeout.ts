@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { useAccessToken, AuthService, buildLoginUrl } from '@autional-cn/shared';
 
 /**
- * onWarning：预警点（到期前 5 分钟）**静默续期失败**时回调——会话此刻仍有效，
+ * onWarning：预警点（到期前 60 秒）**静默续期失败**时回调——会话此刻仍有效，
  *   让消费方提示用户处理；续期成功则全程无感（token 更新自动重调度，不再触发预警）。
  * onExpired：到点续期仍失败时回调（消费方负责唯一导航出口）。
  */
@@ -51,14 +51,17 @@ export function useSessionTimeout(
 				return;
 			}
 
-			const WARNING_BEFORE = 5 * 60 * 1000;
+			// 预警点必须显著小于 AT 寿命（线上 5 分钟）：旧值同为 5 分钟时，
+			// 续期后的新 token 剩余寿命≈预警点，毫秒级时钟差使预警定时器立即再次触发——
+			// 每次续期双倍刷新 + RT 双倍轮换（2026-10-03 线上实证）；60 秒 = 到期前静默续期 + 留 60 秒预警带
+			const WARNING_BEFORE = 60 * 1000;
 			if (timeLeft > WARNING_BEFORE) {
 				warningRef.current = setTimeout(() => {
 					// 到预警点先静默续期（零副作用，会话此刻仍有效）：
 					// 成功零打扰——token 更新触发本 effect 重调度到新到期时间；
 					// 失败才回调 onWarning（提示用户处理），真正过期由下方 handleExpired 统一处置
 					AuthService.refreshToken({ onFailure: 'none' }).then((newToken) => {
-						if (!newToken) onWarning?.(5);
+						if (!newToken) onWarning?.(1);
 					});
 				}, timeLeft - WARNING_BEFORE);
 			}
