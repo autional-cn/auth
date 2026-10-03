@@ -126,7 +126,7 @@ function AppContent() {
 export default function App() {
 	return (
 		<I18nProvider>
-			<ThemeProvider storageKey="authms-auth-pages-theme">
+			<ThemeProvider storageKey="autional-auth-pages-theme">
 				<AppContent />
 				<AuthBrandingInitializer />
 				<AppHeader />

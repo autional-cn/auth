@@ -16,6 +16,7 @@ import {
 	usePublicTenantSlugs,
 	API_BASE_URL,
 	END_USER_PORTAL_URL,
+	PLATFORM_TENANT_ID,
 } from '@autional-cn/shared';
 import {
 	Shield,
@@ -147,9 +148,9 @@ export default function DashboardPage() {
 	const sessionTenantId = meData?.tenant_id || user?.tenant_id || getCurrentTenantId();
 	// U94：平台租户操作员的日常入口是 platform.autional.cn（platform 平面数据面）；auth 站
 	// 磁贴数据面走 user 受众端点，网关只接受 api 平面 token（§3.3 平面对照），platform
-	// 平面会话命中平面守卫 403 ⇒ 平台租户隐藏磁贴区。ULID 为平台租户 well-known 常量
-	// （service-core base/constant TenantPlatformID，全环境同值；admin 控制台同款先例）。
-	const isPlatformTenant = sessionTenantId === '01KSQCBNVMS6SX64PJS937CE33';
+	// 平面会话命中平面守卫 403 ⇒ 平台租户隐藏磁贴区。ULID 常量单源 = @autional-cn/shared
+	// PLATFORM_TENANT_ID（service-core base/constant TenantPlatformID，全环境同值）。
+	const isPlatformTenant = sessionTenantId === PLATFORM_TENANT_ID;
 	const { portals: catalogPortals, allPortals: catalogAllPortals } = usePortalCatalog({
 		tenantId: sessionTenantId,
 		slug: tenantSlug,

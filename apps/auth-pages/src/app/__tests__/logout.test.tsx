@@ -43,6 +43,7 @@ vi.mock('@autional-cn/shared', () => ({
 	usePermission: () => ({ allowed: true }),
 	useLogout: () => mockLogout,
 	useCurrentRole: () => 'admin',
+	PLATFORM_TENANT_ID: '01KSQCBNVMS6SX64PJS937CE33',
 	// U93：dashboard 挂载即读公开租户名单做 slug↔会话校验；本套件测登出/渲染，空名单即 fail-open
 	usePublicTenantSlugs: () => ({ data: [], isSuccess: true }),
 	// 本套件不覆盖门户磁贴，空目录即可

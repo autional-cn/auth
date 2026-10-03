@@ -39,6 +39,7 @@ const state = vi.hoisted(() => ({
 	} as Record<string, any>,
 	accessToken: 'fake-token',
 	role: 'user' as string,
+	platformTenantId: '01KSQCBNVMS6SX64PJS937CE33',
 }));
 
 // 模拟系统 Portal 列表（usePortalCatalog 接口返回，名称使用 i18n key 以便断言）
@@ -57,6 +58,8 @@ const mockSystemApps = vi.hoisted(() => [
 	},
 	{ code: 'user', name: 'dashboard.userPortal', order: 3, config: {} },
 	{ code: 'developer', name: 'dashboard.developerPortal', order: 4, config: {} },
+	// App 形态门户：默认排除（DEFAULT_EXCLUDE），断言其永不进入桌面门户清单
+	{ code: 'authenticator', name: 'dashboard.authenticatorApp', order: 5, config: {} },
 ]);
 
 vi.mock('react-i18next', () => ({
@@ -100,6 +103,7 @@ vi.mock('@autional-cn/shared', () => {
 		getAccessToken: vi.fn(() => state.accessToken),
 		useLogout: () => mockHandleLogout,
 		useCurrentRole: () => state.role,
+		PLATFORM_TENANT_ID: state.platformTenantId,
 		ADMIN_CONSOLE_URL: () => 'http://admin.example.com',
 		DEVELOPER_PORTAL_URL: () => 'http://dev.example.com',
 		END_USER_PORTAL_URL: () => 'http://user.example.com',
@@ -108,29 +112,34 @@ vi.mock('@autional-cn/shared', () => {
 		getPortalUrl: portalUrl,
 		crossAppUrl: (url: string) => url,
 		usePublicTenantSlugs: () => mockPublicTenants(),
-		// 镜像 shared usePortalCatalog 契约：exclude → 角色过滤（allowed_roles 缺省全员可见）→ order 升序
+		// 镜像 shared usePortalCatalog 新契约：默认排除 auth/landing/authenticator →
+		// 可见性矩阵（admin/security 仅管理面角色；platform 成员判定不在本 mock 范围）→
+		// allowed_roles 叠加 → portals order 升序、allPortals 同一可见集（服务端顺序）
 		usePortalCatalog: (opts: any = {}) => {
-			const excluded = new Set(opts.exclude ?? ['auth', 'landing']);
+			const ADMIN_PLANE_ROLES = ['super_admin', 'admin', 'security_admin', 'user_manager'];
+			const excluded = new Set(opts.exclude ?? ['auth', 'landing', 'authenticator']);
 			const role = opts.role !== undefined ? opts.role : state.role;
+			const visible = (app: any) => {
+				if (excluded.has(app.code)) return false;
+				if (
+					(app.code === 'admin' || app.code === 'security') &&
+					(role === null || !ADMIN_PLANE_ROLES.includes(role))
+				) {
+					return false;
+				}
+				const allowedRoles = (app.config as any)?.portal?.allowed_roles;
+				return !allowedRoles || allowedRoles.includes(role ?? '');
+			};
 			const entry = (app: any) => ({
 				code: app.code,
 				name: app.name,
 				url: portalUrl(app.code),
 				order: app.order ?? 0,
 			});
-			const excludedApps =
-				opts.enabled === false
-					? []
-					: mockSystemApps.filter((a) => !excluded.has(a.code));
+			const visibleApps = opts.enabled === false ? [] : mockSystemApps.filter(visible);
 			return {
-				allPortals: excludedApps.map(entry),
-				portals: excludedApps
-					.filter((a) => {
-						const allowed = (a.config as any)?.portal?.allowed_roles;
-						return !allowed || allowed.includes(role);
-					})
-					.map(entry)
-					.sort((a, b) => a.order - b.order),
+				allPortals: visibleApps.map(entry),
+				portals: visibleApps.map(entry).sort((a, b) => a.order - b.order),
 				isLoading: false,
 				isError: false,
 				refetch: vi.fn(),
@@ -249,6 +258,8 @@ describe('DashboardPage', () => {
 		expect(screen.queryByText('dashboard.securityDashboard')).not.toBeInTheDocument();
 		expect(screen.getByText('dashboard.userPortal')).toBeInTheDocument();
 		expect(screen.getByText('dashboard.developerPortal')).toBeInTheDocument();
+		// authenticator 为 App 形态，默认排除出桌面门户清单
+		expect(screen.queryByText('dashboard.authenticatorApp')).not.toBeInTheDocument();
 	});
 
 	it('显示安全概览卡片', async () => {
@@ -384,13 +395,12 @@ describe('DashboardPage slug↔会话一致性（U93）', () => {
 // api 平面）对 platform 平面会话命中网关平面守卫 403（平台租户操作员日常入口 =
 // platform.autional.cn）。裁定 = 平台租户隐藏磁贴区（配置按钮/偏好面板/磁贴网格），
 // 登出保留。判定 = 会话租户 ULID == 平台租户 well-known 常量。
+// page 侧常量单源 = @autional-cn/shared PLATFORM_TENANT_ID（mock 经 state.platformTenantId 供值）。
 // ============================================================
-
-const PLATFORM_TENANT_ULID = '01KSQCBNVMS6SX64PJS937CE33';
 
 describe('DashboardPage 平台租户磁贴隐藏（U94）', () => {
 	it('U94-1 平台租户会话 → 磁贴区（配置按钮/磁贴）隐藏，登出保留', async () => {
-		state.user = { ...state.user, tenant_id: PLATFORM_TENANT_ULID };
+		state.user = { ...state.user, tenant_id: state.platformTenantId };
 		mockGetMe.mockResolvedValue(state.user);
 
 		renderPage();

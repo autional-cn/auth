@@ -13,7 +13,7 @@ export function useAnalyticsLoader() {
 				const state = (parsed as any).state || parsed;
 				if (!state?.consented || !state?.preferences?.analytics) return;
 
-				const scriptId = 'authms-analytics';
+				const scriptId = 'autional-analytics';
 				if (document.getElementById(scriptId)) return;
 
 				const url = import.meta.env.VITE_ANALYTICS_URL as string | undefined;
