@@ -7,9 +7,9 @@ import { apiClient } from '@autional-cn/shared';
 import { PublicAuthConfigByAuthConfig } from '@autional-cn/shared/generated/api';
 import { useI18n } from '@/lib/i18n';
 import { ChevronDown } from 'lucide-react';
-import type { TenantOption } from '@/hooks/usePublicTenants';
+import type { TenantOption } from '@/hooks/use-public-tenants';
 
-export type { TenantOption } from '@/hooks/usePublicTenants';
+export type { TenantOption } from '@/hooks/use-public-tenants';
 
 export interface TenantSelectorProps {
 	value: string;

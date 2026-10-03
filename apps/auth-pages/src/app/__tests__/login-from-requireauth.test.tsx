@@ -85,7 +85,7 @@ vi.mock('@autional-cn/shared/generated/api', async (importOriginal) => {
 
 vi.mock('@/lib/api', () => ({ loadAuthExtras: vi.fn(() => Promise.resolve()) }));
 
-vi.mock('@/hooks/useAuthPageInit', () => ({
+vi.mock('@/hooks/use-auth-page-init', () => ({
 	useAuthPageInit: () => ({
 		authConfig: { data: { tenantId: 't-test' }, isLoading: false, isError: false },
 		publicTenants: { data: [], isLoading: false, isError: false },

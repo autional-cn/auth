@@ -10,7 +10,7 @@ import { getOAuthProviders } from '@/lib/api.generated';
 import { getCached, setCached, getPreloaded, CACHE_KEYS, TTL } from '@/lib/page-init-cache';
 import { extractList } from '@autional-cn/shared';
 import type { AuthConfigBySlug } from '@/hooks/use-tenant-auth-config';
-import type { TenantOption } from '@/hooks/usePublicTenants';
+import type { TenantOption } from '@/hooks/use-public-tenants';
 
 // ─── Types ───
 
