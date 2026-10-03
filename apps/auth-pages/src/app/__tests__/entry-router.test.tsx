@@ -287,10 +287,11 @@ describe('EntryRouter', () => {
 	});
 
 	// ── F-W5c 登出弹跳回归锁：logout=1 回程必须先终结会话再决定落点——
-	//    回程带真实 slug → 落 /<slug>/login?redirect=（登录页展示表单）；
-	//    无法解析出租户 → 落 brand。绝不先放行三分支（带会话回程会被登录页静默重登）──
+	//    回程带真实 slug → 落 /<slug>/login（不带任何回程参数：登出即"重新开始"，
+	//    登录后走默认去向——偏好门户或租户 dashboard，去向交还用户）；
+	//    无法解析出租户 → 落 brand 裸根。绝不先放行三分支（带会话回程会被登录页静默重登）──
 
-	it('E12 logout=1 + 有会话 + 回程带真实 slug → 终结会话后落 /<slug>/login（剥除 logout/rt，保留 redirect）', async () => {
+	it('E12 logout=1 + 有会话 + 回程带真实 slug → 终结会话后落裸 /<slug>/login（redirect/logout/rt 全剥）', async () => {
 		mockSession.token = 'token-xyz';
 		mockParamsMap.redirect = 'https://admin.autional.cn/demo/';
 		mockParamsMap.logout = '1';
@@ -300,10 +301,7 @@ describe('EntryRouter', () => {
 			'&logout=1&rt=security.logout.mus2m9ai';
 		renderEntry();
 		await waitFor(() => {
-			expect(mockNavigate).toHaveBeenCalledWith(
-				'/demo/login?redirect=' + encodeURIComponent('https://admin.autional.cn/demo/'),
-				{ replace: true },
-			);
+			expect(mockNavigate).toHaveBeenCalledWith('/demo/login', { replace: true });
 		});
 		expect(mockLogout).toHaveBeenCalled();
 		// 会话终结必须先于导航（否则落点页面仍能读到残余会话）
@@ -324,7 +322,7 @@ describe('EntryRouter', () => {
 		expect(mockNavigate).not.toHaveBeenCalled();
 	});
 
-	it('E14 logout=1 + 回程带 slug 但名单失败 → 有界回落 brand 并保留 redirect（不盲信回程段）', async () => {
+	it('E14 logout=1 + 回程带 slug 但名单失败 → 有界回落 brand 裸根（不盲信回程段，不携带回程）', async () => {
 		mockSession.token = 'token-xyz';
 		mockParamsMap.redirect = 'https://admin.autional.cn/demo/';
 		mockParamsMap.logout = '1';
@@ -332,23 +330,31 @@ describe('EntryRouter', () => {
 		renderEntry();
 		await waitFor(() => {
 			expect(mockLogout).toHaveBeenCalled();
-			expect(replaceUrlWithoutRt()).toBe(
-				'https://brand.autional.cn/?redirect=' + encodeURIComponent('https://admin.autional.cn/demo/'),
-			);
+			expect(replaceUrlWithoutRt()).toBe('https://brand.autional.cn/');
 		});
 		expect(mockNavigate).not.toHaveBeenCalled();
 	});
 
-	it('E18 logout=1 + 回程 slug 不在名单 → 不认，回落 brand 并保留 redirect', async () => {
+	it('E18 logout=1 + 回程 slug 不在名单 → 不认，回落 brand 裸根（不携带回程）', async () => {
 		mockSession.token = 'token-xyz';
 		mockParamsMap.redirect = 'https://admin.autional.cn/nosuch/';
 		mockParamsMap.logout = '1';
 		renderEntry();
 		await waitFor(() => {
 			expect(mockLogout).toHaveBeenCalled();
-			expect(replaceUrlWithoutRt()).toBe(
-				'https://brand.autional.cn/?redirect=' + encodeURIComponent('https://admin.autional.cn/nosuch/'),
-			);
+			expect(replaceUrlWithoutRt()).toBe('https://brand.autional.cn/');
+		});
+		expect(mockNavigate).not.toHaveBeenCalled();
+	});
+
+	it('E19 logout=1 + 回程无租户段（门户裸根）→ 落 brand 裸根（不携带回程）', async () => {
+		mockSession.token = 'token-xyz';
+		mockParamsMap.redirect = 'https://admin.autional.cn/';
+		mockParamsMap.logout = '1';
+		renderEntry();
+		await waitFor(() => {
+			expect(mockLogout).toHaveBeenCalled();
+			expect(replaceUrlWithoutRt()).toBe('https://brand.autional.cn/');
 		});
 		expect(mockNavigate).not.toHaveBeenCalled();
 	});
