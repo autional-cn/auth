@@ -46,8 +46,8 @@ importers:
   apps/auth-pages:
     dependencies:
       '@autional-cn/shared':
-        specifier: 0.1.0-rc.17
-        version: 0.1.0-rc.17(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(use-sync-external-store@1.7.0(react@19.2.5))
+        specifier: 0.1.0-rc.21
+        version: 0.1.0-rc.21(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(use-sync-external-store@1.7.0(react@19.2.5))
       '@autional-cn/tailwind-preset':
         specifier: 0.1.0-rc.2
         version: 0.1.0-rc.2(tailwindcss@3.4.19)
@@ -193,8 +193,8 @@ packages:
   '@asamuzakjp/nwsapi@2.3.9':
     resolution: {integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==}
 
-  '@autional-cn/shared@0.1.0-rc.17':
-    resolution: {integrity: sha512-4ckRitI6tR9LpmXv/Beq1so76WWY5YYeXhUXq7Px0mokfn9QfqpkLVryckA9Ce/A/VM8zTTZcfI5AmW8eG4q6w==}
+  '@autional-cn/shared@0.1.0-rc.21':
+    resolution: {integrity: sha512-11olaiNwv42B0btNFWywZkgKsMvvy17EoW61I/PwUYgWNkVGX/0M3n/ONoYFNBZL+l0D+Zx8PLOlf3/kQHFveg==}
     peerDependencies:
       react: 19.2.5
       react-dom: 19.2.5
@@ -2334,7 +2334,7 @@ snapshots:
 
   '@asamuzakjp/nwsapi@2.3.9': {}
 
-  '@autional-cn/shared@0.1.0-rc.17(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(use-sync-external-store@1.7.0(react@19.2.5))':
+  '@autional-cn/shared@0.1.0-rc.21(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(use-sync-external-store@1.7.0(react@19.2.5))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@tanstack/react-query': 5.100.9(react@19.2.5)
