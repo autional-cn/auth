@@ -15,10 +15,21 @@ import {
 	Link2,
 	Phone,
 	Lock,
+	UserX,
+	type LucideIcon,
 } from 'lucide-react';
 
+type AccountLink = {
+	path: string;
+	labelKey: string;
+	descKey: string;
+	icon: LucideIcon;
+	/** true = 本仓页面（auth-pages 路由）；未设 = 用户门户深链（AUTH-45①） */
+	local?: boolean;
+};
+
 // AUTH-41：用户门户深链必须带租户 slug（裸链 404），path 为门户内路径。
-const links = [
+const links: AccountLink[] = [
 	{
 		path: '/profile',
 		labelKey: 'account.profile',
@@ -44,10 +55,13 @@ const links = [
 		icon: Bell,
 	},
 	{
-		path: '/security',
+		// AUTH-45①：改密表单在本仓（user 门户 /security 单页无法深链定位到改密），
+		// 卡片指回 auth-pages 的 /<slug>/change-password
+		path: '/change-password',
 		labelKey: 'account.changePassword',
 		descKey: 'account.changePasswordDesc',
 		icon: KeyRound,
+		local: true,
 	},
 	{
 		path: '/security/login-history',
@@ -87,6 +101,13 @@ export default function AccountPage() {
 			descKey: 'account.privacyCenterDesc',
 			icon: Lock,
 		},
+		{
+			// AUTH-45②：注销账户入口（本仓 account-deletion，RequireAuth 保护）
+			href: tenantSlug ? `/${tenantSlug}/account-deletion` : '/account-deletion',
+			labelKey: 'account.deleteAccount',
+			descKey: 'account.deleteAccountDesc',
+			icon: UserX,
+		},
 	];
 
 	usePageTitle('account.title');
@@ -97,7 +118,13 @@ export default function AccountPage() {
 				{links.map((link) => (
 					<a
 						key={link.path}
-						href={userPortalUrl(slug, link.path)}
+						href={
+							link.local
+								? slug
+									? `/${slug}${link.path}`
+									: userPortalUrl(slug, '/security')
+								: userPortalUrl(slug, link.path)
+						}
 						className="flex items-start gap-4 p-4 hover:bg-[var(--color-bg-muted)] transition-colors group"
 					>
 						<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--color-bg-muted)] group-hover:bg-brand-soft/20 transition-colors">

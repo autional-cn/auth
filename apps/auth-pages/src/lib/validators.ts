@@ -196,9 +196,16 @@ export function createResetPasswordSchema(t: TFunction) {
 		});
 }
 
+// 与 identity validatePhone 同口径：+ 开头、纯数字、总长 8-15（+ 后 7-14 位）。
+// 前端先行门控（AUTH-27/28）：格式错不出去、不发请求，服务端 400 兜底不可达。
+export const PHONE_E164_PATTERN = /^\+[0-9]{7,14}$/;
+
 export function createVerifyPhoneSchema(t: TFunction) {
 	return z.object({
-		phone: z.string().min(1, t('validation.phoneRequired')),
+		phone: z
+			.string()
+			.min(1, t('validation.phoneRequired'))
+			.regex(PHONE_E164_PATTERN, t('validation.phoneInvalid')),
 		code: z.string().length(6, t('validation.codeLength')),
 	});
 }
@@ -264,6 +271,5 @@ export function createVerifyIdentityConfirmSchema(t: TFunction) {
 				/^[1-9]\d{5}(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[\dXx]$/,
 				t('validation.idNumberInvalid'),
 			),
-		dateOfBirth: z.string().min(1, t('validation.dobRequired')),
 	});
 }

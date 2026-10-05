@@ -123,7 +123,6 @@ export default function ChangePasswordPage() {
 	usePageTitle('changePassword.forceTitle');
 
 	const mode = searchParams.get('mode'); // 'force' | null
-	const token = searchParams.get('token') || '';
 	const isForceMode = mode === 'force';
 
 	// AUTH-53 约束⑤：盐源权威值 = slug 配置的 tenantId（store 值可能被跨租户残留污染）
@@ -212,9 +211,6 @@ export default function ChangePasswordPage() {
 				newPassword: transmissionResult.password,
 				passwordTransmission: transmissionResult.passwordTransmission,
 			};
-			if (isForceMode && token) {
-				payload.forceToken = token;
-			}
 			await authMePasswordPut(payload as any);
 
 			setSuccess(true);
@@ -270,7 +266,7 @@ export default function ChangePasswordPage() {
 
 			<AuthHeader
 				title={'🔒 ' + t('changePassword.forceTitle')}
-				subtitle={isForceMode ? t('changePassword.firstLogin') : t('changePassword.expiredTitle')}
+				subtitle={isForceMode ? t('changePassword.forceSubtitle') : t('changePassword.subtitle')}
 			/>
 
 			<form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -311,7 +307,7 @@ export default function ChangePasswordPage() {
 								<div key={req.key} className="flex items-center gap-2">
 									<span
 										className={
-											satisfied ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)]'
+											satisfied ? 'text-success-text' : 'text-[var(--color-text-muted)]'
 										}
 									>
 										{satisfied ? (
@@ -343,7 +339,7 @@ export default function ChangePasswordPage() {
 									<span
 										className={
 											satisfied
-												? 'text-[var(--color-success)]'
+												? 'text-success-text'
 												: 'text-[var(--color-text-secondary)]'
 										}
 									>
@@ -368,7 +364,7 @@ export default function ChangePasswordPage() {
 				</div>
 
 				{error && (
-					<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-danger">
+					<div className="rounded-md bg-danger/10 p-3 text-sm text-danger-text">
 						{error}
 					</div>
 				)}
@@ -383,7 +379,7 @@ export default function ChangePasswordPage() {
 					<p>{t('changePassword.accountCenter')}</p>
 					<a
 						href={userPortalUrl(slug, '/security')}
-						className="text-[var(--color-brand)] hover:underline font-medium"
+						className="text-brand-text hover:underline font-medium"
 					>
 						{t('changePassword.goToAccountCenter')} →
 					</a>
@@ -393,7 +389,7 @@ export default function ChangePasswordPage() {
 			{/* Navigation (hidden in force mode) */}
 			{!isForceMode && (
 				<div className="text-center text-sm">
-					<Link to={tenantSlug ? `/${tenantSlug}/account` : '/account'} className="text-[var(--color-brand)] hover:underline">
+					<Link to={tenantSlug ? `/${tenantSlug}/account` : '/account'} className="text-brand-text hover:underline">
 						{t('auth.password.backToAccount')}
 					</Link>
 				</div>

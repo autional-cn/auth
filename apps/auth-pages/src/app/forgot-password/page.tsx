@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
 
 			{submitted ? (
 				<div className="space-y-4">
-					<div className="rounded-md bg-success/10 p-4 text-center text-sm text-success">
+					<div className="rounded-md bg-success/10 p-4 text-center text-sm text-success-text">
 						{channel === 'email' ? t('forgot.sentHintEmail') : t('forgot.sentHintPhone')}
 					</div>
 					<CountdownButton seconds={seconds} fullWidth isLoading={loading} onClick={onResend}>
@@ -160,14 +160,14 @@ export default function ForgotPasswordPage() {
 			<div className="text-center text-sm mt-2">
 				<Link
 					to={tenantSlug ? `/${tenantSlug}/recover-account` : '/recover-account'}
-					className="text-[var(--color-brand)] hover:underline"
+					className="text-brand-text hover:underline"
 				>
 					{t('forgot.recoverAccountHint')}
 				</Link>
 			</div>
 
 			<div className="text-center text-sm">
-				<Link to={tenantSlug ? `/${tenantSlug}/login` : '/login'} className="text-[var(--color-brand)] hover:underline">
+				<Link to={tenantSlug ? `/${tenantSlug}/login` : '/login'} className="text-brand-text hover:underline">
 					{t('forgot.back')}
 				</Link>
 			</div>

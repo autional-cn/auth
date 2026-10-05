@@ -94,7 +94,7 @@ function SSOInitiateContent() {
 			<AuthHeader title={t('sso.title')} subtitle={t('sso.subtitle')} />
 
 			{error && (
-				<div className="rounded-md bg-danger/10 p-3 text-sm text-danger">
+				<div className="rounded-md bg-danger/10 p-3 text-sm text-danger-text">
 					{error}
 				</div>
 			)}
@@ -145,7 +145,7 @@ function SSOInitiateContent() {
 				<button
 					type="button"
 					onClick={() => navigate('/')}
-					className="text-[var(--color-brand)] hover:underline"
+					className="text-brand-text hover:underline"
 				>
 					{t('sso.back')}
 				</button>

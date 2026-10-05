@@ -35,7 +35,7 @@ export default function PasskeyPage() {
 
 			<div className="space-y-1 rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] p-4 text-sm text-[var(--color-text-secondary)]">
 				<p>{t('passkey.loginGuidance')}</p>
-				<a href={loginPath} className="font-medium text-[var(--color-brand)] hover:underline">
+				<a href={loginPath} className="font-medium text-brand-text hover:underline">
 					{t('passkey.goToLogin')} →
 				</a>
 			</div>
@@ -44,7 +44,7 @@ export default function PasskeyPage() {
 				<p>{t('passkey.registerMoved')}</p>
 				<a
 					href={userPortalUrl(slug, '/security')}
-					className="font-medium text-[var(--color-brand)] hover:underline"
+					className="font-medium text-brand-text hover:underline"
 				>
 					{t('passkey.goToAccountCenter')} →
 				</a>
@@ -54,7 +54,7 @@ export default function PasskeyPage() {
 				<button
 					type="button"
 					onClick={() => navigate(loginPath)}
-					className="text-[var(--color-brand)] hover:underline"
+					className="text-brand-text hover:underline"
 				>
 					{t('passkey.backLogin')}
 				</button>

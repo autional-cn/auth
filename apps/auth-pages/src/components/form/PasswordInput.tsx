@@ -52,13 +52,13 @@ function getStrengthBarColor(level: string): string {
 function getStrengthTextColor(level: string): string {
 	switch (level) {
 		case 'weak':
-			return 'text-[var(--color-danger)]';
+			return 'text-danger-text';
 		case 'fair':
 		case 'good':
-			return 'text-[var(--color-warning)]';
+			return 'text-warning-text';
 		case 'strong':
 		case 'very-strong':
-			return 'text-[var(--color-success)]';
+			return 'text-success-text';
 		default:
 			return 'text-[var(--color-text-secondary)]';
 	}
@@ -91,11 +91,11 @@ function getBreachColor(status: BreachStatus): string {
 	switch (status) {
 		case 'local_breached':
 		case 'hibp_breached':
-			return 'text-[var(--color-danger)]';
+			return 'text-danger-text';
 		case 'checking_hibp':
 			return 'text-[var(--color-text-muted)]';
 		case 'safe':
-			return 'text-[var(--color-success)]';
+			return 'text-success-text';
 		default:
 			return '';
 	}

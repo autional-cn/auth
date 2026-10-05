@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { traceEvent } from '@autional-cn/shared';
+import { useResolvedTenantSlug } from '@/hooks/use-tenant-slug';
 import { AuthCard } from '@/components/auth/AuthCard';
 
 type ErrorType =
@@ -68,6 +69,14 @@ export default function ErrorPage() {
 		navigate(backTarget);
 	}, [navigate, backTarget, type]);
 
+	// AUTH-51：「返回登录」须与「返回首页」行为分流（此前同为 goBack）——
+	// 有租户上下文直落 /<slug>/login，无则落入口路由（EntryRouter 决定 brand/登录链）
+	const slug = useResolvedTenantSlug();
+	const goLogin = useCallback(() => {
+		traceEvent('error-exit', { reason: type, to: 'login' });
+		navigate(slug ? `/${slug}/login` : '/');
+	}, [navigate, slug, type]);
+
 	// session_expired: 5 秒倒计时后自动返回登录页
 	useEffect(() => {
 		if (type !== 'session_expired') return;
@@ -112,7 +121,7 @@ export default function ErrorPage() {
 						</button>
 						<button
 							type="button"
-							onClick={goBack}
+							onClick={goLogin}
 							className="w-full rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
 						>
 							{t('auth.error.back')}
@@ -131,7 +140,7 @@ export default function ErrorPage() {
 						</button>
 						<button
 							type="button"
-							onClick={goBack}
+							onClick={goLogin}
 							className="w-full rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
 						>
 							{t('auth.error.back')}

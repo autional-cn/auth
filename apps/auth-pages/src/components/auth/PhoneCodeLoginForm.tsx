@@ -166,7 +166,7 @@ export default function PhoneCodeLoginForm({
 			) : (
 				<>
 					{sent && (
-						<p className="text-sm text-[var(--color-success)]">
+						<p className="text-sm text-success-text">
 							{(t('auth.phoneCode.sentTo') || '验证码已发送至').replace('{phone}', normalizedPhone)}
 						</p>
 					)}
@@ -204,7 +204,7 @@ export default function PhoneCodeLoginForm({
 					</div>
 				</>
 			)}
-			{error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
+			{error && <p className="text-sm text-danger-text">{error}</p>}
 		</div>
 	);
 }

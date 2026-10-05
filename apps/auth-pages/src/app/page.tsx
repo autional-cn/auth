@@ -8,7 +8,8 @@ import { z } from 'zod';
 import { Button, Input, Label } from '@autional-cn/ui';
 import { authLoginPost, authCaptchaChallenge, authMe } from '@autional-cn/shared/generated/api';
 import { loadAuthExtras } from '@/lib/api';
-import { loginWithTokens, useAuthStore, getAccessToken, isValidRedirect, initiateOAuthLogin, extractSlugFromPath, getPortalUrl, getRootDomain, API_BASE_URL } from '@autional-cn/shared';
+import { loginWithTokens, useAuthStore, getAccessToken, isValidRedirect, initiateOAuthLogin, extractSlugFromPath, getPortalUrl, getRootDomain, API_BASE_URL, crossAppUrl, TRUST_CENTER_URL } from '@autional-cn/shared';
+import { useResolvedTenantSlug } from '@/hooks/use-tenant-slug';
 import { createLoginSchema } from '@/lib/validators';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
 import QRLoginPanel from '@/components/auth/QRLoginPanel';
@@ -100,6 +101,7 @@ export default function LoginPage() {
 	const [searchParams] = useSearchParams();
 	const { tenantSlug: slugParam } = useParams();
 	const tenantSlug = slugParam || null;
+	const resolvedSlug = useResolvedTenantSlug();
 	const { t } = useI18n();
 	const schema = useMemo(
 		() =>
@@ -530,7 +532,7 @@ export default function LoginPage() {
 
 			const redirect = searchParams.get('redirect');
 
-			// 密码传输预处? 根据租户配置决定模式
+			// 密码传输预处理：根据租户配置决定模式
 			const transmissionMode =
 				inlineAuthConfig?.passwordPolicy?.passwordTransmission ||
 				slugAuthConfig?.passwordPolicy?.passwordTransmission;
@@ -583,10 +585,19 @@ export default function LoginPage() {
 			// Check must_change_password (force password change)
 			const mustChange = loginResult.mustChangePassword || loginResult.data?.must_change_password;
 			if (mustChange) {
-				const forceToken = loginResult.forceToken || loginResult.data?.force_token || '';
-				navigate(
-					`/${tenantSlug}/change-password?mode=force&token=${encodeURIComponent(forceToken)}`,
+				// AUTH-22：force 流程同样必须建会话——改密请求走 authProtected 的
+				// /auth/me/password；identity 从不签发 force_token（服务端也不识别），
+				// 旧实现携空串跳转且不落会话，改密页无凭据可用。
+				loginWithTokens(
+					loginResult.accessToken || loginResult.data?.accessToken,
+					loginResult.refreshToken || loginResult.data?.refreshToken,
+					loginResult.user || loginResult.data?.user,
 				);
+				anchorSessionFromToken(
+					loginResult.accessToken || loginResult.data?.accessToken || '',
+					{ slug: tenantSlug, tenantId: data.tenantId },
+				);
+				navigate(`/${tenantSlug}/change-password?mode=force`);
 				return;
 			}
 
@@ -741,8 +752,8 @@ export default function LoginPage() {
 			if (typeof errCode === 'string' && errCode.startsWith('400')) {
 				localFailureRef.current += 1;
 			}
-			// 错误横幅只显示登录错误（密码错、账号锁定等?
-			// captcha 相关错误(40800505/40800506)?captcha 区域自己展示
+			// 错误横幅只显示登录错误（密码错、账号锁定等）
+			// captcha 相关错误(40800505/40800506)由 captcha 区域自己展示
 			if (errCode !== 40800505 && errCode !== 40800506) {
 				setError(getErrorMessage(err, t));
 			}
@@ -791,6 +802,32 @@ export default function LoginPage() {
 		</div>
 	);
 
+	// 页脚法律/信任链：按「已解析租户」拼链（脏 slug 回落绝对链），与 AuthCard 页脚同口径
+	const legalFooter = (
+		<div className="flex flex-wrap justify-center gap-x-4 gap-y-1 pt-4 text-xs text-muted-foreground">
+			<Link
+				to={resolvedSlug ? `/${resolvedSlug}/privacy` : '/privacy'}
+				className="hover:underline"
+			>
+				{t('auth.privacyPolicy')}
+			</Link>
+			<Link
+				to={resolvedSlug ? `/${resolvedSlug}/terms` : '/terms'}
+				className="hover:underline"
+			>
+				{t('auth.termsOfService')}
+			</Link>
+			<a
+				href={crossAppUrl(TRUST_CENTER_URL())}
+				target="_blank"
+				rel="noopener noreferrer"
+				className="hover:underline"
+			>
+				{t('auth.trustCenter')}
+			</a>
+		</div>
+	);
+
 	const handleAuthConfigLoaded = useCallback((config: any) => {
 		if (config) {
 			setInlineAuthConfigId(null); // Config already loaded via callback
@@ -831,6 +868,7 @@ export default function LoginPage() {
 						onAuthConfigLoaded={handleAuthConfigLoaded}
 						variant="login"
 					/>
+					{legalFooter}
 				</div>
 			</div>
 		);
@@ -842,13 +880,13 @@ export default function LoginPage() {
 				{cardHeader}
 
 				{accountDeleted && (
-					<div className="rounded-md bg-[var(--color-success)]/10 p-4 flex items-center gap-3">
-						<CheckCircle2 className="h-5 w-5 shrink-0 text-[var(--color-success)]" />
+					<div className="rounded-md bg-success/10 p-4 flex items-center gap-3">
+						<CheckCircle2 className="h-5 w-5 shrink-0 text-success-text" />
 						<div>
-							<p className="text-sm font-medium text-[var(--color-success)]">
+							<p className="text-sm font-medium text-success-text">
 								{t('auth.login.accountDeleted')}
 							</p>
-							<p className="text-xs text-[var(--color-success)] mt-0.5">
+							<p className="text-xs text-success-text mt-0.5">
 								{t('auth.login.gdprNotice')}
 							</p>
 						</div>
@@ -869,11 +907,11 @@ export default function LoginPage() {
 				)}
 
 				{newDeviceBanner && (
-					<div className="rounded-md border border-[var(--color-brand)]/30 bg-[var(--color-brand)]/10 p-4 space-y-2 animate-[slideInDown_300ms_ease-out_100ms]">
-						<p className="text-sm font-medium text-[var(--color-brand)]">
+					<div className="rounded-md border border-brand/30 bg-brand/10 p-4 space-y-2 animate-[slideInDown_300ms_ease-out_100ms]">
+						<p className="text-sm font-medium text-brand-text">
 							{t('login.newDeviceTitle')}
 						</p>
-						<p className="text-xs text-[var(--color-brand)]">{t('login.newDeviceDesc')}</p>
+						<p className="text-xs text-brand-text">{t('login.newDeviceDesc')}</p>
 					</div>
 				)}
 
@@ -899,7 +937,7 @@ export default function LoginPage() {
 				{/* Compliance profile badge */}
 				{authConfig?.complianceProfile?.standards &&
 					authConfig.complianceProfile.standards.length > 0 && (
-						<div className="flex items-center gap-2 rounded-md border border-green-100 bg-[var(--color-success)]/10 px-3 py-2 text-xs text-[var(--color-success)] animate-[fadeIn_300ms_ease-out]">
+						<div className="flex items-center gap-2 rounded-md border border-success/20 bg-success/10 px-3 py-2 text-xs text-success-text animate-[fadeIn_300ms_ease-out]">
 							<svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
 								<path
 									fillRule="evenodd"
@@ -939,7 +977,7 @@ export default function LoginPage() {
 									className={`flex flex-1 flex-col items-center gap-0.5 rounded-md px-1 py-2 text-xs font-medium transition-all duration-200 ${
 										loginMethod === key
 											? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-sm'
-											: 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-surface)]/50 hover:text-[var(--color-text-secondary)]'
+											: 'text-[var(--color-text-muted)] hover:bg-surface/50 hover:text-[var(--color-text-secondary)]'
 									}`}
 								>
 									<Icon className="h-5 w-5" />
@@ -1003,7 +1041,7 @@ export default function LoginPage() {
 					<button
 						type="button"
 						onClick={() => setLoginMethod('identifier_first')}
-						className="w-full text-center text-xs text-[var(--color-text-muted)] hover:text-[var(--color-brand)] transition-all duration-200"
+						className="w-full text-center text-xs text-[var(--color-text-muted)] hover:text-brand-text transition-all duration-200"
 					>
 						{t('auth.login.identifierFirst') || '通过邮箱查找组织'}
 					</button>
@@ -1047,14 +1085,14 @@ export default function LoginPage() {
 								</label>
 								<Link
 									to={tenantSlug ? `/${tenantSlug}/forgot-password` : '/'}
-									className="text-sm text-[var(--color-brand)] transition-all duration-200 hover:underline decoration-2 underline-offset-4"
+									className="text-sm text-brand-text transition-all duration-200 hover:underline decoration-2 underline-offset-4"
 								>
 									{t('login.forgot')}
 								</Link>
 							</div>
 
 							{error && (
-								<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-danger animate-[slideInRight_300ms_ease-out]">
+								<div className="rounded-md bg-danger/10 p-3 text-sm text-danger-text animate-[slideInRight_300ms_ease-out]">
 									{error}
 								</div>
 							)}
@@ -1062,7 +1100,7 @@ export default function LoginPage() {
 							{/* P1-09: Warm-up warning for consecutive failures */}
 							{rateLimitStep === 0 && localFailureRef.current >= 3 && (
 								<div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-									🟡 安全提示：您已连?{localFailureRef.current} 次登录失败。再失败 1
+									🟡 安全提示：您已连续{localFailureRef.current} 次登录失败。再失败 1
 									次将启用人机验证
 								</div>
 							)}
@@ -1079,9 +1117,9 @@ export default function LoginPage() {
 										// P3-01: min-h prevents layout jump, transition smooths state changes
 										className={`rounded-md border p-3 text-sm text-center min-h-[58px] transition-all duration-200 ease ${
 											captchaStatus === 'solved'
-												? 'border-[var(--color-success)]/20 bg-[var(--color-success)]/10 text-[var(--color-success)]'
+												? 'border-success/20 bg-success/10 text-success-text'
 												: captchaStatus === 'expired' || captchaStatus === 'error'
-													? 'border-[var(--color-danger)]/20 bg-[var(--color-danger)]/10 text-[var(--color-danger)]'
+													? 'border-danger/20 bg-danger/10 text-danger-text'
 													: 'border-amber-200 bg-amber-50 text-amber-700'
 										}`}
 									>
@@ -1107,7 +1145,7 @@ export default function LoginPage() {
 										) : captchaStatus === 'solving' ? (
 											// P0-01: Show progress bar + percentage
 											<div className="flex flex-col items-center gap-2">
-												<span>{captchaProgressText || '正在进行安全检?..'}</span>
+												<span>{captchaProgressText || '正在进行安全检测...'}</span>
 												<progress
 													className="w-full h-1.5 rounded"
 													value={captchaProgressRef.current.current}
@@ -1206,11 +1244,13 @@ export default function LoginPage() {
 					{t('login.noAccount')}{' '}
 					<Link
 						to={tenantSlug ? `/${tenantSlug}/register` : '/'}
-						className="text-[var(--color-brand)] transition-all duration-200 hover:underline decoration-2 underline-offset-4"
+						className="text-brand-text transition-all duration-200 hover:underline decoration-2 underline-offset-4"
 					>
 						{t('login.register')}
 					</Link>
 				</div>
+
+				{legalFooter}
 			</div>
 		</div>
 	);

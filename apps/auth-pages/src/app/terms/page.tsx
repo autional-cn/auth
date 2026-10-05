@@ -114,7 +114,7 @@ export default function TermsPage() {
 			)}
 
 			<div className="pt-4 text-center text-sm">
-				<Link to={tenantSlug ? `/${tenantSlug}/login` : '/'} className="text-[var(--color-brand)] hover:underline">
+				<Link to={tenantSlug ? `/${tenantSlug}/login` : '/'} className="text-brand-text hover:underline">
 					{t('terms.backToSignIn')}
 				</Link>
 			</div>

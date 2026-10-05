@@ -1,15 +1,29 @@
 'use client';
 
+// AUTH-29：实名认证页全链修复——
+//   ① 进页预检（/verification/me/detail）：终态（verified/verified_minor/rejected）直接短路，
+//      不再让已认证用户重复走上传流程；
+//   ② 上传 OCR 409（61180002 real_name_exists）分流：重查详情展示已有认证，
+//      不再误报「OCR 识别失败」（与图片无关、换图恒同错）；
+//   ③ 步骤 2-5 契约对齐（OCR 响应键名 / consent 双轨 / verify 的 method+verification_id）：
+//      修复前请求体键错位（name/id_number/date_of_birth）致流程不可执行；
+//   ④ 结果步按后端真值状态渲染（verified/verified_minor/ocr_completed/rejected），
+//      移除 ?status= 查询覆盖；
+//   ⑤ 删除 DOB/gender 僵尸字段（不可预填、不发送，GDPR 数据最小化）。
+
 import { useState, Suspense, useCallback, useRef, useEffect, useMemo } from 'react';
-import { useSearchParams, useParams, Link } from 'react-router';
+import { useParams, Link } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Input, Label, showToast, ToastProvider, StatusBadge } from '@autional-cn/ui';
+import { extractApiError } from '@autional-cn/shared';
 import { useI18n } from '@/lib/i18n';
 import { createVerifyIdentityConfirmSchema } from '@/lib/validators';
 import {
 	authMeConsentPost,
+	verificationConsentPost,
+	verificationMeDetail,
 	verificationOcrPost,
 	verificationVerifyPost,
 } from '@autional-cn/shared/generated/api';
@@ -21,16 +35,19 @@ type Step = 'upload' | 'confirm' | 'consent' | 'verify' | 'result';
 interface OCRResult {
 	name: string;
 	idNumber: string;
-	dateOfBirth: string;
-	gender: string;
 	confidence: number;
 }
 
+// 后端真值状态（verification/me/detail + verify 响应共用）
 interface VerificationResult {
-	status: 'pending' | 'approved' | 'rejected' | 'need_review';
-	verifiedAt: string;
-	message: string;
+	status: string;
+	verifiedAt?: string | null;
+	rejectedReason?: string;
+	retryCount?: number;
+	maxRetries?: number;
 }
+
+type Precheck = 'checking' | 'clear' | 'verified' | 'rejected';
 
 const MAX_IMAGE_SIZE_MB = 10;
 const MAX_IMAGE_SIZE = MAX_IMAGE_SIZE_MB * 1024 * 1024;
@@ -38,6 +55,8 @@ const MAX_IMAGE_SIZE = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 type ConsentKey = 'pii_collection' | 'third_party_transfer' | 'face_collection';
 
 const STEP_ORDER: Step[] = ['upload', 'confirm', 'consent', 'verify', 'result'];
+
+const VERIFIED_STATUSES = ['verified', 'verified_minor'];
 
 function fileToBase64(file: File): Promise<string> {
 	return new Promise((resolve, reject) => {
@@ -50,7 +69,6 @@ function fileToBase64(file: File): Promise<string> {
 
 function VerifyIdentityContent() {
 	const { t, lang } = useI18n();
-	const [searchParams] = useSearchParams();
 	const { tenantSlug } = useParams<{ tenantSlug?: string }>();
 
 	const confirmSchema = useMemo(() => createVerifyIdentityConfirmSchema(t), [lang, t]);
@@ -59,6 +77,11 @@ function VerifyIdentityContent() {
 	const [step, setStep] = useState<Step>('upload');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
+
+	// AUTH-29：预检门——checking 期间渲染 loading；verified/rejected 短路面板
+	const [precheck, setPrecheck] = useState<Precheck>('checking');
+	const [existing, setExisting] = useState<VerificationResult | null>(null);
+	const [verificationId, setVerificationId] = useState('');
 
 	const [frontImage, setFrontImage] = useState<File | null>(null);
 	const [backImage, setBackImage] = useState<File | null>(null);
@@ -84,6 +107,70 @@ function VerifyIdentityContent() {
 			URL.revokeObjectURL(backPreview);
 		};
 	}, [frontPreview, backPreview]);
+
+	// AUTH-29：进页预检——已有终态记录直接短路（跳过整个上传流程）；
+	// 404（无记录）/非终态（进行中，后端允许重走）/网络失败一律放行，预检失败不拦路
+	useEffect(() => {
+		let cancelled = false;
+		(async () => {
+			try {
+				const res = await verificationMeDetail();
+				const detail = ((res as any)?.data || res) as VerificationResult;
+				if (cancelled) return;
+				if (detail?.status && VERIFIED_STATUSES.includes(detail.status)) {
+					setExisting(detail);
+					setPrecheck('verified');
+				} else if (detail?.status === 'rejected') {
+					setExisting(detail);
+					setPrecheck('rejected');
+				} else {
+					setPrecheck('clear');
+				}
+			} catch {
+				if (!cancelled) setPrecheck('clear');
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+
+	// AUTH-28 同款三级分流：i18n_key 已登记 → 本地化；429 → 限流文案；否则通用兜底。
+	// 不直出服务端英文（extractApiError 的 message 链含 title/detail）
+	const resolveErrorMessage = useCallback(
+		(err: unknown, fallbackKey: string): string => {
+			const { i18nKey } = extractApiError(err, '');
+			const localized = i18nKey ? t(i18nKey, '') : '';
+			if (localized) return localized;
+			if ((err as any)?.response?.status === 429) return t('auth.verifyIdentity.rateLimited');
+			return t(fallbackKey);
+		},
+		[t],
+	);
+
+	// AUTH-29：409 分流——重查详情短路展示已有认证；重查失败回落「已有认证记录」文案
+	// （不再把确定性冲突表述为 OCR 故障）
+	const showExistingOrFallback = useCallback(async () => {
+		try {
+			const res = await verificationMeDetail();
+			const detail = ((res as any)?.data || res) as VerificationResult;
+			if (detail?.status && VERIFIED_STATUSES.includes(detail.status)) {
+				setExisting(detail);
+				setPrecheck('verified');
+				return;
+			}
+			if (detail?.status === 'rejected') {
+				setExisting(detail);
+				setPrecheck('rejected');
+				return;
+			}
+		} catch {
+			// fallthrough 到兜底文案
+		}
+		const msg = t('error.verification.real_name_exists');
+		setError(msg);
+		showToast(msg, 'error');
+	}, [t]);
 
 	const {
 		register,
@@ -181,33 +268,44 @@ function VerifyIdentityContent() {
 			]);
 
 			const res = await verificationOcrPost({
-				front_image: frontBase64,
-				back_image: backBase64,
-			} as any);
+				frontImage: frontBase64,
+				backImage: backBase64,
+			});
+			const data = ((res as any)?.data || res) as {
+				verificationId?: string;
+				ocrName?: string;
+				ocrIdNumber?: string;
+				ocrConfidence?: number;
+			};
 
-			const data: OCRResult = (res as any)?.data || res;
-			setOcrResult(data);
-
-			setValue('name', data.name || '');
-			setValue('idNumber', data.idNumber || '');
-			setValue('dateOfBirth', data.dateOfBirth || '');
+			// AUTH-29：verification_id 是后续 consent/verify 的必需句柄，此前被丢弃
+			setVerificationId(data.verificationId || '');
+			setOcrResult({
+				name: data.ocrName || '',
+				idNumber: data.ocrIdNumber || '',
+				confidence: data.ocrConfidence ?? 0,
+			});
+			setValue('name', data.ocrName || '');
+			setValue('idNumber', data.ocrIdNumber || '');
 
 			setStep('confirm');
 		} catch (err: any) {
-			const msg = err.response?.data?.message || t('auth.verifyIdentity.uploadErrorOcr');
-			setError(msg);
-			showToast(msg, 'error');
+			const { code, i18nKey } = extractApiError(err, '');
+			// AUTH-29：终态已存在（61180002）分流——与图片无关，不再归因 OCR 失败
+			if (Number(code) === 61180002 || i18nKey === 'error.verification.real_name_exists') {
+				await showExistingOrFallback();
+			} else {
+				const msg = resolveErrorMessage(err, 'auth.verifyIdentity.uploadErrorOcr');
+				setError(msg);
+				showToast(msg, 'error');
+			}
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	const handleConfirmNext = (data: ConfirmFormData) => {
-		setOcrResult((prev) =>
-			prev
-				? { ...prev, name: data.name, idNumber: data.idNumber, dateOfBirth: data.dateOfBirth }
-				: null,
-		);
+		setOcrResult((prev) => (prev ? { ...prev, name: data.name, idNumber: data.idNumber } : null));
 		setStep('consent');
 	};
 
@@ -227,6 +325,7 @@ function VerifyIdentityContent() {
 			];
 			// 版本取接口真值（= 用户在 /privacy 读到的那一版）；取不到则不带 version
 			const version = await fetchLegalDocumentVersion('privacy', lang);
+			// identity 侧同意留痕（审计/合规面，保留）
 			await Promise.all(
 				consentScopes
 					.filter((p) => consents[p.key])
@@ -238,8 +337,19 @@ function VerifyIdentityContent() {
 						}),
 					),
 			);
-		} catch {
-			showToast(t('auth.verifyIdentity.consentSaveError'), 'error');
+			// AUTH-29：verification 服务侧同意记录——SubmitVerification 强制 consent 存在
+			// （仅写 identity 侧不满足核验门，会 61180009）；生成器 GrantConsentRequest 为
+			// identity 形状（fieldKeys），本服务契约为 consent_items → 调用点 cast（生成器
+			// 同名碰撞，已登记 OPEN-ITEMS）
+			if (!verificationId) throw new Error('missing verification_id');
+			await verificationConsentPost(
+				{
+					consentItems: consentScopes.filter((p) => consents[p.key]).map((p) => p.key),
+				} as any,
+				{ verification_id: verificationId },
+			);
+		} catch (err: any) {
+			showToast(resolveErrorMessage(err, 'auth.verifyIdentity.consentSaveError'), 'error');
 			setConsentSubmitting(false);
 			return;
 		}
@@ -248,31 +358,42 @@ function VerifyIdentityContent() {
 	};
 
 	const handleSubmitVerification = async () => {
-		if (!ocrResult) return;
+		if (!ocrResult || !verificationId) return;
 
 		setLoading(true);
 		setError('');
 		try {
-			const res = await verificationVerifyPost({
-				name: ocrResult.name,
-				id_number: ocrResult.idNumber,
-				date_of_birth: ocrResult.dateOfBirth,
-			} as any);
-
-			const data: VerificationResult = (res as any)?.data || res;
+			const res = await verificationVerifyPost(
+				{
+					method: 'two_element',
+					confirmedName: ocrResult.name,
+					confirmedIdNumber: ocrResult.idNumber,
+				},
+				{ verification_id: verificationId },
+			);
+			const data = ((res as any)?.data || res) as VerificationResult;
 			setVerificationResult(data);
 
-			const newStatus = searchParams.get('status') || data.status;
-			setVerificationResult((prev) =>
-				prev ? { ...prev, status: newStatus as VerificationResult['status'] } : prev,
-			);
+			// AUTH-29：失败态（ocr_completed/rejected）响应无 rejected_reason——补拉详情取真因
+			if (data?.status === 'ocr_completed' || data?.status === 'rejected') {
+				try {
+					const detailRes = await verificationMeDetail();
+					const detail = ((detailRes as any)?.data || detailRes) as VerificationResult;
+					if (detail?.rejectedReason) {
+						setVerificationResult((prev) =>
+							prev ? { ...prev, rejectedReason: detail.rejectedReason } : prev,
+						);
+					}
+				} catch {
+					// 原因属增强信息，取不到不拦结果面
+				}
+			}
 
 			setStep('result');
 		} catch (err: any) {
-			const msg = err.response?.data?.message || t('auth.verifyIdentity.verifyErrorSubmit');
+			const msg = resolveErrorMessage(err, 'auth.verifyIdentity.verifyErrorSubmit');
 			setError(msg);
 			showToast(msg, 'error');
-			setStep('verify');
 		} finally {
 			setLoading(false);
 		}
@@ -294,6 +415,7 @@ function VerifyIdentityContent() {
 		setBackPreview('');
 		setOcrResult(null);
 		setVerificationResult(null);
+		setVerificationId('');
 		setConsents({
 			pii_collection: false,
 			third_party_transfer: false,
@@ -301,6 +423,13 @@ function VerifyIdentityContent() {
 		});
 		setError('');
 		setStep('upload');
+	};
+
+	// 可重试失败（ocr_completed）：回验证步重新提交；终态 rejected 无此按钮
+	const handleRetry = () => {
+		setError('');
+		setVerificationResult(null);
+		setStep('verify');
 	};
 
 	const toggleConsent = (key: string) => {
@@ -318,7 +447,7 @@ function VerifyIdentityContent() {
 						<div
 							className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium transition-colors ${
 								isDone
-									? 'bg-[var(--color-success)]/10 text-[var(--color-success)]'
+									? 'bg-success/10 text-success-text'
 									: isActive
 										? 'bg-[var(--color-brand)] text-[var(--color-on-brand)]'
 										: 'bg-[var(--color-bg-muted)] text-[var(--color-text-muted)]'
@@ -328,7 +457,7 @@ function VerifyIdentityContent() {
 						</div>
 						{idx < 3 && (
 							<div
-								className={`h-0.5 w-6 rounded ${isDone ? 'bg-[var(--color-success)]/50' : 'bg-[var(--color-border-subtle)]'}`}
+								className={`h-0.5 w-6 rounded ${isDone ? 'bg-success/50' : 'bg-[var(--color-border-subtle)]'}`}
 							/>
 						)}
 					</div>
@@ -466,7 +595,7 @@ function VerifyIdentityContent() {
 			</div>
 
 			{error && (
-				<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-danger">
+				<div className="rounded-md bg-danger/10 p-3 text-sm text-danger-text">
 					{error}
 				</div>
 			)}
@@ -529,27 +658,6 @@ function VerifyIdentityContent() {
 						error={errors.idNumber?.message}
 					/>
 				</div>
-
-				<div className="space-y-2">
-					<Label htmlFor="dateOfBirth">{t('auth.verifyIdentity.confirmDob')}</Label>
-					<Input
-						id="dateOfBirth"
-						type="date"
-						{...register('dateOfBirth')}
-						error={errors.dateOfBirth?.message}
-					/>
-				</div>
-
-				{ocrResult?.gender && (
-					<div className="rounded-md bg-[var(--color-bg-muted)] p-3 text-sm text-[var(--color-text-secondary)]">
-						{t('auth.verifyIdentity.confirmGender')}
-						{ocrResult.gender === 'M'
-							? t('auth.verifyIdentity.genderMale')
-							: ocrResult.gender === 'F'
-								? t('auth.verifyIdentity.genderFemale')
-								: ocrResult.gender}
-					</div>
-				)}
 
 				<Button type="submit" fullWidth>
 					{t('auth.verifyIdentity.confirmEdit')}
@@ -628,24 +736,16 @@ function VerifyIdentityContent() {
 							{ocrResult.idNumber.replace(/^(.{6})(?:\d+)(.{4})$/, '$1******$2')}
 						</span>
 					</div>
-					<div className="flex items-center justify-between">
-						<span className="text-sm text-[var(--color-text-secondary)]">
-							{t('auth.verifyIdentity.verifySummaryDob')}
-						</span>
-						<span className="text-sm font-medium text-[var(--color-text-primary)]">
-							{ocrResult.dateOfBirth}
-						</span>
-					</div>
 				</div>
 			)}
 
 			{error && (
-				<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-danger">
+				<div className="rounded-md bg-danger/10 p-3 text-sm text-danger-text">
 					{error}
 				</div>
 			)}
 
-			<Button fullWidth isLoading={loading} onClick={handleSubmitVerification}>
+			<Button fullWidth isLoading={loading} disabled={!verificationId} onClick={handleSubmitVerification}>
 				{loading
 					? t('auth.verifyIdentity.verifyProcessing')
 					: t('auth.verifyIdentity.verifySubmit')}
@@ -653,67 +753,122 @@ function VerifyIdentityContent() {
 		</div>
 	);
 
-	const renderResult = () => (
-		<div className="space-y-5">
-			{verificationResult && (
-				<>
-					<div
-						className={`rounded-md p-6 text-center ${
-							verificationResult.status === 'approved'
-								? 'bg-[var(--color-success)]/10'
-								: verificationResult.status === 'rejected'
-									? 'bg-[var(--color-danger)]/10'
-									: 'bg-[var(--color-warning)]/10'
-						}`}
-					>
-						<div className="text-4xl mb-3">
-							{verificationResult.status === 'approved'
-								? '✅'
-								: verificationResult.status === 'rejected'
-									? '❌'
-									: '⏳'}
-						</div>
-						<h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
-							{verificationResult.status === 'approved'
-								? t('auth.verifyIdentity.verifySuccess')
-								: verificationResult.status === 'rejected'
-									? t('auth.verifyIdentity.verifyRejected')
-									: t('auth.verifyIdentity.verifyPending')}
-						</h3>
-						<p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-							{verificationResult.message ||
-								(verificationResult.status === 'approved'
+	const renderResult = () => {
+		const status = verificationResult?.status || '';
+		const isVerified = VERIFIED_STATUSES.includes(status);
+		const isTerminalRejected = status === 'rejected';
+		const isRetryable = status === 'ocr_completed';
+		const isFailed = isTerminalRejected || isRetryable;
+		const reason = verificationResult?.rejectedReason;
+
+		return (
+			<div className="space-y-5">
+				{verificationResult && (
+					<>
+						<div
+							className={`rounded-md p-6 text-center ${
+								isVerified
+									? 'bg-success/10'
+									: isTerminalRejected
+										? 'bg-danger/10'
+										: 'bg-warning/10'
+							}`}
+						>
+							<div className="text-4xl mb-3">
+								{isVerified ? '✅' : isTerminalRejected ? '❌' : isRetryable ? '⚠️' : '⏳'}
+							</div>
+							<h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+								{isVerified
+									? t('auth.verifyIdentity.verifySuccess')
+									: isFailed
+										? t('auth.verifyIdentity.verifyRejected')
+										: t('auth.verifyIdentity.verifyPending')}
+							</h3>
+							<p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+								{isVerified
 									? t('auth.verifyIdentity.verifySuccessDesc')
-									: verificationResult.status === 'rejected'
-										? t('auth.verifyIdentity.verifyRejectedDesc')
-										: t('auth.verifyIdentity.verifyPendingDesc'))}
-						</p>
-						{verificationResult.verifiedAt && (
-							<p className="mt-3 text-xs text-[var(--color-text-secondary)]">
-								{t('auth.verifyIdentity.verifyTime')}
-								{new Date(verificationResult.verifiedAt).toLocaleString()}
+									: isFailed
+										? reason || t('auth.verifyIdentity.verifyRejectedDesc')
+										: t('auth.verifyIdentity.verifyPendingDesc')}
 							</p>
+							{isTerminalRejected && (
+								<p className="mt-2 text-xs text-[var(--color-text-secondary)]">
+									{t('auth.verifyIdentity.verifyRetryExhausted')}
+								</p>
+							)}
+							{isVerified && verificationResult.verifiedAt && (
+								<p className="mt-3 text-xs text-[var(--color-text-secondary)]">
+									{t('auth.verifyIdentity.verifyTime')}
+									{new Date(verificationResult.verifiedAt).toLocaleString()}
+								</p>
+							)}
+						</div>
+
+						{isRetryable && (
+							<Button variant="outline" fullWidth onClick={handleRetry}>
+								{t('auth.verifyIdentity.verifyRetry')}
+							</Button>
 						)}
-					</div>
+					</>
+				)}
 
-					{verificationResult.status === 'rejected' && (
-						<Button variant="outline" fullWidth onClick={handleCancel}>
-							{t('auth.verifyIdentity.verifyRetry')}
-						</Button>
-					)}
-				</>
-			)}
-
-			<div className="text-center">
-				<Link
-					to={tenantSlug ? `/${tenantSlug}/dashboard` : '/dashboard'}
-					className="text-sm text-[var(--color-brand)] hover:underline"
-				>
-					{t('auth.verifyIdentity.backHome')}
-				</Link>
+				<div className="text-center">
+					<Link
+						to={tenantSlug ? `/${tenantSlug}/dashboard` : '/dashboard'}
+						className="text-sm text-brand-text hover:underline"
+					>
+						{t('auth.verifyIdentity.backHome')}
+					</Link>
+				</div>
 			</div>
-		</div>
-	);
+		);
+	};
+
+	// AUTH-29：预检短路面板（进页预检 / 上传 409 分流共用）
+	const renderExisting = () => {
+		const isVerified = precheck === 'verified';
+		return (
+			<div className="space-y-5">
+				<div
+					className={`rounded-md p-6 text-center ${
+						isVerified ? 'bg-success/10' : 'bg-danger/10'
+					}`}
+				>
+					<div className="text-4xl mb-3">{isVerified ? '✅' : '❌'}</div>
+					<h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+						{isVerified
+							? t('auth.verifyIdentity.alreadyVerifiedTitle')
+							: t('auth.verifyIdentity.alreadyRejectedTitle')}
+					</h3>
+					<p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+						{isVerified
+							? t('auth.verifyIdentity.alreadyVerifiedDesc')
+							: t('auth.verifyIdentity.alreadyRejectedDesc')}
+					</p>
+					{!isVerified && existing?.rejectedReason && (
+						<p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+							{existing.rejectedReason}
+						</p>
+					)}
+					{isVerified && existing?.verifiedAt && (
+						<p className="mt-3 text-xs text-[var(--color-text-secondary)]">
+							{t('auth.verifyIdentity.verifyTime')}
+							{new Date(existing.verifiedAt).toLocaleString()}
+						</p>
+					)}
+				</div>
+
+				<div className="text-center">
+					<Link
+						to={tenantSlug ? `/${tenantSlug}/dashboard` : '/dashboard'}
+						className="text-sm text-brand-text hover:underline"
+					>
+						{t('auth.verifyIdentity.backHome')}
+					</Link>
+				</div>
+			</div>
+		);
+	};
 
 	const renderStepContent = () => {
 		switch (step) {
@@ -732,6 +887,14 @@ function VerifyIdentityContent() {
 		}
 	};
 
+	const stepSubtitle = {
+		upload: t('auth.verifyIdentity.stepUpload'),
+		confirm: t('auth.verifyIdentity.stepConfirm'),
+		consent: t('auth.verifyIdentity.stepConsent'),
+		verify: t('auth.verifyIdentity.stepVerify'),
+		result: t('auth.verifyIdentity.stepResult'),
+	}[step];
+
 	return (
 		<ToastProvider>
 			<AuthCard maxWidth="md">
@@ -739,36 +902,42 @@ function VerifyIdentityContent() {
 					<h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
 						{t('auth.verifyIdentity.title')}
 					</h1>
-					<p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-						{step === 'upload' && t('auth.verifyIdentity.stepUpload')}
-						{step === 'confirm' && t('auth.verifyIdentity.stepConfirm')}
-						{step === 'consent' && t('auth.verifyIdentity.stepConsent')}
-						{step === 'verify' && t('auth.verifyIdentity.stepVerify')}
-						{step === 'result' && t('auth.verifyIdentity.stepResult')}
-					</p>
+					{precheck === 'clear' && (
+						<p className="mt-2 text-sm text-[var(--color-text-secondary)]">{stepSubtitle}</p>
+					)}
 				</div>
 
-				{step !== 'result' && renderStepIndicator()}
-
-				{renderStepContent()}
-
-				{step !== 'upload' && step !== 'result' && (
-					<div className="flex gap-3">
-						<Button variant="outline" fullWidth onClick={handlePrev}>
-							{t('auth.verifyIdentity.verifyBack')}
-						</Button>
-						<Button variant="outline" fullWidth onClick={handleCancel}>
-							{t('auth.verifyIdentity.verifyCancel')}
-						</Button>
+				{precheck === 'checking' ? (
+					<div className="flex justify-center py-10">
+						<div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-border-subtle)] border-t-[var(--color-brand)]" />
 					</div>
-				)}
+				) : precheck === 'verified' || precheck === 'rejected' ? (
+					renderExisting()
+				) : (
+					<>
+						{step !== 'result' && renderStepIndicator()}
 
-				{step === 'upload' && (
-					<div className="text-center">
-						<Button variant="ghost" onClick={handleCancel}>
-							{t('auth.verifyIdentity.verifyCancel')}
-						</Button>
-					</div>
+						{renderStepContent()}
+
+						{step !== 'upload' && step !== 'result' && (
+							<div className="flex gap-3">
+								<Button variant="outline" fullWidth onClick={handlePrev}>
+									{t('auth.verifyIdentity.verifyBack')}
+								</Button>
+								<Button variant="outline" fullWidth onClick={handleCancel}>
+									{t('auth.verifyIdentity.verifyCancel')}
+								</Button>
+							</div>
+						)}
+
+						{step === 'upload' && (
+							<div className="text-center">
+								<Button variant="ghost" onClick={handleCancel}>
+									{t('auth.verifyIdentity.verifyCancel')}
+								</Button>
+							</div>
+						)}
+					</>
 				)}
 			</AuthCard>
 		</ToastProvider>

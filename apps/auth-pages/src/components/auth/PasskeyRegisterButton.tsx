@@ -124,11 +124,11 @@ export function PasskeyRegisterButton({
 		return (
 			<div className="space-y-4">
 				<div className="rounded-md bg-success/10 p-6 text-center">
-					<Fingerprint className="mx-auto h-8 w-8 text-[var(--color-success)]" />
-					<p className="mt-2 text-sm font-medium text-[var(--color-success)]">
+					<Fingerprint className="mx-auto h-8 w-8 text-success-text" />
+					<p className="mt-2 text-sm font-medium text-success-text">
 						{t('passkey.successRegister')}
 					</p>
-					<p className="mt-1 text-xs text-[var(--color-success)]">{t('passkey.available')}</p>
+					<p className="mt-1 text-xs text-success-text">{t('passkey.available')}</p>
 				</div>
 				<Button fullWidth onClick={onSkip}>
 					{t('register.goToDashboard')}
@@ -152,7 +152,7 @@ export function PasskeyRegisterButton({
 			</div>
 
 			{error && (
-				<div className="mt-3 rounded-md bg-danger/10 p-2 text-xs text-danger">
+				<div className="mt-3 rounded-md bg-danger/10 p-2 text-xs text-danger-text">
 					{error}
 				</div>
 			)}

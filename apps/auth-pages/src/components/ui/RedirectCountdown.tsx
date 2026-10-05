@@ -51,7 +51,7 @@ export default function RedirectCountdown({
 				{/* Success Icon */}
 				<div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
 					<svg
-						className="h-8 w-8 text-[var(--color-success)]"
+						className="h-8 w-8 text-success-text"
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke="currentColor"

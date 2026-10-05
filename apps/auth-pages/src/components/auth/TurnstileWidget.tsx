@@ -98,7 +98,7 @@ export function TurnstileWidget({
 	}, [siteKey, action, theme, loadScript, onToken, onError]);
 
 	if (error) {
-		return <div className="text-sm text-danger">{error}</div>;
+		return <div className="text-sm text-danger-text">{error}</div>;
 	}
 
 	return (

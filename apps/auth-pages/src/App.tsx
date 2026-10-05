@@ -54,7 +54,12 @@ function AnalyticsInit() {
 }
 
 function LogoutHandler() {
-	const handleLogout = useLogout();
+	// AUTH-40：裸 /logout 无 URL 租户段，用登录期锚定的 slug 标记补回租户上下文，
+	// 与 dashboard 内嵌登出统一落点（可解析租户 → /<slug>/login；否则 brand 裸根）。
+	const markerSlug = getDashboardSlug();
+	const handleLogout = useLogout(
+		markerSlug ? { returnUrl: `/${markerSlug}/dashboard` } : undefined,
+	);
 	useEffect(() => {
 		handleLogout();
 		// 登出即清跨 tab 的看板 slug 标记（AUTH-53 卫生：不留陈旧租户上下文）
@@ -70,7 +75,7 @@ function NotFoundPage() {
 			<div className="text-center space-y-4">
 				<h1 className="text-6xl font-bold text-[var(--color-text-muted)]">404</h1>
 				<p className="text-lg text-[var(--color-text-secondary)]">{t('notFound.404')}</p>
-				<a href="/" className="text-sm text-[var(--color-brand)] hover:underline">
+				<a href="/" className="text-sm text-brand-text hover:underline">
 					{t('notFound.back')}
 				</a>
 			</div>
@@ -106,6 +111,8 @@ function AppHeader() {
 		'rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-2 py-1 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-700';
 	return (
 		<>
+			{/* AUTH-11：SkipLink 须为 DOM 首停点（fixed 浮层按钮此前排在它前面） */}
+			<SkipLink />
 			{/* 右对齐浮层：chip 在左，主题/语言钉在右侧（新增 chip 不挪动既有按钮） */}
 			<div className="fixed top-3 right-3 z-50 flex items-center gap-2">
 				<TenantSwitchChip className={chromeButtonClass} />
@@ -116,7 +123,6 @@ function AppHeader() {
 					className={chromeButtonClass}
 				/>
 			</div>
-			<SkipLink />
 		</>
 	);
 }
@@ -161,6 +167,8 @@ export default function App() {
 								<Route path="/verify-email" element={<VerifyEmailPage />} />
 								<Route path="/magic-link/confirm" element={<MagicLinkConfirmPage />} />
 								<Route path="/reapply" element={<ReapplyPage />} />
+								{/* AUTH-27：无应用内导航入口，定位为外部直链页（账户手机验证场景）；
+								    租户上下文深链走下方 /:tenantSlug/verify-phone（与 verify-email 对称） */}
 								<Route path="/verify-phone" element={<VerifyPhonePage />} />
 								<Route path="/sso/initiate" element={<SSOInitiatePage />} />
 								<Route path="/error" element={<ErrorPage />} />
@@ -283,9 +291,20 @@ export default function App() {
 								<Route path="/:tenantSlug/reapply" element={<ReapplyPage />} />
 								<Route path="/:tenantSlug/forgot-password" element={<ForgotPasswordPage />} />
 								<Route path="/:tenantSlug/recover-account" element={<RecoverAccountPage />} />
-								<Route path="/:tenantSlug/change-password" element={<ChangePasswordPage />} />
+								{/* AUTH-22：改密页调 authProtected 的 /auth/me/password，必须持会话；
+								    匿名深链此前可直渲染表单（force 流程已改为登录期建会话后进入） */}
+								<Route
+									path="/:tenantSlug/change-password"
+									element={
+										<RequireAuth>
+											<ChangePasswordPage />
+										</RequireAuth>
+									}
+								/>
 								<Route path="/:tenantSlug/magic-link/confirm" element={<MagicLinkConfirmPage />} />
 								<Route path="/:tenantSlug/verify-email" element={<VerifyEmailPage />} />
+								{/* AUTH-27：租户上下文手机验证深链（与 verify-email 对称，成功/返回落租户登录页） */}
+								<Route path="/:tenantSlug/verify-phone" element={<VerifyPhonePage />} />
 								{/* AUTH-50①：租户化 SSO 入口——useParams 取 slug 不再依赖裸链 */}
 								<Route path="/:tenantSlug/sso/initiate" element={<SSOInitiatePage />} />
 								{/* AUTH-48/49：脏 slug 不得把条款/隐私页租户化（未命中白名单 → 404 兜底） */}

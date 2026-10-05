@@ -59,6 +59,9 @@ function OAuthAuthorizeContent() {
 	const [error, setError] = useState('');
 	const [userId, setUserId] = useState('');
 	const [tenantId, setTenantId] = useState('');
+	// AUTH-03：会话未确认（无 token 时 redirectToLogin 的异步 slug 解析在途）不渲染
+	// 同意界面——原实现先渲染完整表单 ~0.5s 再跳走，未登录用户看到同意页闪烁。
+	const [sessionState, setSessionState] = useState<'checking' | 'ready'>('checking');
 
 	// 无会话时的出口：`<slug>/login?redirect=<本 authorize URL>`（TASK-07，短路 brand）。
 	// slug 解析失败回退旧交棒链（由 EntryRouter 决定落点），不白屏。
@@ -75,6 +78,7 @@ function OAuthAuthorizeContent() {
 	useEffect(() => {
 		const token = getAccessToken();
 		if (!token || token === 'undefined' || token === 'null') {
+			// 保持 sessionState='checking'：重定向完成前只渲染加载卡片（AUTH-03）
 			void redirectToLogin();
 			return;
 		}
@@ -83,6 +87,7 @@ function OAuthAuthorizeContent() {
 			setUserId((payload.user_id || payload.sub || '') as string);
 			setTenantId((payload.tenant_id || payload.tenantId || '') as string);
 		}
+		setSessionState('ready');
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -229,6 +234,16 @@ function OAuthAuthorizeContent() {
 
 	const scopes = scope.split(' ').filter(Boolean);
 
+	// AUTH-03：会话未确认前不渲染同意界面（含表单/权限清单），仅加载卡片；
+	// 无会话时 redirectToLogin 已在途，用户不会看到「同意→跳登录」的闪烁。
+	if (sessionState !== 'ready') {
+		return (
+			<AuthCard>
+				<AuthHeader title={t('auth.oauth.authorizeTitle')} subtitle={t('common.loading')} />
+			</AuthCard>
+		);
+	}
+
 	const handleDeny = () => {
 		if (!redirectUri) {
 			setError(t('auth.oauth.missingRedirect'));
@@ -275,7 +290,7 @@ function OAuthAuthorizeContent() {
 			</div>
 
 			{error && (
-				<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-danger">
+				<div className="rounded-md bg-danger/10 p-3 text-sm text-danger-text">
 					{error}
 				</div>
 			)}
@@ -295,7 +310,7 @@ function OAuthAuthorizeContent() {
 							key={s}
 							className="flex items-center gap-2 text-sm text-[var(--color-text-primary)]"
 						>
-							<span className="text-[var(--color-success)]">&#x2713;</span>
+							<span className="text-success-text">&#x2713;</span>
 							{t(scopeToI18nKey(s))}
 						</li>
 					))}

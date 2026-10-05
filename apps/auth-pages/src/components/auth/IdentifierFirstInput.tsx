@@ -81,7 +81,7 @@ export default function IdentifierFirstInput({ onBack }: { onBack: () => void })
 						{t('auth.identifierFirst.continue') || '继续'}
 					</Button>
 				</div>
-				{error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
+				{error && <p className="text-sm text-danger-text">{error}</p>}
 			</div>
 		);
 	}
@@ -107,10 +107,10 @@ export default function IdentifierFirstInput({ onBack }: { onBack: () => void })
 		return (
 			<div className="space-y-4 text-center">
 				<div className="rounded-lg border border-success/30 bg-success/10 p-4">
-					<p className="font-medium text-[var(--color-success)]">
+					<p className="font-medium text-success-text">
 						{match.display_name || match.tenant_name}
 					</p>
-					<p className="text-xs text-[var(--color-success)] mt-1">{match.tenant_name}</p>
+					<p className="text-xs text-success-text mt-1">{match.tenant_name}</p>
 				</div>
 				<Button onClick={() => navigate(`/${slug}/login`)} fullWidth>
 					{(t('auth.identifierFirst.continueTo') || '继续前往 {name}').replace(

@@ -34,7 +34,7 @@ export function ErrorState({ title, description, action }: ErrorStateProps) {
 					strokeWidth="2"
 					strokeLinecap="round"
 					strokeLinejoin="round"
-					className="text-[var(--color-danger)]"
+					className="text-danger-text"
 				>
 					<circle cx="12" cy="12" r="10" />
 					<line x1="15" x2="9" y1="9" y2="15" />

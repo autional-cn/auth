@@ -70,6 +70,9 @@ vi.mock('@autional-cn/shared', () => ({
 	}),
 	getPortalUrl: () => 'https://auth.autional.cn',
 	getRootDomain: () => 'autional.cn',
+	// AUTH-09 登录页页脚合规链：crossAppUrl ∘ TRUST_CENTER_URL 在渲染期被访问
+	crossAppUrl: (base: string, path?: string) => base + (path || ''),
+	TRUST_CENTER_URL: () => 'https://trust.autional.cn',
 }));
 
 vi.mock('@autional-cn/shared/generated/api', async (importOriginal) => {

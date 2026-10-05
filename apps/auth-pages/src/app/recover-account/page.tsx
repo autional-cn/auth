@@ -115,7 +115,7 @@ export default function RecoverAccountPage() {
 						/>
 					</div>
 					{error && (
-						<div className="rounded-md bg-danger/10 p-3 text-sm text-[var(--color-danger)]">
+						<div className="rounded-md bg-danger/10 p-3 text-sm text-danger-text">
 							{error}
 						</div>
 					)}
@@ -159,7 +159,7 @@ export default function RecoverAccountPage() {
 						/>
 					</div>
 					{error && (
-						<div className="rounded-md bg-danger/10 p-3 text-sm text-[var(--color-danger)]">
+						<div className="rounded-md bg-danger/10 p-3 text-sm text-danger-text">
 							{error}
 						</div>
 					)}
@@ -172,13 +172,13 @@ export default function RecoverAccountPage() {
 			{step === 'success' && (
 				<div className="space-y-4 text-center">
 					<div className="rounded-lg bg-success/10 p-6">
-						<p className="text-sm font-medium text-[var(--color-success)]">
+						<p className="text-sm font-medium text-success-text">
 							{t('auth.recoverAccount.success')}
 						</p>
 					</div>
 					<Link
 						to={tenantSlug ? `/${tenantSlug}/login` : '/login'}
-						className="inline-flex items-center text-sm text-[var(--color-brand)] hover:underline"
+						className="inline-flex items-center text-sm text-brand-text hover:underline"
 					>
 						{t('auth.recoverAccount.backToLogin')}
 					</Link>
@@ -186,7 +186,7 @@ export default function RecoverAccountPage() {
 			)}
 
 			<div className="text-center text-sm mt-4">
-				<Link to={tenantSlug ? `/${tenantSlug}/login` : '/login'} className="text-[var(--color-brand)] hover:underline">
+				<Link to={tenantSlug ? `/${tenantSlug}/login` : '/login'} className="text-brand-text hover:underline">
 					{t('auth.recoverAccount.back')}
 				</Link>
 			</div>

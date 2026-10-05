@@ -111,7 +111,7 @@ function PolicyChecklist({
 				return (
 					<div key={req.key} className="flex items-center gap-2 transition-all duration-300">
 						<span
-							className={`transition-all duration-300 ${satisfied ? 'text-[var(--color-success)]' : 'text-neutral-400'}`}
+							className={`transition-all duration-300 ${satisfied ? 'text-success-text' : 'text-neutral-400'}`}
 						>
 							{satisfied ? (
 								<svg
@@ -136,7 +136,7 @@ function PolicyChecklist({
 							)}
 						</span>
 						<span
-							className={`transition-all duration-300 ${satisfied ? 'text-[var(--color-success)] line-through opacity-60' : 'text-neutral-500'}`}
+							className={`transition-all duration-300 ${satisfied ? 'text-success-text line-through opacity-60' : 'text-neutral-500'}`}
 						>
 							{req.label}
 						</span>
@@ -502,9 +502,9 @@ export default function RegisterPage() {
 			case 'checking':
 				return <p className="mt-1 text-xs text-[var(--color-text-secondary)]">检查中...</p>;
 			case 'available':
-				return <p className="mt-1 text-xs text-[var(--color-success)]">✅ 该用户名可用</p>;
+				return <p className="mt-1 text-xs text-success-text">✅ 该用户名可用</p>;
 			case 'taken':
-				return <p className="mt-1 text-xs text-danger">❌ 该用户名已被占用</p>;
+				return <p className="mt-1 text-xs text-danger-text">❌ 该用户名已被占用</p>;
 			default:
 				return null;
 		}
@@ -516,9 +516,9 @@ export default function RegisterPage() {
 			case 'checking':
 				return <p className="mt-1 text-xs text-[var(--color-text-secondary)]">检查中...</p>;
 			case 'available':
-				return <p className="mt-1 text-xs text-[var(--color-success)]">该邮箱可用</p>;
+				return <p className="mt-1 text-xs text-success-text">该邮箱可用</p>;
 			case 'taken':
-				return <p className="mt-1 text-xs text-danger">该邮箱已被注册</p>;
+				return <p className="mt-1 text-xs text-danger-text">该邮箱已被注册</p>;
 			default:
 				return null;
 		}
@@ -685,7 +685,7 @@ export default function RegisterPage() {
 								{...register('reason' as any)}
 							/>
 							{(errors as any).reason?.message && (
-								<p className="text-xs text-danger">{(errors as any).reason.message}</p>
+								<p className="text-xs text-danger-text">{(errors as any).reason.message}</p>
 							)}
 						</div>
 					)}
@@ -755,7 +755,7 @@ export default function RegisterPage() {
 								{t('register.agreeTerms')}
 								<Link
 									to={tenantSlug ? `/${tenantSlug}/terms` : '/terms'}
-									className="text-[var(--color-brand)] transition-all duration-200 hover:underline decoration-2 underline-offset-4"
+									className="text-brand-text transition-all duration-200 hover:underline decoration-2 underline-offset-4"
 									target="_blank"
 									rel="noopener"
 								>
@@ -764,7 +764,7 @@ export default function RegisterPage() {
 								{t('register.and')}
 								<Link
 									to={tenantSlug ? `/${tenantSlug}/privacy` : '/privacy'}
-									className="text-[var(--color-brand)] transition-all duration-200 hover:underline decoration-2 underline-offset-4"
+									className="text-brand-text transition-all duration-200 hover:underline decoration-2 underline-offset-4"
 									target="_blank"
 									rel="noopener"
 								>
@@ -773,12 +773,12 @@ export default function RegisterPage() {
 							</span>
 						</label>
 						{errors.agreeTerms && (
-							<p className="text-xs text-danger">{errors.agreeTerms.message}</p>
+							<p className="text-xs text-danger-text">{errors.agreeTerms.message}</p>
 						)}
 					</div>
 
 					{error && (
-						<div className="rounded-md bg-danger/10 p-3 text-sm text-danger">
+						<div className="rounded-md bg-danger/10 p-3 text-sm text-danger-text">
 							{error}
 						</div>
 					)}
@@ -825,7 +825,7 @@ export default function RegisterPage() {
 				{t('register.hasAccount')}{' '}
 				<Link
 					to={tenantSlug ? `/${tenantSlug}/login` : '/login'}
-					className="text-[var(--color-brand)] transition-all duration-200 hover:underline decoration-2 underline-offset-4"
+					className="text-brand-text transition-all duration-200 hover:underline decoration-2 underline-offset-4"
 				>
 					{t('register.login')}
 				</Link>

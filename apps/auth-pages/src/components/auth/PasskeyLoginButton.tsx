@@ -234,7 +234,7 @@ export function PasskeyLoginButton({ email, tenantId }: PasskeyLoginButtonProps)
 				{t('passkey.submitLogin')}
 			</Button>
 			{error && (
-				<p className="mt-2 text-center text-xs text-danger" data-testid="passkey-error">
+				<p className="mt-2 text-center text-xs text-danger-text" data-testid="passkey-error">
 					{error}
 				</p>
 			)}

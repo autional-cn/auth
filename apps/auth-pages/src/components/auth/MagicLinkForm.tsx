@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
-import { Mail, ArrowLeft } from 'lucide-react';
+import { Mail } from 'lucide-react';
+import { Button, Input, Label } from '@autional-cn/ui';
 import { authMagicLinkRequestPost } from '@autional-cn/shared/generated/api';
 
 interface MagicLinkFormProps {
@@ -33,7 +34,11 @@ export function MagicLinkForm({ tenantId, onBack, mode = 'login' }: MagicLinkFor
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!email.trim()) return;
+		// 与邮箱/短信验证码子表单同口径：即点即验，空输入给原因，不做静默禁用
+		if (!email.trim()) {
+			setError(t('magicLink.emailRequired') || '请输入邮箱');
+			return;
+		}
 
 		setLoading(true);
 		setError('');
@@ -58,22 +63,16 @@ export function MagicLinkForm({ tenantId, onBack, mode = 'login' }: MagicLinkFor
 
 	if (sent) {
 		return (
-			<div className="space-y-4 text-center">
-				<div className="rounded-lg bg-brand/10 p-6">
-					<Mail className="mx-auto h-8 w-8 text-[var(--color-brand)]" />
-					<p className="mt-3 text-sm font-medium text-[var(--color-brand)]">
-						{t(config.sentTitleKey)}
-					</p>
-					<p className="mt-2 text-xs text-[var(--color-brand)]">{t(config.checkEmailKey)}</p>
+			<div className="space-y-4">
+				<div className="rounded-lg bg-brand/10 p-6 text-center">
+					<Mail className="mx-auto h-8 w-8 text-brand-text" />
+					<p className="mt-3 text-sm font-medium text-brand-text">{t(config.sentTitleKey)}</p>
+					<p className="mt-2 text-xs text-brand-text">{t(config.checkEmailKey)}</p>
 				</div>
 				{onBack && (
-					<button
-						onClick={onBack}
-						className="inline-flex items-center text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-					>
-						<ArrowLeft className="mr-2 h-4 w-4" />
+					<Button variant="outline" onClick={onBack} fullWidth>
 						{t('magicLink.back')}
-					</button>
+					</Button>
 				)}
 			</div>
 		);
@@ -83,51 +82,36 @@ export function MagicLinkForm({ tenantId, onBack, mode = 'login' }: MagicLinkFor
 	const subtitleKey = mode === 'register' ? 'register.magicLinkSubtitle' : 'magicLink.subtitle';
 
 	return (
-		<form onSubmit={handleSubmit} className="space-y-4">
+		<form onSubmit={handleSubmit} noValidate className="space-y-4">
 			<div className="text-center">
 				<p className="text-sm font-medium text-[var(--color-text-primary)]">{t(titleKey)}</p>
 				<p className="mt-1 text-xs text-[var(--color-text-secondary)]">{t(subtitleKey)}</p>
 			</div>
 
 			<div className="space-y-2">
-				<label
-					htmlFor="magic-link-email"
-					className="block text-sm font-medium text-[var(--color-text-primary)]"
-				>
-					{t('magicLink.email')}
-				</label>
-				<input
+				<Label htmlFor="magic-link-email">{t('magicLink.email')}</Label>
+				<Input
 					id="magic-link-email"
 					type="email"
+					placeholder="user@example.com"
+					autoComplete="email"
 					value={email}
 					onChange={(e) => setEmail(e.target.value)}
-					placeholder={t('magicLink.emailPlaceholder')}
-					autoFocus
-					className="w-full rounded-md border border-[var(--color-border-subtle)] px-3 py-2 text-sm placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-					required
 				/>
 			</div>
 
-			{error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
+			<div className="flex gap-2">
+				{onBack && (
+					<Button type="button" variant="outline" onClick={onBack} fullWidth>
+						{t('magicLink.back')}
+					</Button>
+				)}
+				<Button type="submit" disabled={loading} isLoading={loading} fullWidth>
+					{loading ? t('magicLink.sending') : t('magicLink.send')}
+				</Button>
+			</div>
 
-			<button
-				type="submit"
-				disabled={loading || !email.trim()}
-				className="w-full rounded-md bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-[var(--color-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
-			>
-				{loading ? t('magicLink.sending') : t('magicLink.send')}
-			</button>
-
-			{onBack && (
-				<button
-					type="button"
-					onClick={onBack}
-					className="inline-flex items-center text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-				>
-					<ArrowLeft className="mr-2 h-4 w-4" />
-					{t('magicLink.back')}
-				</button>
-			)}
+			{error && <p className="text-sm text-danger-text">{error}</p>}
 		</form>
 	);
 }

@@ -97,7 +97,7 @@ export function TenantSelector({
 						onChange(id);
 					}}
 				/>
-				{error && <p className="text-xs text-danger">{error}</p>}
+				{error && <p className="text-xs text-danger-text">{error}</p>}
 			</div>
 		);
 	}
@@ -140,7 +140,7 @@ export function TenantSelector({
 				</select>
 				<ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
 			</div>
-			{error && <p className="text-xs text-danger">{error}</p>}
+			{error && <p className="text-xs text-danger-text">{error}</p>}
 		</div>
 	);
 }

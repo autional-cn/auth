@@ -125,6 +125,23 @@ describe('同意页冷启动（无会话）', () => {
 			);
 		});
 	});
+
+	it('AUTH-03：无会话时同意表单不渲染——跳转在途仅加载卡片（无 0.5s 表单闪烁）', async () => {
+		renderPage();
+
+		// 首帧即断言：修复前完整同意表单（approve/deny + 权限清单）先渲染、后跳走
+		expect(screen.queryByRole('button', { name: 'auth.oauth.approve' })).toBeNull();
+		expect(screen.queryByRole('button', { name: 'auth.oauth.deny' })).toBeNull();
+		expect(screen.queryByText('auth.oauth.requestedPermissions')).toBeNull();
+		expect(screen.getByText('common.loading')).toBeInTheDocument();
+
+		await waitFor(() => {
+			expect(mockReplace).toHaveBeenCalled();
+		});
+		// 跳转在途仍不渲染表单
+		expect(screen.queryByRole('button', { name: 'auth.oauth.approve' })).toBeNull();
+		expect(screen.getByText('common.loading')).toBeInTheDocument();
+	});
 });
 
 describe('同意提交（有会话）', () => {

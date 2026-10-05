@@ -5,6 +5,7 @@ import { useNavigate, useParams, Link } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Label } from '@autional-cn/ui';
+import { extractApiError } from '@autional-cn/shared';
 import { createVerifyPhoneSchema } from '@/lib/validators';
 import type { VerifyPhoneFormData } from '@/lib/validators';
 import { sendSmsCode, verifyPhone } from '@/lib/api.generated';
@@ -29,12 +30,28 @@ export default function VerifyPhonePage() {
 		register,
 		handleSubmit,
 		watch,
+		trigger,
 		formState: { errors },
 	} = useForm<VerifyPhoneFormData>({
 		resolver: zodResolver(schema),
 	});
 
 	const phoneValue = watch('phone');
+
+	// AUTH-28：错误分流（不再只读 data.message——RFC7807 无此字段，服务端语义被吞）。
+	// 后端 Problem 契约带 i18n_key（如 error.phone_invalid_format / error.invalid_verification_code /
+	// error.otp.too_many_attempts）时按本地化键渲染；键未登记（含自动 error.<码>）不直出
+	// 服务端英文——429 走限流文案，余者落通用文案。
+	const resolveErrorMessage = useCallback(
+		(err: unknown, fallbackKey: string): string => {
+			const { i18nKey } = extractApiError(err, '');
+			const localized = i18nKey ? t(i18nKey, '') : '';
+			if (localized) return localized;
+			if ((err as any)?.response?.status === 429) return t('auth.verifyPhone.rateLimited');
+			return t(fallbackKey);
+		},
+		[t],
+	);
 
 	useEffect(() => {
 		if (countdown <= 0) return;
@@ -43,18 +60,20 @@ export default function VerifyPhonePage() {
 	}, [countdown]);
 
 	const handleSendCode = useCallback(async () => {
-		if (!phoneValue || countdown > 0) return;
+		if (countdown > 0 || sending) return;
+		// AUTH-27：格式门控先行——无效手机号不发请求，错误以内联字段提示呈现
+		if (!(await trigger('phone'))) return;
 		setSending(true);
 		setError('');
 		try {
 			await sendSmsCode({ phone: phoneValue });
 			setCountdown(COOLDOWN_SECONDS);
 		} catch (err: any) {
-			setError(err.response?.data?.message || t('auth.verifyPhone.errorSendFailed'));
+			setError(resolveErrorMessage(err, 'auth.verifyPhone.errorSendFailed'));
 		} finally {
 			setSending(false);
 		}
-	}, [phoneValue, countdown, t]);
+	}, [phoneValue, countdown, sending, trigger, resolveErrorMessage]);
 
 	const onSubmit = async (_data: VerifyPhoneFormData) => {
 		setSubmitting(true);
@@ -66,7 +85,7 @@ export default function VerifyPhonePage() {
 				navigate(tenantSlug ? `/${tenantSlug}/login` : '/');
 			}, 2000);
 		} catch (err: any) {
-			setError(err.response?.data?.message || t('auth.verifyPhone.errorVerifyFailed'));
+			setError(resolveErrorMessage(err, 'auth.verifyPhone.errorVerifyFailed'));
 		} finally {
 			setSubmitting(false);
 		}
@@ -78,7 +97,7 @@ export default function VerifyPhonePage() {
 
 			{success ? (
 				<div className="space-y-4">
-					<div className="rounded-md bg-[var(--color-success)]/10 p-4 text-center text-sm text-success">
+					<div className="rounded-md bg-success/10 p-4 text-center text-sm text-success-text">
 						{t('auth.verifyPhone.success')}
 					</div>
 					<Link to={tenantSlug ? `/${tenantSlug}/login` : '/'}>
@@ -128,7 +147,7 @@ export default function VerifyPhonePage() {
 					</div>
 
 					{error && (
-						<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-danger">
+						<div className="rounded-md bg-danger/10 p-3 text-sm text-danger-text">
 							{error}
 						</div>
 					)}
@@ -142,7 +161,7 @@ export default function VerifyPhonePage() {
 			<div className="text-center text-sm">
 				<Link
 					to={tenantSlug ? `/${tenantSlug}/login` : '/'}
-					className="text-[var(--color-brand)] hover:underline"
+					className="text-brand-text hover:underline"
 				>
 					{t('auth.common.backToLogin')}
 				</Link>

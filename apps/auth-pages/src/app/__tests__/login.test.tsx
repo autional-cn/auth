@@ -45,6 +45,9 @@ vi.mock('@autional-cn/shared', () => ({
 		password,
 		passwordTransmission: mode || 'plain',
 	}),
+	// AUTH-09 登录页页脚合规链：crossAppUrl ∘ TRUST_CENTER_URL 在渲染期被访问
+	crossAppUrl: (base: string, path?: string) => base + (path || ''),
+	TRUST_CENTER_URL: () => 'https://trust.autional.cn',
 }));
 
 const mockAuthLoginPost = vi.fn();

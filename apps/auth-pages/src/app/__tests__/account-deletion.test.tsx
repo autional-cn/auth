@@ -384,12 +384,13 @@ describe('AccountDeletionPage - API Error Handling', () => {
 });
 
 describe('AccountDeletionPage - Navigation', () => {
-	it('navigates to dashboard when cancel link is clicked', () => {
+	// AUTH-45③：取消回跳改落 account（原落 dashboard；测试路由无租户段 → 裸链）
+	it('navigates to account page when cancel link is clicked', () => {
 		renderAccountDeletion();
 
 		const cancelLink = screen.getByText('deletion.cancel');
 		fireEvent.click(cancelLink);
 
-		expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+		expect(mockNavigate).toHaveBeenCalledWith('/account');
 	});
 });

@@ -123,7 +123,7 @@ beforeEach(() => {
 describe('ChangePasswordPage', () => {
 	it('渲染强制修改密码模式，显示策略清单和提示横幅', async () => {
 		searchParams = new URLSearchParams(
-			'mode=force&token=abc123&policy=' +
+			'mode=force&policy=' +
 				encodeURIComponent(
 					JSON.stringify({ requireUpper: true, requireLower: true, requireDigit: true }),
 				),
@@ -134,7 +134,7 @@ describe('ChangePasswordPage', () => {
 
 		expect(screen.getByText('changePassword.forceBanner')).toBeInTheDocument();
 		expect(screen.getByText(/changePassword\.forceTitle/)).toBeInTheDocument();
-		expect(screen.getByText('changePassword.firstLogin')).toBeInTheDocument();
+		expect(screen.getByText('changePassword.forceSubtitle')).toBeInTheDocument();
 
 		const user = userEvent.setup();
 		await user.type(screen.getByPlaceholderText('auth.password.newPasswordPlaceholder'), 'Hello');
@@ -147,6 +147,40 @@ describe('ChangePasswordPage', () => {
 		});
 	});
 
+	// AUTH-22 回归锁：force 模式凭据 = 会话 JWT（登录期已建），载荷不得再携
+	// force_token 死字段（identity 不签发也不校验；旧实现把查询串透传）。
+	it('AUTH-22: force 模式提交载荷不含 force_token', async () => {
+		searchParams = new URLSearchParams('mode=force');
+		mockUseSearchParams.mockReturnValue([searchParams, vi.fn()]);
+
+		const user = userEvent.setup();
+		renderPage();
+
+		await user.type(
+			screen.getByPlaceholderText('auth.password.oldPasswordPlaceholder'),
+			'OldPass1',
+		);
+		await user.type(
+			screen.getByPlaceholderText('auth.password.newPasswordPlaceholder'),
+			'NewStr0ng!',
+		);
+		await user.type(
+			screen.getByPlaceholderText('auth.password.confirmPasswordPlaceholder'),
+			'NewStr0ng!',
+		);
+		await user.click(screen.getByRole('button', { name: 'auth.password.setBtn' }));
+
+		await waitFor(() => {
+			expect(mockAuthMePasswordPut).toHaveBeenCalledTimes(1);
+		});
+		const payload = (mockAuthMePasswordPut as any).mock.calls[0][0] as Record<string, unknown>;
+		expect(Object.keys(payload).sort()).toEqual([
+			'newPassword',
+			'oldPassword',
+			'passwordTransmission',
+		]);
+	});
+
 	it('渲染过期密码模式，显示账户中心链接', () => {
 		searchParams = new URLSearchParams();
 		mockUseSearchParams.mockReturnValue([searchParams, vi.fn()]);
@@ -154,7 +188,7 @@ describe('ChangePasswordPage', () => {
 		renderPage();
 
 		expect(screen.queryByText('changePassword.forceBanner')).not.toBeInTheDocument();
-		expect(screen.getByText('changePassword.expiredTitle')).toBeInTheDocument();
+		expect(screen.getByText('changePassword.subtitle')).toBeInTheDocument();
 		expect(screen.getByText('auth.password.backToAccount')).toBeInTheDocument();
 		expect(screen.getByText('changePassword.accountCenter')).toBeInTheDocument();
 		expect(screen.getByText('changePassword.goToAccountCenter →')).toBeInTheDocument();

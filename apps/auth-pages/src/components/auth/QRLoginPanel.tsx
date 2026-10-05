@@ -117,7 +117,7 @@ export default function QRLoginPanel() {
 							<p className="text-xs text-[var(--color-text-secondary)] mb-1">
 								{t('qrLogin.matchNumber')}
 							</p>
-							<span className="text-2xl font-bold tracking-widest text-[var(--color-brand)]">
+							<span className="text-2xl font-bold tracking-widest text-brand-text">
 								{numberMatching}
 							</span>
 						</div>
@@ -139,12 +139,12 @@ export default function QRLoginPanel() {
 
 			{status === 'success' && (
 				<div className="rounded-lg border border-success/30 bg-success/10 p-6 text-center">
-					<p className="text-[var(--color-success)] font-medium">{t('qrLogin.success')}</p>
+					<p className="text-success-text font-medium">{t('qrLogin.success')}</p>
 				</div>
 			)}
 
 			{error && (
-				<div className="rounded-md bg-danger/10 p-3 text-sm text-danger text-center">
+				<div className="rounded-md bg-danger/10 p-3 text-sm text-danger-text text-center">
 					{error}
 					{status === 'error' && (
 						<Button

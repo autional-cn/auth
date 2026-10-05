@@ -250,7 +250,7 @@ export default function DashboardPage() {
 
 			<div className="space-y-6">
 				<div className="text-center">
-					<h1 className="text-2xl font-bold text-[var(--color-brand)]">{t('dashboard.title')}</h1>
+					<h1 className="text-2xl font-bold text-brand-text">{t('dashboard.title')}</h1>
 					<p className="mt-2 text-sm text-[var(--color-text-secondary)]">
 						{t('dashboard.loggedIn')}
 					</p>
@@ -263,7 +263,7 @@ export default function DashboardPage() {
 						</span>
 						<button
 							onClick={loadAccountData}
-							className="shrink-0 text-sm font-medium text-[var(--color-brand)] transition-all duration-200 hover:underline decoration-2 underline-offset-4"
+							className="shrink-0 text-sm font-medium text-brand-text transition-all duration-200 hover:underline decoration-2 underline-offset-4"
 						>
 							{t('dashboard.retry', '重试')}
 						</button>
@@ -299,7 +299,7 @@ export default function DashboardPage() {
 						<div className="flex items-center justify-between">
 							<span className="text-sm text-[var(--color-text-secondary)]">MFA</span>
 							<span
-								className={`text-sm font-medium ${displayUser?.mfaEnabled ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)]'}`}
+								className={`text-sm font-medium ${displayUser?.mfaEnabled ? 'text-success-text' : 'text-[var(--color-text-muted)]'}`}
 							>
 								{displayUser?.mfaEnabled ? t('dashboard.mfaEnabled') : t('dashboard.mfaDisabled')}
 							</span>
@@ -315,17 +315,25 @@ export default function DashboardPage() {
 						<div className="flex items-center justify-between">
 							<span className="text-sm text-[var(--color-text-secondary)]">MFA</span>
 							<span
-								className={`text-sm font-medium ${displayUser?.mfaEnabled ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)]'}`}
+								className={`text-sm font-medium ${displayUser?.mfaEnabled ? 'text-success-text' : 'text-[var(--color-text-muted)]'}`}
 							>
 								{displayUser?.mfaEnabled ? t('dashboard.mfaEnabled') : t('dashboard.mfaDisabled')}
 							</span>
 						</div>
-						<a
-							href={userPortalUrl(slug, '/security')}
-							className="inline-block text-sm text-[var(--color-brand)] transition-all duration-200 hover:underline decoration-2 underline-offset-4 font-medium"
-						>
-							{t('dashboard.manageSecurity')} →
-						</a>
+						<div className="flex flex-wrap gap-x-4 gap-y-1">
+							<a
+								href={userPortalUrl(slug, '/security')}
+								className="inline-block text-sm text-brand-text transition-all duration-200 hover:underline decoration-2 underline-offset-4 font-medium"
+							>
+								{t('dashboard.manageSecurity')} →
+							</a>
+							<Link
+								to={slug ? `/${slug}/account` : '/account'}
+								className="inline-block text-sm text-brand-text transition-all duration-200 hover:underline decoration-2 underline-offset-4 font-medium"
+							>
+								{t('dashboard.accountHub', '账户与安全')} →
+							</Link>
+						</div>
 					</div>
 				)}
 
@@ -344,14 +352,14 @@ export default function DashboardPage() {
 										s.userAgent?.substring(0, 30) ||
 										t('dashboard.unknownDevice')}
 								</span>
-								<span className={s.isCurrentSession ? 'text-[var(--color-success)] font-medium' : ''}>
+								<span className={s.isCurrentSession ? 'text-success-text font-medium' : ''}>
 									{s.isCurrentSession ? t('dashboard.currentSession') : s.lastActiveAt || ''}
 								</span>
 							</div>
 						))}
 						<a
 							href={userPortalUrl(slug, '/sessions')}
-							className="text-xs text-[var(--color-brand)] transition-all duration-200 hover:underline decoration-2 underline-offset-4 block mt-2"
+							className="text-xs text-brand-text transition-all duration-200 hover:underline decoration-2 underline-offset-4 block mt-2"
 						>
 							{t('dashboard.viewAllSessions')}
 						</a>

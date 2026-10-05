@@ -48,7 +48,7 @@ export default function ReapplyPage() {
 	return (
 		<AuthCard title={t('auth.reapply.title')} subtitle={t('auth.reapply.subtitle')}>
 			{error && (
-				<div className="mb-4 rounded-md bg-danger/10 p-3 text-sm text-danger">
+				<div className="mb-4 rounded-md bg-danger/10 p-3 text-sm text-danger-text">
 					{error}
 				</div>
 			)}
@@ -80,7 +80,7 @@ export default function ReapplyPage() {
 						className="w-full rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
 						{...register('reason')}
 					/>
-					{errors.reason?.message && <p className="text-xs text-danger">{errors.reason.message}</p>}
+					{errors.reason?.message && <p className="text-xs text-danger-text">{errors.reason.message}</p>}
 				</div>
 
 				<Button type="submit" fullWidth isLoading={loading}>

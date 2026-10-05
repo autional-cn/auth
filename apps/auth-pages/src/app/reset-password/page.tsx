@@ -178,7 +178,7 @@ function ResetPasswordContent() {
 				</div>
 
 				{tokenError && (
-					<div className="rounded-md bg-danger/10 p-3 text-sm text-danger">
+					<div className="rounded-md bg-danger/10 p-3 text-sm text-danger-text">
 						{tokenError}
 					</div>
 				)}
@@ -189,7 +189,7 @@ function ResetPasswordContent() {
 			</form>
 
 			<div className="text-center text-sm">
-				<Link to="/" className="text-[var(--color-brand)] hover:underline">
+				<Link to="/" className="text-brand-text hover:underline">
 					{t('auth.common.backToLogin')}
 				</Link>
 			</div>

@@ -125,7 +125,7 @@ export default function AccountDeletionPage() {
 			<AuthCard>
 				<AuthHeader title={t('deletion.title')} subtitle={t('deletion.warning')} />
 
-				<div className="rounded-md bg-danger/10 p-4 text-sm text-[var(--color-danger)]">
+				<div className="rounded-md bg-danger/10 p-4 text-sm text-danger-text">
 					<p className="font-semibold">{t('deletion.irreversible')}</p>
 					<ul className="mt-2 list-inside list-disc space-y-1">
 						<li>{t('deletion.itemProfile')}</li>
@@ -139,14 +139,14 @@ export default function AccountDeletionPage() {
 					<p>{t('deletion.alsoInAccountCenter')}</p>
 					<a
 						href={userPortalUrl(slug, '/security')}
-						className="text-[var(--color-brand)] hover:underline font-medium"
+						className="text-brand-text hover:underline font-medium"
 					>
 						{t('deletion.goToAccountCenter')} →
 					</a>
 				</div>
 
 				{error && (
-					<div className="rounded-md bg-danger/10 p-3 text-sm text-danger">
+					<div className="rounded-md bg-danger/10 p-3 text-sm text-danger-text">
 						{error}
 					</div>
 				)}
@@ -171,8 +171,8 @@ export default function AccountDeletionPage() {
 				<div className="text-center text-sm">
 					<button
 						type="button"
-						onClick={() => navigate(tenantSlug ? `/${tenantSlug}/dashboard` : '/dashboard')}
-						className="text-[var(--color-brand)] hover:underline"
+						onClick={() => navigate(tenantSlug ? `/${tenantSlug}/account` : '/account')}
+						className="text-brand-text hover:underline"
 					>
 						{t('deletion.cancel')}
 					</button>
