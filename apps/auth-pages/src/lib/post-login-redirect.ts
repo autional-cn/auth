@@ -10,14 +10,15 @@ import {
 export function getPostLoginTarget(opts: {
 	tenantSlug?: string | null;
 	redirect?: string | null;
-	user?: { metadata?: { portal_preferences?: { default?: string } } } | null;
+	// 响应经 shared 拦截器 camel 化：metadata.portal_preferences → portalPreferences
+	user?: { metadata?: { portalPreferences?: { default?: string } } } | null;
 }): string {
 	if (opts.redirect && isValidRedirect(opts.redirect)) {
 		return opts.redirect;
 	}
 
 	// 1. 用户偏好的默认 Portal
-	const prefs = opts.user?.metadata?.portal_preferences;
+	const prefs = opts.user?.metadata?.portalPreferences;
 	if (prefs?.default) {
 		const portalUrl = getPortalUrl(prefs.default, opts.tenantSlug || undefined);
 		if (portalUrl) return portalUrl;

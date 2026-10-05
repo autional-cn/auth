@@ -12,6 +12,7 @@ import {
 import { loadAuthExtras } from '@/lib/api';
 import { anchorSessionFromToken } from '@/lib/anchor-session';
 import { exchangeCodeForToken } from '@/lib/api.generated';
+import { oauthErrorText } from '@/lib/oauth-error-text';
 import RedirectCountdown from '@/components/ui/RedirectCountdown';
 import { useI18n } from '@/lib/i18n';
 import { AuthCard } from '@/components/auth/AuthCard';
@@ -43,7 +44,14 @@ function OAuthCallbackContent() {
 		const handleCallback = async () => {
 			if (errorParam) {
 				setStatus('error');
-				setMessage(errorDescription || t('auth.oauth.errorOccurred'));
+				// AUTH-46③：error 码/描述 → 本地化（未知码回落描述原文，不直出英文裸句）
+				setMessage(
+					oauthErrorText(t, {
+						code: errorParam,
+						description: errorDescription,
+						fallback: t('auth.oauth.errorOccurred'),
+					}),
+				);
 				return;
 			}
 
@@ -109,7 +117,9 @@ function OAuthCallbackContent() {
 				}
 			} catch (err) {
 				setStatus('error');
-				setMessage(extractApiError(err, t('oauth.callback.failed')).message);
+				// AUTH-46③：错误体带 i18n_key 时按本地化键渲染；无键回落归一化消息
+				const e = extractApiError(err, t('oauth.callback.failed'));
+				setMessage(e.i18nKey ? t(e.i18nKey, e.message) : e.message);
 			}
 		};
 

@@ -30,17 +30,6 @@ vi.mock('@/hooks/use-tenant-slug', () => ({
 	useResolvedTenantSlug: () => 'demo',
 }));
 
-vi.mock('@/lib/api', () => ({
-	loadAuthExtras: vi.fn(() => Promise.resolve()),
-}));
-
-vi.mock('@/lib/api.generated', () => ({
-	beginPasskeyLogin: vi.fn(() => Promise.resolve({ data: {} })),
-	completePasskeyLogin: vi.fn(() => Promise.resolve({ data: { accessToken: 'test-token' } })),
-	beginPasskeyRegister: vi.fn(() => Promise.resolve({ data: {} })),
-	completePasskeyRegister: vi.fn(() => Promise.resolve({ data: {} })),
-}));
-
 vi.mock('@/lib/i18n', () => ({
 	useI18n: () => ({
 		t: (key: string) => key,
@@ -50,80 +39,56 @@ vi.mock('@/lib/i18n', () => ({
 
 import PasskeyPage from '../passkey/page';
 
-function renderPasskey(mode: 'login' | 'register' = 'login') {
+// AUTH-39：本页为指引页——不再内嵌第二套 WebAuthn 登录链（真实入口 = 登录页
+// PasskeyLoginButton），所有链接文案与行为对齐。
+function renderPasskey() {
 	return render(
-		<MemoryRouter initialEntries={[`/passkey?mode=${mode}`]}>
+		<MemoryRouter initialEntries={['/passkey']}>
 			<PasskeyPage />
 		</MemoryRouter>,
 	);
 }
 
-describe('PasskeyPage', () => {
+describe('PasskeyPage（指引页）', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
-	describe('login mode', () => {
-		it('renders title and subtitle for login mode', () => {
-			renderPasskey('login');
-			expect(screen.getByText('passkey.titleLogin')).toBeInTheDocument();
-			expect(screen.getByText('passkey.subtitleLogin')).toBeInTheDocument();
-		});
-
-		it('renders submit button for login', () => {
-			renderPasskey('login');
-			expect(screen.getByText('passkey.submitLogin')).toBeInTheDocument();
-		});
-
-		it('renders back button to login page', () => {
-			renderPasskey('login');
-			expect(screen.getByText('passkey.backLogin')).toBeInTheDocument();
-		});
-
-		it('renders what-is-passkey info section', () => {
-			renderPasskey('login');
-			expect(screen.getByText('passkey.whatIs')).toBeInTheDocument();
-			expect(screen.getByText('passkey.description')).toBeInTheDocument();
-		});
-
-		it('shows unsupported warning when WebAuthn is not available', () => {
-			renderPasskey('login');
-			expect(screen.getByText('passkey.unsupported')).toBeInTheDocument();
-		});
+	it('renders guidance title and subtitle', () => {
+		renderPasskey();
+		expect(screen.getByText('passkey.titleLogin')).toBeInTheDocument();
+		expect(screen.getByText('passkey.guidanceSubtitle')).toBeInTheDocument();
 	});
 
-	describe('register mode', () => {
-		it('renders redirect notice for register mode', () => {
-			renderPasskey('register');
-			expect(screen.getByText('passkey.registerMoved')).toBeInTheDocument();
-		});
-
-		it('renders go-to-account-center link for register', () => {
-			renderPasskey('register');
-			expect(screen.getByText(/passkey\.goToAccountCenter/)).toBeInTheDocument();
-		});
-
-		it('renders back link that navigates to dashboard', () => {
-			renderPasskey('register');
-			const backBtn = screen.getByText('passkey.backLogin');
-			expect(backBtn).toBeInTheDocument();
-			fireEvent.click(backBtn);
-			expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
-		});
+	it('renders what-is-passkey info section', () => {
+		renderPasskey();
+		expect(screen.getByText('passkey.whatIs')).toBeInTheDocument();
+		expect(screen.getByText('passkey.description')).toBeInTheDocument();
 	});
 
-	describe('error handling', () => {
-		it('submit button is disabled when WebAuthn unavailable', () => {
-			renderPasskey('login');
-			const btn = screen.getByText('passkey.submitLogin');
-			expect(btn).toBeDisabled();
-		});
+	it('links to tenant-scoped login page for passkey sign-in', () => {
+		renderPasskey();
+		const link = screen.getByText(/passkey\.goToLogin/).closest('a');
+		expect(link).toHaveAttribute('href', '/demo/login');
+		expect(screen.getByText('passkey.loginGuidance')).toBeInTheDocument();
 	});
 
-	describe('success state', () => {
-		it('does not show submit buttons when success is displayed', () => {
-			renderPasskey('login');
-			expect(screen.queryByText('passkey.successLogin')).not.toBeInTheDocument();
-		});
+	it('links to account center for managing passkeys', () => {
+		renderPasskey();
+		const link = screen.getByText(/passkey\.goToAccountCenter/).closest('a');
+		expect(link).toHaveAttribute('href', '/user/demo/security');
+		expect(screen.getByText('passkey.registerMoved')).toBeInTheDocument();
+	});
+
+	it('「使用密码登录」按钮导航到登录页（文案-行为对齐）', () => {
+		renderPasskey();
+		const backBtn = screen.getByText('passkey.backLogin');
+		fireEvent.click(backBtn);
+		expect(mockNavigate).toHaveBeenCalledWith('/demo/login');
+	});
+
+	it('不再渲染 WebAuthn 登录发起按钮（无第二套登录链/无原始错误直渲）', () => {
+		renderPasskey();
+		expect(screen.queryByText('passkey.submitLogin')).not.toBeInTheDocument();
 	});
 });

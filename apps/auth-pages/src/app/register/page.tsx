@@ -163,6 +163,8 @@ export default function RegisterPage() {
 	const [usernameStatus, setUsernameStatus] = useState<CheckStatus>('idle');
 	const [emailStatus, setEmailStatus] = useState<CheckStatus>('idle');
 	const [registrationSuccess, setRegistrationSuccess] = useState(false);
+	// 注册成功后的 Passkey 登记需要原口令重认证（begin 端点 password 必填）
+	const [registeredPassword, setRegisteredPassword] = useState('');
 	const [rateLimitStep, setRateLimitStep] = useState(0);
 	const turnstileTokenRef = useRef<string>('');
 
@@ -468,6 +470,7 @@ export default function RegisterPage() {
 			}
 
 			await loadAuthExtras().catch(() => {});
+			setRegisteredPassword(data.password);
 			setRegistrationSuccess(true);
 		} catch (err: any) {
 			const status = err?.response?.status;
@@ -551,6 +554,8 @@ export default function RegisterPage() {
 
 				{authConfig?.passkeyEnabled !== false && (
 					<PasskeyRegisterButton
+						password={registeredPassword}
+						tenantId={authConfig?.tenantId || selectedTenantId || undefined}
 						onSkip={() =>
 							(window.location.href = tenantSlug ? `/${tenantSlug}/dashboard` : '/dashboard')
 						}

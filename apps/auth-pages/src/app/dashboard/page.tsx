@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Link } from 'react-router';
-import { useAuth, extractItem, extractList } from '@autional-cn/shared';
-import { sessionsUserSessionsByUser, authMeMemberships } from '@autional-cn/shared/generated/api';
+import { useAuth, extractList } from '@autional-cn/shared';
+import { authMeSessions, authMeMemberships, authMePut } from '@autional-cn/shared/generated/api';
 import { getMe } from '@/lib/api';
 import { AuthCard } from '@/components/auth/AuthCard';
 import {
@@ -13,7 +13,6 @@ import {
 	usePortalCatalog,
 	getCurrentTenantId,
 	usePublicTenantSlugs,
-	API_BASE_URL,
 } from '@autional-cn/shared';
 import {
 	Shield,
@@ -58,6 +57,15 @@ const PORTAL_LABELS: Record<string, string> = {
 	developer: 'dashboard.developerPortal',
 };
 
+// /auth/me/sessions payload 经拦截器 camel 化后的行形状（见 identity dto.SessionResponse）
+interface SessionInfo {
+	deviceType?: string;
+	userAgent?: string;
+	ip?: string;
+	isCurrentSession?: boolean;
+	lastActiveAt?: string;
+}
+
 export default function DashboardPage() {
 	const navigate = useNavigate();
 	const { tenantSlug } = useParams<{ tenantSlug?: string }>();
@@ -73,10 +81,11 @@ export default function DashboardPage() {
 	};
 	usePageTitle('dashboard.title');
 	const [loading, setLoading] = useState(true);
+	const [meError, setMeError] = useState(false);
 	const [meData, setMeData] = useState<any>(null);
 	const [memberships, setMemberships] = useState<MembershipInfo[]>([]);
 	const [pendingMembers, setPendingMembers] = useState<MembershipInfo[]>([]);
-	const [sessions, setSessions] = useState<any[]>([]);
+	const [sessions, setSessions] = useState<SessionInfo[]>([]);
 
 	// 获取系统 Portal 列表
 	const [showPrefs, setShowPrefs] = useState(false);
@@ -110,9 +119,10 @@ export default function DashboardPage() {
 		}
 	};
 
-	// 从 meData/user metadata 加载 Portal 偏好
+	// 从 meData/user metadata 加载 Portal 偏好（/auth/me 的 metadata 经拦截器 camel 化，
+	// 存储键 portal_preferences → portalPreferences；值为保存时的 JSON 字符串）
 	useEffect(() => {
-		const remote = meData?.metadata?.portal_preferences || user?.metadata?.portal_preferences;
+		const remote = meData?.metadata?.portalPreferences ?? user?.metadata?.portalPreferences;
 		if (remote) {
 			try {
 				const parsed = typeof remote === 'string' ? JSON.parse(remote) : remote;
@@ -120,33 +130,26 @@ export default function DashboardPage() {
 			} catch {
 				/* ignore */
 			}
-		} else if (meData?.tenant_type || user?.tenant_type) {
+		} else if (meData?.tenantType || user?.tenant_type) {
 			// 无用户偏好时，根据租户类型使用默认模板
-			setPrefs(getDefaultPrefsByTenantType(meData?.tenant_type || user?.tenant_type));
+			setPrefs(getDefaultPrefsByTenantType(meData?.tenantType || user?.tenant_type));
 		}
 	}, [meData, user]);
 
-	// 保存 Portal 偏好到远程
+	// 保存 Portal 偏好到远程（经 shared 客户端：拦截器注入鉴权/租户头并把书面 camel 键
+	// 转 snake 落库——存储键 portal_preferences；读取侧经拦截器还原为 portalPreferences）
 	const savePrefs = useCallback(async (newPrefs: typeof prefs) => {
 		setPrefs(newPrefs);
 		setShowPrefs(false);
-		const token = getAccessToken();
-		if (!token) return;
 		try {
-			await fetch(`${API_BASE_URL}/identity/api/v1/auth/me`, {
-				method: 'PUT',
-				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-				body: JSON.stringify({
-					metadata: { portal_preferences: JSON.stringify(newPrefs) },
-				}),
-			});
+			await authMePut({ metadata: { portalPreferences: JSON.stringify(newPrefs) } });
 		} catch {
 			/* background save */
 		}
 	}, []);
 
 	// 获取系统 Portal 列表（shared usePortalCatalog：self 端点 + 容错口径内置）
-	const sessionTenantId = meData?.tenant_id || user?.tenant_id || getCurrentTenantId();
+	const sessionTenantId = user?.tenant_id || getCurrentTenantId();
 	// 平台租户不再特判隐藏（U94 移除）：2026-10-03 线上实测 self 端点对 platform 会话
 	// 200 可用，当时"platform 平面会话 403"的前提已不复现；拉取失败/空列表时磁贴区
 	// （allPortals.length > 0 条件）自然不渲染，无需按租户特判。
@@ -154,6 +157,36 @@ export default function DashboardPage() {
 		tenantId: sessionTenantId,
 		slug: tenantSlug,
 	});
+
+	// 账户数据装载：/auth/me 失败 → meError 非阻塞错误态 + 重试按钮复用本函数；
+	// 会话/成员卡失败仅隐藏对应卡片，不阻塞页面主体（AUTH-43/44）
+	const loadAccountData = useCallback(async () => {
+		setLoading(true);
+		try {
+			const res = await getMe();
+			setMeData(res);
+			setMeError(false);
+		} catch {
+			setMeError(true);
+		}
+		try {
+			// /auth/me/sessions：自作用域端点，payload = {items: [...]}（拦截器已 camel 化）
+			const sessRes = await authMeSessions();
+			setSessions(extractList<SessionInfo>(sessRes));
+		} catch {
+			/* 会话卡隐藏即可 */
+		}
+		try {
+			// /auth/me/memberships：payload 为数组（NewDataResponse）
+			const memRes = await authMeMemberships();
+			const items = extractList<MembershipInfo>(memRes);
+			setMemberships(items);
+			setPendingMembers(items.filter((m) => m.status === 'pending'));
+		} catch {
+			/* 成员卡隐藏即可 */
+		}
+		setLoading(false);
+	}, []);
 
 	useEffect(() => {
 		const token = accessToken || getAccessToken();
@@ -164,43 +197,8 @@ export default function DashboardPage() {
 			}
 		}
 
-		getMe()
-			.then((res) => {
-				setMeData(res);
-				const userId = res.id || user?.id;
-				if (userId) {
-					sessionsUserSessionsByUser(userId)
-						.then((sessRes: any) => {
-							const sess = extractItem<{ sessions?: unknown[]; items?: unknown[] }>(
-								sessRes.data,
-							);
-							setSessions((sess?.sessions as unknown[]) || extractList(sessRes.data) || []);
-						})
-						.catch(() => {
-							// 静默失败
-						});
-				}
-			})
-			.catch(() => {
-				// 静默失败
-			});
-
-		authMeMemberships()
-			.then((res) => {
-				const items: MembershipInfo[] = (res as any)?.items ?? [];
-				setMemberships(items);
-				const pending = items.filter((m) => m.status === 'pending');
-				if (pending.length > 0) {
-					setPendingMembers(pending);
-				}
-			})
-			.catch(() => {
-				// 静默失败
-			})
-			.finally(() => {
-				setLoading(false);
-			});
-	}, [accessToken, navigate]);
+		loadAccountData();
+	}, [accessToken, navigate, loadAccountData]);
 
 	const handleLogout = useLogout();
 
@@ -245,7 +243,7 @@ export default function DashboardPage() {
 			{pendingMembers.length > 0 && (
 				<div className="space-y-3">
 					{pendingMembers.map((m) => (
-						<PendingApprovalBanner key={m.tenant_id} tenantName={m.tenant_name} status={m.status} />
+						<PendingApprovalBanner key={m.tenantId} tenantName={m.tenantName} status={m.status} />
 					))}
 				</div>
 			)}
@@ -257,6 +255,20 @@ export default function DashboardPage() {
 						{t('dashboard.loggedIn')}
 					</p>
 				</div>
+
+				{meError && (
+					<div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] px-4 py-3">
+						<span className="text-sm text-[var(--color-text-secondary)]">
+							{t('dashboard.accountLoadFailed', '账户信息加载失败，可重试')}
+						</span>
+						<button
+							onClick={loadAccountData}
+							className="shrink-0 text-sm font-medium text-[var(--color-brand)] transition-all duration-200 hover:underline decoration-2 underline-offset-4"
+						>
+							{t('dashboard.retry', '重试')}
+						</button>
+					</div>
+				)}
 
 				<div className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] p-6 space-y-4">
 					<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
@@ -322,16 +334,18 @@ export default function DashboardPage() {
 						<h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
 							{t('dashboard.activeSessions')}
 						</h3>
-						{sessions.slice(0, 3).map((s: any, i: number) => (
+						{sessions.slice(0, 3).map((s, i: number) => (
 							<div
 								key={i}
 								className="flex items-center justify-between text-xs text-[var(--color-text-secondary)]"
 							>
 								<span>
-									{s.device || s.user_agent?.substring(0, 30) || t('dashboard.unknownDevice')}
+									{s.deviceType ||
+										s.userAgent?.substring(0, 30) ||
+										t('dashboard.unknownDevice')}
 								</span>
-								<span className={s.is_current ? 'text-[var(--color-success)] font-medium' : ''}>
-									{s.is_current ? t('dashboard.currentSession') : s.last_active_at || ''}
+								<span className={s.isCurrentSession ? 'text-[var(--color-success)] font-medium' : ''}>
+									{s.isCurrentSession ? t('dashboard.currentSession') : s.lastActiveAt || ''}
 								</span>
 							</div>
 						))}

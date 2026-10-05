@@ -163,7 +163,7 @@ describe('同意提交（有会话）', () => {
 		expect(mockReplace).not.toHaveBeenCalled();
 	});
 
-	it('服务端拒绝 → 呈现 error_description，不跳转', async () => {
+	it('服务端拒绝（已知码 login_required）→ 码级本地化，不跳转', async () => {
 		const user = userEvent.setup();
 		mockFetch.mockImplementation((url: string, init?: any) => {
 			if (String(url).includes('/bff/oauth/api/v1/oauth/authorize')) {
@@ -182,9 +182,11 @@ describe('同意提交（有会话）', () => {
 
 		await user.click(screen.getByRole('button', { name: 'auth.oauth.approve' }));
 
+		// AUTH-46①：已知错误码经 oauthErrorText 映射为本地化键（描述原文不落屏）
 		await waitFor(() => {
-			expect(screen.getByText('会话已失效')).toBeInTheDocument();
+			expect(screen.getByText('oauth.error.loginRequired')).toBeInTheDocument();
 		});
+		expect(screen.queryByText('会话已失效')).toBeNull();
 		expect(locationMock.href).toBe('');
 	});
 });

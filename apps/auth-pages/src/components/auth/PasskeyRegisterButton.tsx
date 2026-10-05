@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { Button } from '@autional-cn/ui';
 import { Fingerprint } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
+import { extractApiError } from '@autional-cn/shared';
 import { beginPasskeyRegister, completePasskeyRegister } from '@/lib/api.generated';
+import { preparePasswordForTenant } from '@/lib/password-transmission';
 
 function base64urlToBuffer(base64url: string): ArrayBuffer {
 	const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
@@ -22,9 +24,18 @@ function bufferToBase64url(buffer: ArrayBuffer): string {
 interface PasskeyRegisterButtonProps {
 	onSkip: () => void;
 	onSuccess?: () => void;
+	/** 注册时用户输入的原始口令（begin 端点 password 必填，校验用户身份） */
+	password: string;
+	/** 租户权威 id（密码传输模式解析用，与注册/登录同一口径） */
+	tenantId?: string;
 }
 
-export function PasskeyRegisterButton({ onSkip, onSuccess }: PasskeyRegisterButtonProps) {
+export function PasskeyRegisterButton({
+	onSkip,
+	onSuccess,
+	password,
+	tenantId,
+}: PasskeyRegisterButtonProps) {
 	const { t } = useI18n();
 	const [loading, setLoading] = useState(false);
 	const [registered, setRegistered] = useState(false);
@@ -39,9 +50,14 @@ export function PasskeyRegisterButton({ onSkip, onSuccess }: PasskeyRegisterButt
 		setError('');
 
 		try {
+			// U385/AUTH-39：begin 端点 password 必填（后端据此经 VerifyPassword 校验身份）。
+			// hash 租户下裸明文必败 —— 必须按租户传输模式预处理（与注册/自动登录同一形态）。
+			const transmission = await preparePasswordForTenant(tenantId || '', password);
 			// 1. Request registration options from server
-			// TODO: pass real userName once user context is available in this component
-			const optionsRes = await beginPasskeyRegister({ userName: '' });
+			const optionsRes = await beginPasskeyRegister({
+				userName: '',
+				password: transmission.password,
+			});
 			const data = (optionsRes as any)?.data || optionsRes;
 			const options = data.response || data;
 
@@ -87,7 +103,9 @@ export function PasskeyRegisterButton({ onSkip, onSuccess }: PasskeyRegisterButt
 				// User cancelled the browser prompt — silent handling
 				setError('');
 			} else {
-				setError(err?.response?.data?.message || err?.message || t('passkey.registerFailed'));
+				// AUTH-39：错误体带 i18n_key 时按本地化键渲染，避免原始英文直渲
+				const apiErr = extractApiError(err, t('passkey.registerFailed'));
+				setError(apiErr.i18nKey ? t(apiErr.i18nKey, apiErr.message) : apiErr.message);
 			}
 		} finally {
 			setLoading(false);

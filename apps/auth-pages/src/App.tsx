@@ -286,6 +286,8 @@ export default function App() {
 								<Route path="/:tenantSlug/change-password" element={<ChangePasswordPage />} />
 								<Route path="/:tenantSlug/magic-link/confirm" element={<MagicLinkConfirmPage />} />
 								<Route path="/:tenantSlug/verify-email" element={<VerifyEmailPage />} />
+								{/* AUTH-50①：租户化 SSO 入口——useParams 取 slug 不再依赖裸链 */}
+								<Route path="/:tenantSlug/sso/initiate" element={<SSOInitiatePage />} />
 								{/* AUTH-48/49：脏 slug 不得把条款/隐私页租户化（未命中白名单 → 404 兜底） */}
 								<Route
 									path="/:tenantSlug/terms"

@@ -10,14 +10,14 @@ const {
 	mockApiClientGet,
 	mockGetMe,
 	mockAuthMeMemberships,
-	mockSessionsUserSessionsByUserId,
+	mockAuthMeSessions,
 	mockPublicTenants,
 } = vi.hoisted(() => ({
 	mockHandleLogout: vi.fn(),
 	mockApiClientGet: vi.fn(() => Promise.resolve({ data: { items: [] } })),
 	mockGetMe: vi.fn(),
 	mockAuthMeMemberships: vi.fn(() => Promise.resolve({ items: [] })),
-	mockSessionsUserSessionsByUserId: vi.fn(() => Promise.resolve({ items: [] })),
+	mockAuthMeSessions: vi.fn(() => Promise.resolve({ items: [] })),
 	mockPublicTenants: vi.fn(
 		(): { data: Array<{ id: string; name: string }>; isSuccess: boolean } => ({
 			data: [],
@@ -89,9 +89,13 @@ vi.mock('react-router', async () => {
 	};
 });
 
-vi.mock('@autional-cn/shared', () => {
+vi.mock('@autional-cn/shared', async () => {
+	// extractList 取真实现：页面数据管线（sessions/memberships 装载）依赖其信封解包语义
+	const actual =
+		await vi.importActual<typeof import('@autional-cn/shared')>('@autional-cn/shared');
 	const portalUrl = (code: string) => `http://${code}.example.com`;
 	return {
+		extractList: actual.extractList,
 		useAuthStore: Object.assign(
 			vi.fn(() => ({ user: state.user, accessToken: state.accessToken })),
 			{ getState: vi.fn(() => ({ user: state.user, accessToken: state.accessToken })) },
@@ -150,8 +154,8 @@ vi.mock('@autional-cn/shared', () => {
 
 vi.mock('@autional-cn/shared/generated/api', () => ({
 	authMeMemberships: (...args: any[]) => (mockAuthMeMemberships as any)(...args),
-	sessionsUserSessionsByUser: (...args: any[]) =>
-		(mockSessionsUserSessionsByUserId as any)(...args),
+	authMeSessions: (...args: any[]) => (mockAuthMeSessions as any)(...args),
+	authMePut: vi.fn(() => Promise.resolve({})),
 }));
 
 vi.mock('@/lib/api', () => ({
@@ -284,10 +288,11 @@ describe('DashboardPage', () => {
 	});
 
 	it('有待审批的成员时显示待审批横幅', async () => {
+		// 行数据取拦截器 camel 化后的 payload 形状（组件读 tenantId/tenantName）
 		mockAuthMeMemberships.mockResolvedValue({
 			items: [
-				{ tenant_id: 't1', tenant_name: 'Acme Corp', status: 'pending' },
-				{ tenant_id: 't2', tenant_name: 'Beta Inc', status: 'active' },
+				{ tenantId: 't1', tenantName: 'Acme Corp', status: 'pending' },
+				{ tenantId: 't2', tenantName: 'Beta Inc', status: 'active' },
 			],
 		} as any);
 

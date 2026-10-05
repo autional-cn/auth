@@ -1,9 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import SSOInitiatePage from '../sso/initiate/page';
+
+// setup.ts 全局把 slug hooks 桩为 undefined（chrome 安全默认）；本文件测的正是
+// AUTH-50① 的真实解析（useParams + 名单校验），覆盖回真实实现。
+vi.mock('@/hooks/use-tenant-slug', async (importOriginal) =>
+	await importOriginal<typeof import('@/hooks/use-tenant-slug')>(),
+);
 
 vi.mock('react-i18next', () => ({
 	useTranslation: () => ({
@@ -13,61 +18,60 @@ vi.mock('react-i18next', () => ({
 	I18nextProvider: ({ children }: any) => children,
 }));
 
-let mockParams: Record<string, string> = {};
-
-const mockNavigate = vi.fn();
-vi.mock('react-router', async () => {
-	const actual = await vi.importActual('react-router');
-	return {
-		...actual,
-		useNavigate: () => mockNavigate,
-		useParams: () => mockParams,
-		Link: ({ to, children }: any) => <a href={to}>{children}</a>,
-	};
-});
-
-vi.mock('@autional-cn/shared', () => ({
-	apiClient: { get: vi.fn(() => Promise.resolve({ data: {} })) },
+vi.mock('@/lib/i18n', () => ({
+	useI18n: () => ({
+		t: (key: string) => key,
+		lang: 'zh-CN',
+	}),
 }));
 
-const mockInitiateSSO = vi.fn();
-vi.mock('@autional-cn/shared/generated/api', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@autional-cn/shared/generated/api')>();
+// AUTH-50①：生效 slug 经 useEffectiveTenantSlug（useParams + 公开名单 + 会话回落）解析——
+// 不再 mock react-router 的 useParams（mock 会绕过真实路由，脏 slug/无 param 全测不出）。
+vi.mock('@autional-cn/shared', async () => {
+	const actual =
+		await vi.importActual<typeof import('@autional-cn/shared')>('@autional-cn/shared');
 	return {
 		...actual,
-		authSsoInitiatePost: (...args: any[]) => mockInitiateSSO(...args),
+		usePublicTenantSlugs: () => ({ data: [{ name: 'my-org' }, { name: 'custom' }] }),
+		useAuthStore: (selector: any) => selector({ currentTenantId: null }),
 	};
 });
+
+const mockInitiateSSO = vi.fn();
+vi.mock('@/lib/api.generated', () => ({
+	initiateSSO: (...args: any[]) => mockInitiateSSO(...args),
+}));
 
 const mockUseTenantAuthConfigBySlug = vi.fn(() => ({ data: null, isLoading: false }));
 
 vi.mock('@/hooks/use-tenant-auth-config', () => ({
-	useTenantAuthConfigBySlug: vi
-		.fn()
-		.mockImplementation((...args: any[]) => (mockUseTenantAuthConfigBySlug as any)(...args)),
+	useTenantAuthConfigBySlug: (...args: any[]) =>
+		(mockUseTenantAuthConfigBySlug as any)(...args),
 	useTenantAuthConfig: () => ({ data: null, isLoading: false }),
 }));
 
-const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-
-function renderSSO(route = '/sso/initiate') {
+function renderSSO(route = '/my-org/sso/initiate') {
 	return render(
-		<QueryClientProvider client={queryClient}>
-			<MemoryRouter initialEntries={[route]}>
-				<SSOInitiatePage />
-			</MemoryRouter>
-		</QueryClientProvider>,
+		<MemoryRouter initialEntries={[route]}>
+			<Routes>
+				<Route path="/:tenantSlug/sso/initiate" element={<SSOInitiatePage />} />
+				<Route path="/sso/initiate" element={<SSOInitiatePage />} />
+			</Routes>
+		</MemoryRouter>,
 	);
 }
 
 beforeEach(() => {
 	vi.clearAllMocks();
-	mockParams = {};
 	mockUseTenantAuthConfigBySlug.mockReturnValue({ data: null, isLoading: false });
 });
 
+afterEach(() => {
+	vi.unstubAllGlobals();
+});
+
 describe('SSOInitiatePage', () => {
-	it('renders provider buttons', () => {
+	it('renders preset provider buttons', () => {
 		renderSSO();
 		expect(screen.getByText('Okta')).toBeInTheDocument();
 		expect(screen.getByText('Azure AD')).toBeInTheDocument();
@@ -75,22 +79,94 @@ describe('SSOInitiatePage', () => {
 		expect(screen.getByText('Google Workspace')).toBeInTheDocument();
 	});
 
-	it('calls initiateSSO with provider on button click', async () => {
-		mockInitiateSSO.mockResolvedValue({ data: { authUrl: 'https://okta.com/sso' } });
+	it('AUTH-50① 真实路由 slug 传给 authConfig hook', () => {
+		renderSSO('/my-org/sso/initiate');
+		expect(mockUseTenantAuthConfigBySlug).toHaveBeenCalledWith('my-org');
+	});
+
+	it('AUTH-50① 脏 slug（不在公开名单）→ null 上下文，不当作有效租户', () => {
+		renderSSO('/dirty-slug/sso/initiate');
+		expect(mockUseTenantAuthConfigBySlug).toHaveBeenCalledWith(null);
+	});
+
+	it('AUTH-50④ 硬编码文案已入 i18n（「或」→ sso.or / placeholder → sso.domainPlaceholder）', () => {
+		renderSSO();
+		expect(screen.getByText('sso.or')).toBeInTheDocument();
+		expect(screen.queryByText('或')).toBeNull();
+		expect(screen.getByPlaceholderText('sso.domainPlaceholder')).toBeInTheDocument();
+	});
+
+	it('AUTH-50② provider click → initiateSSO；payload 直给 authUrl → 整页跳转', async () => {
+		mockInitiateSSO.mockResolvedValue({ authUrl: 'https://okta.example.com/sso' });
+
+		const hrefSetter = vi.fn();
+		const originalLocation = window.location;
+		delete (window as any).location;
+		(window as any).location = Object.defineProperties(
+			{},
+			{
+				...Object.getOwnPropertyDescriptors(originalLocation),
+				href: { get: () => 'http://localhost/my-org/sso/initiate', set: hrefSetter },
+			},
+		);
+		try {
+			const user = userEvent.setup();
+			renderSSO();
+			await user.click(screen.getByText('Okta'));
+
+			await waitFor(() => {
+				expect(mockInitiateSSO).toHaveBeenCalledWith({ provider: 'okta' });
+				expect(hrefSetter).toHaveBeenCalledWith('https://okta.example.com/sso');
+			});
+			expect(screen.queryByText('sso.noRedirectUrl')).toBeNull();
+		} finally {
+			Object.defineProperty(window, 'location', { value: originalLocation, writable: true });
+		}
+	});
+
+	it('AUTH-50② 响应缺 authUrl → 本地化提示（不直出硬编码中文）', async () => {
+		mockInitiateSSO.mockResolvedValue({});
 		const user = userEvent.setup();
 		renderSSO();
 		await user.click(screen.getByText('Okta'));
 
-		await waitFor(() => {
-			expect(mockInitiateSSO).toHaveBeenCalledWith({ provider: 'okta' });
+		expect(await screen.findByText('sso.noRedirectUrl')).toBeInTheDocument();
+	});
+
+	it('AUTH-50③ 错误体带 i18n_key → 按本地化键渲染，原始英文不落屏', async () => {
+		mockInitiateSSO.mockRejectedValue({
+			response: {
+				data: {
+					code: 'SSO_001',
+					message: 'raw provider english message',
+					i18n_key: 'error.sso_provider_not_configured',
+				},
+			},
 		});
+		const user = userEvent.setup();
+		renderSSO();
+		await user.click(screen.getByText('Okta'));
+
+		expect(await screen.findByText('error.sso_provider_not_configured')).toBeInTheDocument();
+		expect(screen.queryByText('raw provider english message')).toBeNull();
+	});
+
+	it('AUTH-50③ 无 i18n_key → 回落归一化消息（键链 message→title→detail）', async () => {
+		mockInitiateSSO.mockRejectedValue({
+			response: { data: { title: 'problem title fallback' } },
+		});
+		const user = userEvent.setup();
+		renderSSO();
+		await user.click(screen.getByText('Okta'));
+
+		expect(await screen.findByText('problem title fallback')).toBeInTheDocument();
 	});
 
 	it('submits domain and calls initiateSSO', async () => {
-		mockInitiateSSO.mockResolvedValue({ data: { authUrl: 'https://idp.example.com/sso' } });
+		mockInitiateSSO.mockResolvedValue({});
 		const user = userEvent.setup();
 		renderSSO();
-		await user.type(screen.getByPlaceholderText('例如：company.com'), 'myorg.com');
+		await user.type(screen.getByPlaceholderText('sso.domainPlaceholder'), 'myorg.com');
 		await user.click(screen.getByRole('button', { name: 'sso.continue' }));
 
 		await waitFor(() => {
@@ -105,8 +181,7 @@ describe('SSOInitiatePage', () => {
 		expect(mockInitiateSSO).not.toHaveBeenCalled();
 	});
 
-	it('renders dynamic providers when tenant config has sso_providers', async () => {
-		mockParams = { tenantSlug: 'my-org' };
+	it('renders dynamic providers when tenant config has ssoProviders', () => {
 		mockUseTenantAuthConfigBySlug.mockReturnValue({
 			data: {
 				ssoProviders: [
@@ -119,14 +194,13 @@ describe('SSOInitiatePage', () => {
 			} as any,
 			isLoading: false,
 		});
-		renderSSO('/sso/initiate/my-org');
+		renderSSO('/my-org/sso/initiate');
 		expect(screen.getByText('My Org Okta')).toBeInTheDocument();
 		expect(screen.getByText('Company Azure AD')).toBeInTheDocument();
 		expect(screen.queryByText('OneLogin')).not.toBeInTheDocument();
 	});
 
-	it('renders unknown provider with fallback icon', async () => {
-		mockParams = { tenantSlug: 'custom' };
+	it('renders unknown provider with fallback icon', () => {
 		mockUseTenantAuthConfigBySlug.mockReturnValue({
 			data: {
 				ssoProviders: [{ id: 'custom_idp', name: 'Custom IDP' }],
@@ -136,7 +210,7 @@ describe('SSOInitiatePage', () => {
 			} as any,
 			isLoading: false,
 		});
-		renderSSO('/sso/initiate/custom');
+		renderSSO('/custom/sso/initiate');
 		expect(screen.getByText('Custom IDP')).toBeInTheDocument();
 		expect(screen.getByText('🔗')).toBeInTheDocument();
 	});

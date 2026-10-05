@@ -718,8 +718,9 @@ export default function LoginPage() {
 				window.location.href = finalRedirect;
 			} else {
 				const at = loginResult.accessToken || loginResult.data?.accessToken;
-				// 偏好驱动的默认跳转
-				const prefs = loginResult.user?.metadata?.portal_preferences;
+				// 偏好驱动的默认跳转（响应经拦截器 camel 化：portal_preferences → portalPreferences；
+				// 登录响应不携 metadata，权威回读源为 dashboard 的 /auth/me）
+				const prefs = loginResult.user?.metadata?.portalPreferences;
 				if (prefs?.default) {
 					const portalUrl = getPortalUrl(prefs.default, tenantSlug || undefined);
 					if (portalUrl) {

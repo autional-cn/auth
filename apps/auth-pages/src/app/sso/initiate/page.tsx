@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Button, Input, Label } from '@autional-cn/ui';
+import { extractApiError } from '@autional-cn/shared';
 import { initiateSSO } from '@/lib/api.generated';
 import { useI18n } from '@/lib/i18n';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { useTenantAuthConfigBySlug } from '@/hooks/use-tenant-auth-config';
+import { useEffectiveTenantSlug } from '@/hooks/use-tenant-slug';
 
 const PRESET_PROVIDERS = [
 	{ key: 'okta', name: 'Okta', icon: '🔵' },
@@ -37,8 +39,8 @@ export default function SSOInitiatePage() {
 function SSOInitiateContent() {
 	const { t } = useI18n();
 	const navigate = useNavigate();
-	const { tenantSlug: slugParam } = useParams();
-	const tenantSlug = slugParam || null;
+	// AUTH-50①：生效租户 slug（param 名单校验 + 会话回落），裸链/深链均不再空上下文
+	const tenantSlug = useEffectiveTenantSlug() || null;
 	const { data: authConfig } = useTenantAuthConfigBySlug(tenantSlug || null);
 	const [domain, setDomain] = useState('');
 	const [loading, setLoading] = useState(false);
@@ -55,42 +57,36 @@ function SSOInitiateContent() {
 		return PRESET_PROVIDERS;
 	}, [authConfig?.ssoProviders]);
 
-	const handleProviderClick = async (provider: string) => {
+	// AUTH-50③：错误体 i18n_key → 本地化；未知键回落归一化消息，不直出英文/框架文本
+	const startSSO = async (provider: string) => {
 		setLoading(true);
 		setError('');
 		try {
+			// AUTH-50②：拦截器已 unwrap 信封并 camelCase——payload 直给（res.authUrl）
 			const res = await initiateSSO({ provider });
-			const redirectUrl = res.data?.authUrl || res.data?.auth_url;
+			const redirectUrl = res?.authUrl;
 			if (redirectUrl) {
 				window.location.href = redirectUrl;
 			} else {
-				setError('未获取到 SSO 跳转地址');
+				setError(t('sso.noRedirectUrl'));
 			}
 		} catch (err: any) {
-			setError(err.response?.data?.message || 'SSO 发起失败，请稍后重试');
+			const e = extractApiError(err, t('sso.initiateFailed'));
+			setError(e.i18nKey ? t(e.i18nKey, e.message) : e.message);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const handleDomainSubmit = async (e: React.FormEvent) => {
+	const handleProviderClick = (provider: string) => {
+		void startSSO(provider);
+	};
+
+	const handleDomainSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!domain.trim()) return;
-		setLoading(true);
-		setError('');
-		try {
-			const res = await initiateSSO({ provider: domain.trim() });
-			const redirectUrl = res.data?.authUrl || res.data?.auth_url;
-			if (redirectUrl) {
-				window.location.href = redirectUrl;
-			} else {
-				setError('未获取到 SSO 跳转地址');
-			}
-		} catch (err: any) {
-			setError(err.response?.data?.message || 'SSO 发起失败，请稍后重试');
-		} finally {
-			setLoading(false);
-		}
+		const provider = domain.trim();
+		if (!provider) return;
+		void startSSO(provider);
 	};
 
 	return (
@@ -124,7 +120,7 @@ function SSOInitiateContent() {
 				</div>
 				<div className="relative flex justify-center text-xs uppercase">
 					<span className="bg-[var(--color-bg-surface)] px-2 text-[var(--color-text-muted)]">
-						或
+						{t('sso.or')}
 					</span>
 				</div>
 			</div>
@@ -134,7 +130,7 @@ function SSOInitiateContent() {
 					<Label htmlFor="domain">{t('sso.domain')}</Label>
 					<Input
 						id="domain"
-						placeholder="例如：company.com"
+						placeholder={t('sso.domainPlaceholder')}
 						value={domain}
 						onChange={(e) => setDomain(e.target.value)}
 						disabled={loading}

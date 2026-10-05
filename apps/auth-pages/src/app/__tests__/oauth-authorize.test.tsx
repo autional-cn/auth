@@ -264,10 +264,108 @@ describe('OAuthAuthorizePage 授权失败错误态（U85）', () => {
 		expect(await screen.findByText(/oauth\.authorize\.authorizeFailed/)).toBeInTheDocument();
 	});
 
-	it('U85-4 OAuth 规范字符串 error_description → 原样展示（原行为不回归）', async () => {
+	it('U85-4（AUTH-46 收编）已知错误码 → 码级本地化，英文裸描述不落屏', async () => {
 		stubAuthorizeFetch({ error: 'invalid_request', error_description: 'invalid client' });
 		await clickApprove();
-		expect(await screen.findByText('invalid client')).toBeInTheDocument();
+		expect(await screen.findByText('oauth.error.invalidRequest')).toBeInTheDocument();
+		expect(screen.queryByText('invalid client')).toBeNull();
+	});
+});
+
+// ============================================================
+// AUTH-46/47：错误用户化（错误码/描述 → 本地化）+ 缺参预校验 + 302 防御。
+// ============================================================
+
+describe('OAuthAuthorizePage AUTH-46/47（错误用户化 + 302 防御 + 缺参预校验）', () => {
+	function stubFetchResponse(overrides: Record<string, unknown>) {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok: false,
+				status: 400,
+				redirected: false,
+				url: '',
+				json: async () => null,
+				...overrides,
+			}),
+		);
+	}
+
+	async function clickApprove(url = DEFAULT_PARAMS) {
+		const user = userEvent.setup();
+		renderOAuthAuthorize(url);
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: 'auth.oauth.approve' })).toBeInTheDocument();
+		});
+		await user.click(screen.getByRole('button', { name: 'auth.oauth.approve' }));
+	}
+
+	it('AUTH-46 Gin binding 原文 → 码级映射吸收（不直出框架文本）', async () => {
+		stubFetchResponse({
+			json: async () => ({
+				error: 'invalid_request',
+				error_description: "Key: 'client_id' Error:Field validation for 'client_id' failed",
+			}),
+		});
+		await clickApprove();
+		expect(await screen.findByText('oauth.error.invalidRequest')).toBeInTheDocument();
+	});
+
+	it('AUTH-47 未知错误码 → 回落描述原文（真实原因不被吞）', async () => {
+		stubFetchResponse({
+			json: async () => ({ error: 'vendor_unknown_code', error_description: 'vendor raw detail' }),
+		});
+		await clickApprove();
+		expect(await screen.findByText('vendor raw detail')).toBeInTheDocument();
+	});
+
+	it('AUTH-47 缺 client_id → 不发 POST，显示缺参文案', async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal('fetch', fetchMock);
+		await clickApprove('/oauth/authorize?redirect_uri=https://example.com/callback');
+		expect(await screen.findByText('oauth.authorize.missingParams')).toBeInTheDocument();
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('AUTH-47 302 防御：res.url 查询串错误 → 按描述模式本地化（PKCE）', async () => {
+		stubFetchResponse({
+			ok: true,
+			redirected: true,
+			url: 'https://example.com/callback?error=invalid_request&error_description=PKCE+code_challenge+is+required',
+			json: async () => null,
+		});
+		await clickApprove();
+		expect(await screen.findByText('oauth.error.pkceRequired')).toBeInTheDocument();
+	});
+
+	it('AUTH-47 成功主链：200 {redirect_to} → 整页跳转（回归锁）', async () => {
+		stubFetchResponse({
+			ok: true,
+			json: async () => ({
+				redirect_to: 'https://example.com/callback?code=auth-code&state=random-state',
+			}),
+		});
+
+		const hrefSetter = vi.fn();
+		const originalLocation = window.location;
+		delete (window as any).location;
+		(window as any).location = Object.defineProperties(
+			{},
+			{
+				...Object.getOwnPropertyDescriptors(originalLocation),
+				href: { get: () => 'http://localhost/oauth/authorize', set: hrefSetter },
+			},
+		);
+		try {
+			await clickApprove();
+			await waitFor(() => {
+				expect(hrefSetter).toHaveBeenCalledWith(
+					'https://example.com/callback?code=auth-code&state=random-state',
+				);
+			});
+		} finally {
+			Object.defineProperty(window, 'location', { value: originalLocation, writable: true });
+		}
 	});
 });
 
