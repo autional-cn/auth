@@ -10,6 +10,7 @@ import {
 } from '@autional-cn/shared/generated/api';
 import { loginWithTokens } from '@autional-cn/shared';
 import { loadAuthExtras } from '@/lib/api';
+import { anchorSessionFromToken } from '@/lib/anchor-session';
 import { getPostLoginTarget } from '@/lib/post-login-redirect';
 import { useI18n } from '@/lib/i18n';
 import { useCountdown } from '@/hooks/use-countdown';
@@ -115,6 +116,11 @@ export default function PhoneCodeLoginForm({
 
 			if (accessToken && user) {
 				loginWithTokens(accessToken, refreshToken || '', user);
+				// AUTH-53⑤：会话建立即锚定（手机验证码登录/注册自动登录，与其余入口同法）
+				anchorSessionFromToken(accessToken, {
+					slug: tenantSlug || null,
+					tenantId: tenantId || null,
+				});
 				await loadAuthExtras();
 				window.location.href = getPostLoginTarget({ tenantSlug, redirect });
 			} else {
