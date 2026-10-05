@@ -46,17 +46,17 @@ importers:
   apps/auth-pages:
     dependencies:
       '@autional-cn/shared':
-        specifier: 0.1.0-rc.30
-        version: 0.1.0-rc.30(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(use-sync-external-store@1.7.0(react@19.2.5))
+        specifier: 0.1.0-rc.31
+        version: 0.1.0-rc.31(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(use-sync-external-store@1.7.0(react@19.2.5))
       '@autional-cn/tailwind-preset':
-        specifier: 0.1.0-rc.3
-        version: 0.1.0-rc.3(tailwindcss@3.4.19)
+        specifier: 0.1.0-rc.4
+        version: 0.1.0-rc.4(tailwindcss@3.4.19)
       '@autional-cn/tokens':
-        specifier: 0.1.0-rc.8
-        version: 0.1.0-rc.8
+        specifier: 0.1.0-rc.9
+        version: 0.1.0-rc.9
       '@autional-cn/ui':
         specifier: 0.1.0-rc.41
-        version: 0.1.0-rc.41(@autional-cn/tokens@0.1.0-rc.8)(i18next@26.0.10(typescript@5.8.3))(lucide-react@0.509.0(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react-hook-form@7.75.0(react@19.2.5))(react-i18next@17.0.7(i18next@26.0.10(typescript@5.8.3))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.8.3))(react-router@7.15.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)
+        version: 0.1.0-rc.41(@autional-cn/tokens@0.1.0-rc.9)(i18next@26.0.10(typescript@5.8.3))(lucide-react@0.509.0(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react-hook-form@7.75.0(react@19.2.5))(react-i18next@17.0.7(i18next@26.0.10(typescript@5.8.3))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.8.3))(react-router@7.15.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)
       '@hookform/resolvers':
         specifier: 3.10.0
         version: 3.10.0(react-hook-form@7.75.0(react@19.2.5))
@@ -158,19 +158,19 @@ packages:
   '@asamuzakjp/nwsapi@2.3.9':
     resolution: {integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==}
 
-  '@autional-cn/shared@0.1.0-rc.30':
-    resolution: {integrity: sha512-B5EtZMx8Nj1NIieqgJuncB8wX7vEQy6qt+wo/0ZZE0MFbELNfDYXkJuED0bpu6oGKwHK+Z23QZD92jK0XdAtgw==}
+  '@autional-cn/shared@0.1.0-rc.31':
+    resolution: {integrity: sha512-DDTA9/8q+HlJUHfYolJZ5FCAKvGGcAjflP4kGqhS2Wsm3hVDYYCcjyFtUtH0oAIxPIXbTOLoRwRGdHEvieVjfw==}
     peerDependencies:
       react: 19.2.5
       react-dom: 19.2.5
 
-  '@autional-cn/tailwind-preset@0.1.0-rc.3':
-    resolution: {integrity: sha512-yzQqP6YVLQ5g5pz4yRqB7klulYnOhibKo2/R2/FWsbKTOY61Vp6b/l0pdZxLZWVM56B0n6ukSukLfNIpKBorhg==}
+  '@autional-cn/tailwind-preset@0.1.0-rc.4':
+    resolution: {integrity: sha512-D09o43AnQyHrG6x1YyQOPu0RenZDQBcQixk0nXTIHYl0Pibupf7xDMVvGRxY9oeQClHOoQxounSwpmwwX0wByw==}
     peerDependencies:
       tailwindcss: '>=3.0.0'
 
-  '@autional-cn/tokens@0.1.0-rc.8':
-    resolution: {integrity: sha512-aHpSOaHOaa3mmVGofxp9cmtLLr3PqxuVm0NabJ61ZAlKwd0nWu49p/PF94JWo8xeDFAlcT81gqPFb79edwlfKw==}
+  '@autional-cn/tokens@0.1.0-rc.9':
+    resolution: {integrity: sha512-5u8FWsukYsk2Gs/3lUf9RV2Z2japUec2YdEsfJeeQ0ZwfRZij4q55Tkiyg8p80sDnrsl3fR7YNGsiu87aUnSCQ==}
 
   '@autional-cn/tsconfig@0.1.0-rc':
     resolution: {integrity: sha512-XY7N2lbMlR1D+OlkxDAw9Pz9CleV4UZ14RfWkkhGTZbbHvxT/d69H8GXWhyc9/634RoEUyVajYmjT75cZbKF4A==}
@@ -1936,7 +1936,7 @@ snapshots:
 
   '@asamuzakjp/nwsapi@2.3.9': {}
 
-  '@autional-cn/shared@0.1.0-rc.30(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(use-sync-external-store@1.7.0(react@19.2.5))':
+  '@autional-cn/shared@0.1.0-rc.31(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(use-sync-external-store@1.7.0(react@19.2.5))':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@tanstack/react-query': 5.100.9(react@19.2.5)
@@ -1954,18 +1954,18 @@ snapshots:
       - immer
       - use-sync-external-store
 
-  '@autional-cn/tailwind-preset@0.1.0-rc.3(tailwindcss@3.4.19)':
+  '@autional-cn/tailwind-preset@0.1.0-rc.4(tailwindcss@3.4.19)':
     dependencies:
-      '@autional-cn/tokens': 0.1.0-rc.8
+      '@autional-cn/tokens': 0.1.0-rc.9
       tailwindcss: 3.4.19
 
-  '@autional-cn/tokens@0.1.0-rc.8': {}
+  '@autional-cn/tokens@0.1.0-rc.9': {}
 
   '@autional-cn/tsconfig@0.1.0-rc': {}
 
-  '@autional-cn/ui@0.1.0-rc.41(@autional-cn/tokens@0.1.0-rc.8)(i18next@26.0.10(typescript@5.8.3))(lucide-react@0.509.0(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react-hook-form@7.75.0(react@19.2.5))(react-i18next@17.0.7(i18next@26.0.10(typescript@5.8.3))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.8.3))(react-router@7.15.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)':
+  '@autional-cn/ui@0.1.0-rc.41(@autional-cn/tokens@0.1.0-rc.9)(i18next@26.0.10(typescript@5.8.3))(lucide-react@0.509.0(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react-hook-form@7.75.0(react@19.2.5))(react-i18next@17.0.7(i18next@26.0.10(typescript@5.8.3))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.8.3))(react-router@7.15.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)':
     dependencies:
-      '@autional-cn/tokens': 0.1.0-rc.8
+      '@autional-cn/tokens': 0.1.0-rc.9
       i18next: 26.0.10(typescript@5.8.3)
       lucide-react: 0.509.0(react@19.2.5)
       react: 19.2.5
