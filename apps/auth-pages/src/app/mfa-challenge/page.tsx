@@ -1,89 +1,70 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router';
-import { Link } from 'react-router';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useParams, Link } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Input, Label } from '@autional-cn/ui';
-import { useAuth, loginWithTokens } from '@autional-cn/shared';
+import { loginWithTokens, decodeJwtPayload, extractApiError } from '@autional-cn/shared';
 import { createMfaTOTPSchema, createMfaSMSSchema } from '@/lib/validators';
 import type { MFATOTPFormData, MFASMSFormData } from '@/lib/validators';
-import {
-	validateTOTP,
-	verifyMFASMS,
-	verifyMFAEmail,
-	verifyMFA,
-	sendMFASMS,
-	sendMFAEmail,
-	mfaPushChallengePost,
-	mfaPushChallengeByChallenge,
-	verifyMFAChallenge,
-} from '@/lib/api.generated';
+import { verifyMFAChallenge } from '@/lib/api.generated';
 import { useI18n } from '@/lib/i18n';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 
-type MFATab = 'totp' | 'sms' | 'email' | 'backup' | 'push';
+type CodeMethod = 'totp' | 'sms' | 'email' | 'backup';
 
-function useCountdown(initialSeconds = 60) {
-	const [countdown, setCountdown] = useState(0);
-	const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+// 登录页/mfa-setup 写入的挑战会话（oauth/callback 写入子集：无 email/phone/riskLevel）
+interface PreAuthData {
+	challengeToken: string;
+	tenantId?: string;
+	riskLevel?: string;
+	requiredMfaMethods?: string[];
+	email?: string;
+	phone?: string;
+}
 
-	const start = () => {
-		setCountdown(initialSeconds);
-		timerRef.current = setInterval(() => {
-			setCountdown((prev) => {
-				if (prev <= 1) {
-					if (timerRef.current) clearInterval(timerRef.current);
-					return 0;
-				}
-				return prev - 1;
-			});
-		}, 1000);
-	};
+const CODE_METHOD_ORDER: CodeMethod[] = ['totp', 'sms', 'email', 'backup'];
 
-	useEffect(() => {
-		return () => {
-			if (timerRef.current) clearInterval(timerRef.current);
-		};
-	}, []);
+// identity 挑战错误码（610004xx）：403 无效/过期挑战令牌 → 回登录；400 验证码错误 → 留本页
+const IDENTITY_ERR_MFA_CHALLENGE_REQUIRED = 61000403;
+const IDENTITY_ERR_INVALID_MFA_CODE = 61000402;
 
-	return { countdown, start };
+// 展示用脱敏（仅渲染，不参与鉴权）
+function maskContact(value: string): string {
+	if (!value) return '';
+	if (value.includes('@')) {
+		const [local, domain] = value.split('@');
+		return `${local.slice(0, 2)}***@${domain}`;
+	}
+	return value.replace(/^(\+?\d{3})\d+(\d{4})$/, '$1****$2');
+}
+
+/**
+ * 可见验证方式 = requiredMfaMethods 中的可验证码方法（password 是基线、webauthn 无码面）；
+ * 交集为空（如 MFAEnabled 用户在 normal/low 风险下 required=["password"]）→ 回落全部码方法。
+ * 备用码与 TOTP 同腿验证（mfa 侧 ValidateTOTP 内含一次性消费回退），随 TOTP 一并展示。
+ */
+function deriveTabs(required?: string[]): CodeMethod[] {
+	const policy = (required || []).filter(
+		(m): m is 'totp' | 'sms' | 'email' => m === 'totp' || m === 'sms' || m === 'email',
+	);
+	const base: CodeMethod[] = policy.length > 0 ? policy : ['totp', 'sms', 'email'];
+	const withBackup: CodeMethod[] = base.includes('totp') ? [...base, 'backup'] : base;
+	return CODE_METHOD_ORDER.filter((m) => withBackup.includes(m));
 }
 
 type BackupFormData = { code: string };
-
-function TrustDeviceCheckbox({
-	trustDevice,
-	setTrustDevice,
-	t,
-}: {
-	trustDevice: boolean;
-	setTrustDevice: (v: boolean) => void;
-	t: (key: string, params?: Record<string, unknown>) => string;
-}) {
-	return (
-		<label className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
-			<input
-				type="checkbox"
-				className="mt-0.5 h-4 w-4 rounded border-[var(--color-border-subtle)] text-[var(--color-brand)] focus:ring-[var(--color-brand)]"
-				checked={trustDevice}
-				onChange={(e) => setTrustDevice(e.target.checked)}
-			/>
-			<div>
-				<span className="font-medium text-[var(--color-text-primary)]">{t('mfa.trustDevice')}</span>
-				<p className="text-xs text-[var(--color-text-secondary)]">{t('mfa.trustDeviceDesc')}</p>
-			</div>
-		</label>
-	);
-}
 
 export default function MFAChallengePage() {
 	const { t, lang } = useI18n();
 	const navigate = useNavigate();
 	const { tenantSlug } = useParams<{ tenantSlug?: string }>();
+	const loginPath = tenantSlug ? `/${tenantSlug}/login` : '/';
+	const dashboardPath = tenantSlug ? `/${tenantSlug}/dashboard` : '/dashboard';
+
 	const mfaTotpSchema = createMfaTOTPSchema(t);
 	const mfaSmsSchema = createMfaSMSSchema(t);
 	const backupSchema = useMemo(
@@ -93,193 +74,152 @@ export default function MFAChallengePage() {
 			}),
 		[lang, t],
 	);
-	const [activeTab, setActiveTab] = useState<MFATab>('totp');
+
+	const [preAuth, setPreAuth] = useState<PreAuthData | null>(null);
+	const [fatal, setFatal] = useState<'' | 'expired'>('');
+	const [activeTab, setActiveTab] = useState<CodeMethod>('totp');
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState('');
-	const [sendSuccess, setSendSuccess] = useState('');
-	const [trustDevice, setTrustDevice] = useState(false);
-	const smsCountdown = useCountdown();
-	const emailCountdown = useCountdown();
-	const pushCountdown = useCountdown(120);
 
-	const { user } = useAuth();
+	// AUTH-36：挂载即校验挑战会话（存在性 + 签名令牌未过期）；无效不渲染死表单
+	useEffect(() => {
+		const raw = sessionStorage.getItem('mfa_pre_auth');
+		if (!raw) {
+			navigate(loginPath, { replace: true });
+			return;
+		}
+		let parsed: PreAuthData | null = null;
+		try {
+			parsed = JSON.parse(raw);
+		} catch {
+			parsed = null;
+		}
+		const payload = parsed?.challengeToken ? decodeJwtPayload(parsed.challengeToken) : null;
+		const exp = typeof (payload as any)?.exp === 'number' ? (payload as any).exp : 0;
+		if (!parsed?.challengeToken || !payload || exp <= 0 || exp * 1000 <= Date.now()) {
+			sessionStorage.removeItem('mfa_pre_auth');
+			setFatal('expired');
+			return;
+		}
+		setPreAuth(parsed);
+	}, [navigate, loginPath]);
 
-	const [riskLevel, setRiskLevel] = useState<'low' | 'medium' | 'high' | null>(null);
+	const tabs = useMemo(() => deriveTabs(preAuth?.requiredMfaMethods), [preAuth]);
 
 	useEffect(() => {
-		const preAuth = sessionStorage.getItem('mfa_pre_auth');
-		if (!user?.id && !preAuth) {
-			navigate('/', { replace: true });
+		if (preAuth && !tabs.includes(activeTab)) {
+			setActiveTab(tabs[0]);
 		}
-		if (preAuth) {
-			try {
-				const parsed = JSON.parse(preAuth);
-				if (parsed.riskLevel) {
-					setRiskLevel(parsed.riskLevel);
-				}
-			} catch {
-				/* ignore parse errors */
-			}
-		}
-	}, [user, navigate]);
-
-	const [pushChallengeId, setPushChallengeId] = useState('');
-	const [pushNumberMatching, setPushNumberMatching] = useState('');
-	const [pushStatus, setPushStatus] = useState<
-		'idle' | 'pending' | 'approved' | 'denied' | 'expired'
-	>('idle');
-	const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+	}, [preAuth, tabs, activeTab]);
 
 	const totpForm = useForm<MFATOTPFormData>({ resolver: zodResolver(mfaTotpSchema) });
 	const smsForm = useForm<MFASMSFormData>({ resolver: zodResolver(mfaSmsSchema) });
 	const emailForm = useForm<MFASMSFormData>({ resolver: zodResolver(mfaSmsSchema) });
 	const backupForm = useForm<BackupFormData>({ resolver: zodResolver(backupSchema) });
 
-	const handleSendSMS = async () => {
-		try {
-			setError('');
-			setSendSuccess('');
-			await sendMFASMS({ phone: (user as any)?.phone || '' });
-			setSendSuccess(t('mfa.challenge.smsSent'));
-			smsCountdown.start();
-		} catch (err: any) {
-			setError(err.response?.data?.message || t('mfa.challenge.smsSendFailed'));
-		}
-	};
-
-	const handleSendEmail = async () => {
-		try {
-			setError('');
-			setSendSuccess('');
-			await sendMFAEmail({ email: (user as any)?.email || '' });
-			setSendSuccess(t('mfa.challenge.emailSent'));
-			emailCountdown.start();
-		} catch (err: any) {
-			setError(err.response?.data?.message || t('mfa.challenge.emailSendFailed'));
-		}
-	};
-
-	const handlePushChallenge = async () => {
-		try {
-			setError('');
-			setPushStatus('pending');
-			const res = await mfaPushChallengePost({
-				user_id: (user as any)?.id || '',
-				login_context: navigator.userAgent,
-			});
-			const data = (res as any)?.data || res;
-			setPushChallengeId(data?.challenge_id || data?.challengeId || '');
-			setPushNumberMatching(data?.number_matching || data?.numberMatching || '');
-			pushCountdown.start();
-			startPushPolling(data?.challenge_id || data?.challengeId || '');
-		} catch (err: any) {
-			setError(err.response?.data?.message || t('mfa.challenge.pushChallengeFailed'));
-			setPushStatus('idle');
-		}
-	};
-
-	const startPushPolling = (challengeId: string) => {
-		if (pollRef.current) clearInterval(pollRef.current);
-		pollRef.current = setInterval(async () => {
-			try {
-				const res = await mfaPushChallengeByChallenge(challengeId);
-				const data = (res as any)?.data || res;
-				const status: string = data?.status || '';
-				if (status === 'approved') {
-					setPushStatus('approved');
-					if (pollRef.current) clearInterval(pollRef.current);
-					navigate(tenantSlug ? `/${tenantSlug}/dashboard` : '/dashboard');
-				} else if (status === 'denied') {
-					setPushStatus('denied');
-					if (pollRef.current) clearInterval(pollRef.current);
-					setError(t('mfa.challenge.pushDenied'));
-				} else if (status === 'expired') {
-					setPushStatus('expired');
-					if (pollRef.current) clearInterval(pollRef.current);
-					setError(t('mfa.challenge.pushExpired'));
-				}
-			} catch {
-				// 静默忽略轮询错误
-			}
-		}, 2000);
-	};
-
-	useEffect(() => {
-		return () => {
-			if (pollRef.current) clearInterval(pollRef.current);
-		};
-	}, []);
-
-	const handleSubmit = async (code: string, type: MFATab) => {
+	const handleSubmit = async (code: string, type: CodeMethod) => {
+		if (!preAuth) return;
 		setSubmitting(true);
 		setError('');
 		try {
-			const preAuth = sessionStorage.getItem('mfa_pre_auth');
-			if (preAuth) {
-				const { challengeToken } = JSON.parse(preAuth);
-				const mfaMethod = type === 'sms' ? 'sms' : type === 'email' ? 'email' : 'totp';
-				const res = await verifyMFAChallenge({
-					challengeToken,
-					code,
-					mfa_method: mfaMethod,
-					trust_device: trustDevice,
-				});
-				const data = (res as any)?.data || res;
-				loginWithTokens(data.accessToken, data.refreshToken, data.user);
+			// 显式方法映射（AUTH-38：backup 不塌缩为 totp；identity 侧 totp/backup 同腿验证）
+			const res: any = await verifyMFAChallenge({
+				challengeToken: preAuth.challengeToken,
+				code,
+				mfaMethod: type,
+			});
+			loginWithTokens(res?.accessToken || '', res?.refreshToken || '', res?.user);
+			sessionStorage.removeItem('mfa_pre_auth');
+			navigate(dashboardPath);
+		} catch (err) {
+			const status = (err as any)?.response?.status;
+			const numeric = Number((err as any)?.response?.data?.code);
+			// 挑战令牌已失效（服务端复验口径）→ 清会话，引导重新登录
+			if (status === 403 || numeric === IDENTITY_ERR_MFA_CHALLENGE_REQUIRED) {
 				sessionStorage.removeItem('mfa_pre_auth');
-				navigate(tenantSlug ? `/${tenantSlug}/dashboard` : '/dashboard');
+				setPreAuth(null);
+				setFatal('expired');
 				return;
 			}
-			if (type === 'totp') await validateTOTP({ code, trust_device: trustDevice });
-			else if (type === 'sms')
-				await verifyMFASMS({ phone: (user as any)?.phone || '', code, trust_device: trustDevice });
-			else if (type === 'email')
-				await verifyMFAEmail({
-					email: (user as any)?.email || '',
-					code,
-					trust_device: trustDevice,
-				});
-			else if (type === 'backup')
-				await verifyMFA({ code, userId: (user as any)?.id || '', trust_device: trustDevice });
-			navigate(tenantSlug ? `/${tenantSlug}/dashboard` : '/dashboard');
-		} catch (err: any) {
-			setError(err.response?.data?.message || t('mfa.challenge.verifyFailed'));
+			if (numeric === IDENTITY_ERR_INVALID_MFA_CODE) {
+				setError(t('mfa.challenge.verifyFailed'));
+				return;
+			}
+			if (status === 429) {
+				setError(t('mfa.challenge.rateLimited'));
+				return;
+			}
+			setError(extractApiError(err, t('mfa.challenge.verifyFailed')).message);
 		} finally {
 			setSubmitting(false);
 		}
 	};
 
-	const tabs: { key: MFATab; label: string }[] = [
-		{ key: 'totp', label: t('mfa.challenge.tabTOTP') },
-		{ key: 'sms', label: t('mfa.challenge.tabSMS') },
-		{ key: 'email', label: t('mfa.challenge.tabEmail') },
-		{ key: 'backup', label: t('mfa.challenge.tabBackup') },
-		{ key: 'push', label: t('mfa.challenge.tabPush') },
-	];
+	// 验证会话已过期（挂载预检或服务端 403 复验）——引导重新登录
+	if (fatal === 'expired') {
+		return (
+			<AuthCard>
+				<div className="text-center space-y-6">
+					<div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-3xl">
+						⏱️
+					</div>
+					<AuthHeader
+						title={t('mfa.challenge.sessionExpiredTitle')}
+						subtitle={t('mfa.challenge.sessionExpiredDesc')}
+					/>
+					<Button fullWidth onClick={() => navigate(loginPath, { replace: true })}>
+						{t('mfa.challenge.sessionExpiredAction')}
+					</Button>
+				</div>
+			</AuthCard>
+		);
+	}
+
+	// 预检未完成（首帧/跳转中）——不渲染表单
+	if (!preAuth) {
+		return (
+			<AuthCard>
+				<div className="py-8 text-center text-sm text-[var(--color-text-secondary)]">
+					{t('common.loading')}
+				</div>
+			</AuthCard>
+		);
+	}
+
+	const tabLabel = (key: CodeMethod) =>
+		key === 'totp'
+			? t('mfa.challenge.tabTOTP')
+			: key === 'sms'
+				? t('mfa.challenge.tabSMS')
+				: key === 'email'
+					? t('mfa.challenge.tabEmail')
+					: t('mfa.challenge.tabBackup');
 
 	return (
 		<AuthCard>
 			<AuthHeader title={t('mfa.challenge.title')} subtitle={t('mfa.challenge.subtitle')} />
 
-			<div className="flex rounded-md bg-[var(--color-bg-muted)] p-1">
-				{tabs.map((tab) => (
-					<button
-						key={tab.key}
-						type="button"
-						onClick={() => {
-							setActiveTab(tab.key);
-							setError('');
-						}}
-						className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-							activeTab === tab.key
-								? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-sm'
-								: 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-						}`}
-					>
-						{tab.label}
-					</button>
-				))}
-			</div>
+			{tabs.length > 1 && (
+				<div className="flex rounded-md bg-[var(--color-bg-muted)] p-1">
+					{tabs.map((key) => (
+						<button
+							key={key}
+							type="button"
+							onClick={() => {
+								setActiveTab(key);
+								setError('');
+							}}
+							className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+								activeTab === key
+									? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-sm'
+									: 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+							}`}
+						>
+							{tabLabel(key)}
+						</button>
+					))}
+				</div>
+			)}
 
 			{error && (
 				<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-danger">
@@ -287,26 +227,20 @@ export default function MFAChallengePage() {
 				</div>
 			)}
 
-			{riskLevel && (
+			{preAuth.riskLevel && (
 				<div
 					className={`rounded-md p-3 text-sm font-medium ${
-						riskLevel === 'low'
+						preAuth.riskLevel === 'low'
 							? 'bg-[var(--color-brand)]/10 text-[var(--color-brand)]'
-							: riskLevel === 'medium'
+							: preAuth.riskLevel === 'medium'
 								? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
 								: 'bg-[var(--color-danger)]/10 text-[var(--color-danger)]'
 					}`}
 					data-testid="mfa-risk-level-banner"
 				>
-					{riskLevel === 'low' && t('mfa.riskLevel.low')}
-					{riskLevel === 'medium' && t('mfa.riskLevel.medium')}
-					{riskLevel === 'high' && t('mfa.riskLevel.high')}
-				</div>
-			)}
-
-			{sendSuccess && (
-				<div className="rounded-md bg-[var(--color-success)]/10 p-3 text-sm text-[var(--color-success)]">
-					{sendSuccess}
+					{preAuth.riskLevel === 'low' && t('mfa.riskLevel.low')}
+					{preAuth.riskLevel === 'medium' && t('mfa.riskLevel.medium')}
+					{preAuth.riskLevel === 'high' && t('mfa.riskLevel.high')}
 				</div>
 			)}
 
@@ -331,7 +265,6 @@ export default function MFAChallengePage() {
 							{t('mfa.challenge.totpHelp')}
 						</p>
 					</div>
-					<TrustDeviceCheckbox trustDevice={trustDevice} setTrustDevice={setTrustDevice} t={t} />
 					<Button type="submit" fullWidth isLoading={submitting}>
 						{t('mfa.challenge.verify')}
 					</Button>
@@ -355,23 +288,15 @@ export default function MFAChallengePage() {
 							{...smsForm.register('code')}
 							error={smsForm.formState.errors.code?.message}
 						/>
+						<p className="text-xs text-[var(--color-text-secondary)]">
+							{preAuth.phone
+								? t('mfa.challenge.smsDelivered', { target: maskContact(preAuth.phone) })
+								: t('mfa.challenge.smsDeliveredGeneric')}
+						</p>
 					</div>
-					<TrustDeviceCheckbox trustDevice={trustDevice} setTrustDevice={setTrustDevice} t={t} />
-					<div className="flex gap-2">
-						<Button type="submit" fullWidth isLoading={submitting}>
-							{t('mfa.challenge.verify')}
-						</Button>
-						<Button
-							type="button"
-							variant="outline"
-							disabled={smsCountdown.countdown > 0}
-							onClick={handleSendSMS}
-						>
-							{smsCountdown.countdown > 0
-								? `${t('mfa.challenge.retry')} (${smsCountdown.countdown}s)`
-								: t('mfa.challenge.getCode')}
-						</Button>
-					</div>
+					<Button type="submit" fullWidth isLoading={submitting}>
+						{t('mfa.challenge.verify')}
+					</Button>
 				</form>
 			)}
 
@@ -392,23 +317,15 @@ export default function MFAChallengePage() {
 							{...emailForm.register('code')}
 							error={emailForm.formState.errors.code?.message}
 						/>
+						<p className="text-xs text-[var(--color-text-secondary)]">
+							{preAuth.email
+								? t('mfa.challenge.emailDelivered', { target: maskContact(preAuth.email) })
+								: t('mfa.challenge.emailDeliveredGeneric')}
+						</p>
 					</div>
-					<TrustDeviceCheckbox trustDevice={trustDevice} setTrustDevice={setTrustDevice} t={t} />
-					<div className="flex gap-2">
-						<Button type="submit" fullWidth isLoading={submitting}>
-							{t('mfa.challenge.verify')}
-						</Button>
-						<Button
-							type="button"
-							variant="outline"
-							disabled={emailCountdown.countdown > 0}
-							onClick={handleSendEmail}
-						>
-							{emailCountdown.countdown > 0
-								? `${t('mfa.challenge.retry')} (${emailCountdown.countdown}s)`
-								: t('mfa.challenge.sendCode')}
-						</Button>
-					</div>
+					<Button type="submit" fullWidth isLoading={submitting}>
+						{t('mfa.challenge.verify')}
+					</Button>
 				</form>
 			)}
 
@@ -432,93 +349,14 @@ export default function MFAChallengePage() {
 							{t('mfa.challenge.backupHelp')}
 						</p>
 					</div>
-					<TrustDeviceCheckbox trustDevice={trustDevice} setTrustDevice={setTrustDevice} t={t} />
 					<Button type="submit" fullWidth isLoading={submitting}>
 						{t('mfa.challenge.verify')}
 					</Button>
 				</form>
 			)}
 
-			{activeTab === 'push' && (
-				<div className="space-y-4">
-					{pushStatus === 'idle' && (
-						<>
-							<p className="text-sm text-[var(--color-text-secondary)]">
-								{t('mfa.challenge.pushDesc')}
-							</p>
-							<Button type="button" fullWidth onClick={handlePushChallenge}>
-								{t('mfa.challenge.sendPush')}
-							</Button>
-						</>
-					)}
-					{pushStatus === 'pending' && (
-						<div className="space-y-4 text-center">
-							<div className="rounded-lg border border-[var(--color-brand)]/30 bg-[var(--color-brand)]/10 p-6">
-								<p className="text-sm text-[var(--color-brand)]">
-									{t('mfa.challenge.pushPendingDesc')}
-								</p>
-								{pushNumberMatching && (
-									<div className="mt-4">
-										<p className="text-xs text-[var(--color-text-secondary)] mb-1">
-											{t('mfa.challenge.pushNumberLabel')}
-										</p>
-										<span className="text-3xl font-bold tracking-widest text-[var(--color-brand)]">
-											{pushNumberMatching}
-										</span>
-									</div>
-								)}
-								<div className="mt-4 flex items-center justify-center gap-2">
-									<div className="h-3 w-3 animate-pulse rounded-full bg-[var(--color-brand)]" />
-									<span className="text-xs text-[var(--color-brand)]">
-										{t('mfa.challenge.pushWaiting')} ({pushCountdown.countdown}s)
-									</span>
-								</div>
-							</div>
-							<Button
-								type="button"
-								variant="outline"
-								fullWidth
-								onClick={() => {
-									setPushStatus('idle');
-									if (pollRef.current) clearInterval(pollRef.current);
-								}}
-							>
-								{t('mfa.challenge.cancel')}
-							</Button>
-						</div>
-					)}
-					{pushStatus === 'approved' && (
-						<div className="rounded-lg border border-[var(--color-success)]/20 bg-[var(--color-success)]/10 p-6 text-center">
-							<p className="text-[var(--color-success)] font-medium">
-								{t('mfa.challenge.pushApproved')}
-							</p>
-						</div>
-					)}
-					{pushStatus === 'denied' && (
-						<div className="space-y-4">
-							<div className="rounded-lg border border-[var(--color-danger)]/20 bg-[var(--color-danger)]/10 p-6 text-center">
-								<p className="text-[var(--color-danger)]">{t('mfa.challenge.pushDenied')}</p>
-							</div>
-							<Button type="button" fullWidth onClick={handlePushChallenge}>
-								{t('mfa.challenge.retry')}
-							</Button>
-						</div>
-					)}
-					{pushStatus === 'expired' && (
-						<div className="space-y-4">
-							<p className="text-sm text-[var(--color-text-secondary)] text-center">
-								{t('mfa.challenge.pushExpiredTitle')}
-							</p>
-							<Button type="button" fullWidth onClick={handlePushChallenge}>
-								{t('mfa.challenge.retry')}
-							</Button>
-						</div>
-					)}
-				</div>
-			)}
-
 			<div className="text-center text-sm">
-				<Link to={tenantSlug ? `/${tenantSlug}/login` : '/'} className="text-[var(--color-brand)] hover:underline">
+				<Link to={loginPath} className="text-[var(--color-brand)] hover:underline">
 					{t('mfa.challenge.backToLogin')}
 				</Link>
 			</div>

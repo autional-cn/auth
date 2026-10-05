@@ -604,11 +604,18 @@ export default function LoginPage() {
 				loginResult.data?.requires_mfa
 			) {
 				const ct = loginResult.challengeToken || loginResult.data?.challenge_token || '';
+				// 挑战页数据面：riskLevel/requiredMfaMethods 驱动可见验证方式与风险横幅；
+				// email/phone 仅用于投递提示的脱敏展示（登录期 B3/B5 已按可用方法发码）
 				sessionStorage.setItem(
 					'mfa_pre_auth',
 					JSON.stringify({
 						challengeToken: ct,
 						tenantId: data.tenantId || '',
+						riskLevel: loginResult.riskLevel || loginResult.data?.risk_level || '',
+						requiredMfaMethods:
+							loginResult.requiredMfaMethods || loginResult.data?.required_mfa_methods || [],
+						email: loginResult.user?.email || '',
+						phone: loginResult.user?.phone || '',
 					}),
 				);
 				navigate(`/${tenantSlug}/mfa-challenge`);

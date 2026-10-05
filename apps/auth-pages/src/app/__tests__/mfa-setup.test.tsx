@@ -32,29 +32,34 @@ vi.mock('@autional-cn/shared', () => ({
 	crossAppUrl: (url: string) => url,
 	loginWithTokens: vi.fn(),
 	getAccessToken: () => null,
+	extractApiError: (err: any, fallback: string) => ({
+		code: err?.response?.data?.code ?? 'UNKNOWN',
+		message: err?.response?.data?.message ?? err?.message ?? fallback,
+	}),
 }));
 
-const mockSetupMFA = vi.fn();
 const mockEnableMFA = vi.fn();
-const mockRegenerateBackupCodes = vi.fn();
+const mockVerifyTOTPMFA = vi.fn();
 const mockSendMFASMS = vi.fn();
 const mockVerifyMFASMS = vi.fn();
 const mockSendMFAEmail = vi.fn();
 const mockVerifyMFAEmail = vi.fn();
 const mockGetMFAStatus = vi.fn();
 const mockDisableMFA = vi.fn();
+const mockDisableMFASMS = vi.fn();
+const mockDisableMFAEmail = vi.fn();
 
 vi.mock('@/lib/api.generated', () => ({
-	setupMFA: (...args: any[]) => mockSetupMFA(...args),
 	enableMFA: (...args: any[]) => mockEnableMFA(...args),
-	regenerateBackupCodes: (...args: any[]) => mockRegenerateBackupCodes(...args),
+	verifyTOTPMFA: (...args: any[]) => mockVerifyTOTPMFA(...args),
 	sendMFASMS: (...args: any[]) => mockSendMFASMS(...args),
 	verifyMFASMS: (...args: any[]) => mockVerifyMFASMS(...args),
 	sendMFAEmail: (...args: any[]) => mockSendMFAEmail(...args),
 	verifyMFAEmail: (...args: any[]) => mockVerifyMFAEmail(...args),
 	getMFAStatus: (...args: any[]) => mockGetMFAStatus(...args),
 	disableMFA: (...args: any[]) => mockDisableMFA(...args),
-	validateTOTP: vi.fn((_opts?: any) => Promise.resolve()),
+	disableMFASMS: (...args: any[]) => mockDisableMFASMS(...args),
+	disableMFAEmail: (...args: any[]) => mockDisableMFAEmail(...args),
 }));
 
 vi.mock('@/lib/i18n', () => ({
@@ -75,11 +80,17 @@ function renderMFASetup() {
 	);
 }
 
+const STATUS_DISABLED = { totpEnabled: false, smsEnabled: false, emailEnabled: false };
+const ENABLE_RESPONSE = {
+	secret: 'JBSWY3DPEHPK3PXP',
+	qrCode: 'data:image/png;base64,testqr',
+	qrCodeUrl: 'otpauth://totp/Autional:user@example.com?secret=JBSWY3DPEHPK3PXP',
+	backupCodes: ['CODE001', 'CODE002', 'CODE003', 'CODE004'],
+};
+
 beforeEach(() => {
 	vi.clearAllMocks();
-	mockGetMFAStatus.mockResolvedValue({
-		data: { totpEnabled: false, smsEnabled: false, emailEnabled: false },
-	});
+	mockGetMFAStatus.mockResolvedValue({ ...STATUS_DISABLED, smsPhone: '', emailAddress: '' });
 });
 
 describe('MFASetupPage', () => {
@@ -97,10 +108,8 @@ describe('MFASetupPage', () => {
 			expect(screen.getAllByText('auth.mfa.setupSubtitleStep1')).toHaveLength(1);
 		});
 
-		it('shows TOTP QR code and secret after clicking authenticator option', async () => {
-			mockSetupMFA.mockResolvedValue({
-				data: { qr_url: 'data:image/png;base64,testqr', secret: 'JBSWY3DPEHPK3PXP' },
-			});
+		it('enrolls via enable (deviceName param) and renders qrCode/secret keys (AUTH-31)', async () => {
+			mockEnableMFA.mockResolvedValue({ ...ENABLE_RESPONSE });
 
 			const user = userEvent.setup();
 			renderMFASetup();
@@ -112,82 +121,18 @@ describe('MFASetupPage', () => {
 			await user.click(screen.getByText('auth.mfa.setupAuthApp'));
 
 			await waitFor(() => {
+				expect(mockEnableMFA).toHaveBeenCalledWith({ deviceName: 'Autional Auth' });
 				expect(screen.getByText('auth.mfa.setupStep2Title')).toBeInTheDocument();
-				expect(screen.getByAltText('MFA QR Code')).toBeInTheDocument();
-				expect(screen.getByText('JBSWY3DPEHPK3PXP')).toBeInTheDocument();
-				expect(screen.getByText('auth.mfa.setupVerifyAndEnable')).toBeInTheDocument();
 			});
+
+			const img = screen.getByAltText('MFA QR Code') as HTMLImageElement;
+			expect(img.src).toBe('data:image/png;base64,testqr');
+			expect(screen.getByText('JBSWY3DPEHPK3PXP')).toBeInTheDocument();
 		});
 
-		it('shows SMS setup form after clicking SMS option', async () => {
-			const user = userEvent.setup();
-			renderMFASetup();
-
-			await waitFor(() => {
-				expect(screen.getByText('auth.mfa.setupTitle')).toBeInTheDocument();
-			});
-
-			await user.click(screen.getByText('auth.mfa.setupSms'));
-
-			await waitFor(() => {
-				expect(screen.getByText('auth.mfa.setupStep2Title')).toBeInTheDocument();
-				expect(screen.getByText('auth.mfa.phoneLabel')).toBeInTheDocument();
-			});
-
-			expect(screen.getByPlaceholderText('auth.mfa.phonePlaceholder')).toBeInTheDocument();
-			expect(screen.getByRole('button', { name: 'auth.mfa.getCode' })).toBeInTheDocument();
-		});
-
-		it('shows Email setup form after clicking Email option', async () => {
-			const user = userEvent.setup();
-			renderMFASetup();
-
-			await waitFor(() => {
-				expect(screen.getByText('auth.mfa.setupTitle')).toBeInTheDocument();
-			});
-
-			await user.click(screen.getByText('auth.mfa.setupEmail'));
-
-			await waitFor(() => {
-				expect(screen.getByText('auth.mfa.setupStep2Title')).toBeInTheDocument();
-				expect(screen.getByText('auth.mfa.emailLabel')).toBeInTheDocument();
-			});
-
-			expect(screen.getByPlaceholderText('auth.mfa.emailPlaceholder')).toBeInTheDocument();
-			expect(screen.getByRole('button', { name: 'auth.mfa.getCode' })).toBeInTheDocument();
-		});
-
-		it('shows account center link at bottom', async () => {
-			renderMFASetup();
-
-			await waitFor(() => {
-				expect(screen.getByText('auth.mfa.setupTitle')).toBeInTheDocument();
-			});
-
-			expect(screen.getByText('mfa.accountCenter')).toBeInTheDocument();
-			expect(
-				screen.getByText((content) => content.startsWith('mfa.goToAccountCenter')),
-			).toBeInTheDocument();
-		});
-
-		it('shows back button in setup flow', async () => {
-			renderMFASetup();
-
-			await waitFor(() => {
-				expect(screen.getByText('auth.mfa.setupTitle')).toBeInTheDocument();
-			});
-
-			expect(screen.getByText('auth.mfa.back')).toBeInTheDocument();
-		});
-
-		it('enables MFA via TOTP and shows backup codes on success', async () => {
-			mockSetupMFA.mockResolvedValue({
-				data: { qr_url: 'data:image/png;base64,testqr', secret: 'JBSWY3DPEHPK3PXP' },
-			});
-			mockEnableMFA.mockResolvedValue({ data: {} });
-			mockRegenerateBackupCodes.mockResolvedValue({
-				data: { codes: ['CODE001', 'CODE002', 'CODE003', 'CODE004'] },
-			});
+		it('activates via totp/verify and shows backup codes from the enable response (AUTH-32)', async () => {
+			mockEnableMFA.mockResolvedValue({ ...ENABLE_RESPONSE });
+			mockVerifyTOTPMFA.mockResolvedValue({ valid: true });
 
 			const user = userEvent.setup();
 			renderMFASetup();
@@ -207,25 +152,21 @@ describe('MFASetupPage', () => {
 			await user.click(screen.getByRole('button', { name: 'auth.mfa.setupVerifyAndEnable' }));
 
 			await waitFor(() => {
-				expect(mockEnableMFA).toHaveBeenCalledWith({ code: '123456', type: 'totp' });
-				expect(mockRegenerateBackupCodes).toHaveBeenCalled();
+				// 唯一启用口：totp/verify（不再是幽灵 enableMFA({code,type})）
+				expect(mockVerifyTOTPMFA).toHaveBeenCalledWith({ code: '123456' });
 			});
 
 			await waitFor(() => {
 				expect(screen.getByText('auth.mfa.setupStep3Title')).toBeInTheDocument();
 				expect(screen.getByText('CODE001')).toBeInTheDocument();
-				expect(screen.getByText('CODE002')).toBeInTheDocument();
-				expect(screen.getByText('CODE003')).toBeInTheDocument();
 				expect(screen.getByText('CODE004')).toBeInTheDocument();
 			});
 		});
 
-		it('shows error when TOTP verification fails', async () => {
-			mockSetupMFA.mockResolvedValue({
-				data: { qr_url: 'data:image/png;base64,testqr', secret: 'JBSWY3DPEHPK3PXP' },
-			});
-			mockEnableMFA.mockRejectedValue({
-				response: { data: { message: 'Invalid verification code' } },
+		it('shows error when totp/verify rejects with invalid-code code', async () => {
+			mockEnableMFA.mockResolvedValue({ ...ENABLE_RESPONSE });
+			mockVerifyTOTPMFA.mockRejectedValue({
+				response: { status: 400, data: { code: 61040013, message: 'invalid MFA code' } },
 			});
 
 			const user = userEvent.setup();
@@ -241,24 +182,105 @@ describe('MFASetupPage', () => {
 				expect(screen.getByText('auth.mfa.setupStep2Title')).toBeInTheDocument();
 			});
 
-			const codeInput = screen.getByPlaceholderText('auth.mfa.codePlaceholder');
-			await user.type(codeInput, '000000');
+			await user.type(screen.getByPlaceholderText('auth.mfa.codePlaceholder'), '000000');
 			await user.click(screen.getByRole('button', { name: 'auth.mfa.setupVerifyAndEnable' }));
 
 			await waitFor(() => {
-				expect(screen.getByText('Invalid verification code')).toBeInTheDocument();
+				expect(screen.getByText('auth.mfa.errorInvalidCode')).toBeInTheDocument();
 			});
+		});
+
+		it('refetches status and switches to disable view on enable 409', async () => {
+			mockEnableMFA.mockRejectedValue({
+				response: { status: 409, data: { code: 61040010, message: 'TOTP already enabled' } },
+			});
+			mockGetMFAStatus
+				.mockResolvedValueOnce({ ...STATUS_DISABLED, smsPhone: '', emailAddress: '' })
+				.mockResolvedValueOnce({
+					totpEnabled: true,
+					smsEnabled: false,
+					emailEnabled: false,
+					smsPhone: '',
+					emailAddress: '',
+				});
+
+			const user = userEvent.setup();
+			renderMFASetup();
+
+			await waitFor(() => {
+				expect(screen.getByText('auth.mfa.setupTitle')).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByText('auth.mfa.setupAuthApp'));
+
+			await waitFor(() => {
+				expect(mockGetMFAStatus).toHaveBeenCalledTimes(2);
+				expect(screen.getByText('auth.mfa.enabledStatus')).toBeInTheDocument();
+				expect(screen.getByText('auth.mfa.errorAlreadyEnabled')).toBeInTheDocument();
+			});
+		});
+
+		it('self-activates SMS via verify and stops on valid=false (no ghost enable)', async () => {
+			mockSendMFASMS.mockResolvedValue({ sent: true });
+			mockVerifyMFASMS.mockResolvedValue({ valid: false });
+
+			const user = userEvent.setup();
+			renderMFASetup();
+
+			await waitFor(() => {
+				expect(screen.getByText('auth.mfa.setupTitle')).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByText('auth.mfa.setupSms'));
+
+			await waitFor(() => {
+				expect(screen.getByText('auth.mfa.setupStep2Title')).toBeInTheDocument();
+			});
+
+			await user.type(screen.getByPlaceholderText('auth.mfa.phonePlaceholder'), '13800138000');
+			await user.click(screen.getByRole('button', { name: 'auth.mfa.getCode' }));
+
+			await waitFor(() => {
+				expect(mockSendMFASMS).toHaveBeenCalledWith({ phone: '13800138000' });
+			});
+
+			await user.type(screen.getByPlaceholderText('auth.mfa.codePlaceholder'), '123456');
+			await user.click(screen.getByRole('button', { name: 'auth.mfa.enableSubmit' }));
+
+			await waitFor(() => {
+				expect(mockVerifyMFASMS).toHaveBeenCalledWith({ phone: '13800138000', code: '123456' });
+				// valid=false → 留在 step2 报错，且不得调用幽灵 enableMFA
+				expect(screen.getByText('auth.mfa.errorVerifyCodeFailed')).toBeInTheDocument();
+				expect(screen.getByText('auth.mfa.setupStep2Title')).toBeInTheDocument();
+			});
+		});
+
+		it('shows account center link at bottom', async () => {
+			renderMFASetup();
+
+			await waitFor(() => {
+				expect(screen.getByText('auth.mfa.setupTitle')).toBeInTheDocument();
+			});
+
+			expect(screen.getByText('mfa.accountCenter')).toBeInTheDocument();
+			expect(
+				screen.getByText((content) => content.startsWith('mfa.goToAccountCenter')),
+			).toBeInTheDocument();
 		});
 	});
 
 	describe('when MFA is already enabled', () => {
 		beforeEach(() => {
 			mockGetMFAStatus.mockResolvedValue({
-				data: { totpEnabled: true, smsEnabled: false, emailEnabled: false },
+				totpEnabled: true,
+				smsEnabled: false,
+				emailEnabled: false,
+				smsPhone: '',
+				emailAddress: '',
 			});
 		});
 
-		it('shows MFA enabled status with disable option', async () => {
+		it('shows MFA enabled status with code-based disable option (AUTH-33)', async () => {
 			renderMFASetup();
 
 			await waitFor(() => {
@@ -268,20 +290,13 @@ describe('MFASetupPage', () => {
 			expect(screen.getByText('auth.mfa.enabledDesc')).toBeInTheDocument();
 			expect(screen.getByText('auth.mfa.disableLabel')).toBeInTheDocument();
 			expect(screen.getByText('auth.mfa.disableBtn')).toBeInTheDocument();
+			// 无密码输入面
+			expect(screen.queryByPlaceholderText('auth.mfa.disablePlaceholder')).not.toBeInTheDocument();
 		});
 
-		it('shows account center link when MFA is enabled', async () => {
-			renderMFASetup();
+		it('disables TOTP by verification code (not password)', async () => {
+			mockDisableMFA.mockResolvedValue({ disabled: true });
 
-			await waitFor(() => {
-				expect(screen.getByText('mfa.accountCenter')).toBeInTheDocument();
-				expect(
-					screen.getByText((content) => content.startsWith('mfa.goToAccountCenter')),
-				).toBeInTheDocument();
-			});
-		});
-
-		it('disables MFA when password is provided', async () => {
 			const user = userEvent.setup();
 			renderMFASetup();
 
@@ -289,23 +304,52 @@ describe('MFASetupPage', () => {
 				expect(screen.getByText('auth.mfa.enabledStatus')).toBeInTheDocument();
 			});
 
-			await user.type(
-				screen.getByPlaceholderText('auth.mfa.disablePlaceholder'),
-				'current-password',
-			);
+			await user.type(screen.getByPlaceholderText('auth.mfa.codePlaceholder'), '123456');
 			await user.click(screen.getByRole('button', { name: 'auth.mfa.disableBtn' }));
 
 			await waitFor(() => {
-				expect(mockDisableMFA).toHaveBeenCalledWith({
-					code: 'current-password',
-					userId: 'test-user-id',
+				expect(mockDisableMFA).toHaveBeenCalledWith({ code: '123456' });
+			});
+		});
+
+		it('sends and verifies a code to disable SMS MFA', async () => {
+			mockGetMFAStatus.mockResolvedValue({
+				totpEnabled: false,
+				smsEnabled: true,
+				emailEnabled: false,
+				smsPhone: '13800138000',
+				emailAddress: '',
+			});
+			mockSendMFASMS.mockResolvedValue({ sent: true });
+			mockDisableMFASMS.mockResolvedValue({ disabled: true });
+
+			const user = userEvent.setup();
+			renderMFASetup();
+
+			await waitFor(() => {
+				expect(screen.getByText('auth.mfa.enabledStatus')).toBeInTheDocument();
+			});
+
+			await user.click(screen.getByRole('button', { name: 'auth.mfa.sendCode' }));
+
+			await waitFor(() => {
+				expect(mockSendMFASMS).toHaveBeenCalledWith({
+					phone: '13800138000',
+					purpose: 'disable',
 				});
 			});
+
+			await user.type(screen.getByPlaceholderText('auth.mfa.codePlaceholder'), '654321');
+			await user.click(screen.getByRole('button', { name: 'auth.mfa.disableBtn' }));
+
+			await waitFor(() => {
+				expect(mockDisableMFASMS).toHaveBeenCalledWith({ code: '654321' });
+			});
 		});
 
-		it('shows error when disable MFA fails', async () => {
+		it('shows invalid-code error when disable rejects with 61040013', async () => {
 			mockDisableMFA.mockRejectedValue({
-				response: { data: { message: 'Invalid password' } },
+				response: { status: 400, data: { code: 61040013, message: 'invalid MFA code' } },
 			});
 
 			const user = userEvent.setup();
@@ -315,11 +359,11 @@ describe('MFASetupPage', () => {
 				expect(screen.getByText('auth.mfa.enabledStatus')).toBeInTheDocument();
 			});
 
-			await user.type(screen.getByPlaceholderText('auth.mfa.disablePlaceholder'), 'wrong-password');
+			await user.type(screen.getByPlaceholderText('auth.mfa.codePlaceholder'), '999999');
 			await user.click(screen.getByRole('button', { name: 'auth.mfa.disableBtn' }));
 
 			await waitFor(() => {
-				expect(screen.getByText('Invalid password')).toBeInTheDocument();
+				expect(screen.getByText('auth.mfa.errorInvalidCode')).toBeInTheDocument();
 			});
 		});
 	});
@@ -329,9 +373,6 @@ describe('MFASetupPage', () => {
 			const prevUser = mockUser;
 			mockUser = null;
 			mockGetMFAStatus.mockClear();
-			mockGetMFAStatus.mockResolvedValue({
-				data: { totpEnabled: false, smsEnabled: false, emailEnabled: false },
-			});
 
 			renderMFASetup();
 

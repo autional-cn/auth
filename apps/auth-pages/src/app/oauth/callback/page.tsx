@@ -57,10 +57,14 @@ function OAuthCallbackContent() {
 				const res = await exchangeCodeForToken(oauthProvider as any, { code, state } as any);
 				const data = (res as any)?.data || res;
 				if (data.requiresMfa) {
+					// 挑战页数据面：riskLevel/requiredMfaMethods 驱动可见验证方式与风险横幅
+					// （OAuth 响应无 user 明细 → 挑战页投递提示走通用文案）
 					sessionStorage.setItem(
 						'mfa_pre_auth',
 						JSON.stringify({
 							challengeToken: data.challengeToken || '',
+							riskLevel: data.riskLevel || '',
+							requiredMfaMethods: data.requiredMfaMethods || [],
 						}),
 					);
 					navigate('/mfa-challenge');
