@@ -108,8 +108,9 @@ export default function PhoneCodeLoginForm({
 				res = await authLoginPhoneCodePost(loginPayload as any);
 			}
 
-			const accessToken = res?.access_token || res?.data?.access_token;
-			const refreshToken = res?.refresh_token || res?.data?.refresh_token;
+			// 拦截器已解包信封并转 camelCase（{code,data:{access_token..}} → {accessToken..}）
+			const accessToken = res?.accessToken || res?.data?.accessToken;
+			const refreshToken = res?.refreshToken || res?.data?.refreshToken;
 			const user = res?.user || res?.data?.user;
 
 			if (accessToken && user) {

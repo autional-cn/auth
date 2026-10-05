@@ -56,8 +56,8 @@ vi.mock('@autional-cn/shared/generated/api', async (importOriginal) => {
 	return {
 		...actual,
 		authRegisterPost: (...args: any[]) => mockAuthRegisterPost(...args),
-		authRegisterCheckUsername: (...args: any[]) => mockAuthRegisterCheckUsername(...args),
-		authRegisterCheckEmail: (...args: any[]) => mockAuthRegisterCheckEmail(...args),
+		authRegisterCheckUsernamePost: (...args: any[]) => mockAuthRegisterCheckUsername(...args),
+		authRegisterCheckEmailPost: (...args: any[]) => mockAuthRegisterCheckEmail(...args),
 		authLoginPost: (...args: any[]) => mockAuthLoginPost(...args),
 		authMeConsentPost: (...args: any[]) => mockAuthMeConsentPost(...args),
 		compliancePublicLegalDocuments: (...args: any[]) => mockCompliancePublicLegalDocuments(...args),

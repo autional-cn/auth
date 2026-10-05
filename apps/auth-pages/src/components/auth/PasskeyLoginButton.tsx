@@ -80,7 +80,8 @@ export function PasskeyLoginButton({ email, tenantId }: PasskeyLoginButtonProps)
 					mediation: 'conditional',
 					tenantId: tenantId || undefined,
 				});
-				const options = beginData.response || beginData;
+				// 后端返回 go-webauthn CredentialAssertion（{publicKey:{...}}，经 NewDataResponse 解包后亦然）
+				const options = (beginData as any)?.publicKey ?? (beginData as any)?.response ?? beginData;
 
 				// 2. 构建WebAuthn请求选项
 				const publicKey: PublicKeyCredentialRequestOptions = {
@@ -164,7 +165,7 @@ export function PasskeyLoginButton({ email, tenantId }: PasskeyLoginButtonProps)
 				tenantId: tenantId || undefined,
 				mediation: email ? undefined : 'conditional',
 			});
-			const options = beginData.response || beginData;
+			const options = (beginData as any)?.publicKey ?? (beginData as any)?.response ?? beginData;
 
 			// 2. Convert server response to WebAuthn request options
 			const publicKey: PublicKeyCredentialRequestOptions = {
@@ -186,16 +187,18 @@ export function PasskeyLoginButton({ email, tenantId }: PasskeyLoginButtonProps)
 			const cred = credential as PublicKeyCredential;
 			const assertion = cred.response as AuthenticatorAssertionResponse;
 
-			// 4. Send signed assertion to server
+			// 4. Send signed assertion to server (后端契约: 顶层 credential 包裹)
 			const data = await authWebauthnAuthenticateCompletePost({
-				id: cred.id,
-				rawId: bufferToBase64url(cred.rawId),
-				type: cred.type,
-				response: {
-					clientDataJSON: bufferToBase64url(assertion.clientDataJSON),
-					authenticatorData: bufferToBase64url(assertion.authenticatorData),
-					signature: bufferToBase64url(assertion.signature),
-					userHandle: assertion.userHandle ? bufferToBase64url(assertion.userHandle) : null,
+				credential: {
+					id: cred.id,
+					rawId: bufferToBase64url(cred.rawId),
+					type: cred.type,
+					response: {
+						clientDataJSON: bufferToBase64url(assertion.clientDataJSON),
+						authenticatorData: bufferToBase64url(assertion.authenticatorData),
+						signature: bufferToBase64url(assertion.signature),
+						userHandle: assertion.userHandle ? bufferToBase64url(assertion.userHandle) : null,
+					},
 				},
 			} as any);
 

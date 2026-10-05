@@ -1,20 +1,18 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { Button, Input, Label } from '@autional-cn/ui';
 import {
-	authRecoveryRequestPost,
-	authRecoveryVerifyPost,
-	authRecoveryCompletePost,
+	authRecoverAccountPost,
+	authRecoverAccountResetPost,
 	PublicAuthConfigBySlugByBySlug,
 } from '@autional-cn/shared/generated/api';
 import { processPasswordForTransmission } from '@autional-cn/shared';
 import { useI18n } from '@/lib/i18n';
 import { usePageTitle } from '@/hooks/use-page-title';
-import { useTenantStore } from '@/lib/tenant-store';
 import { PasswordInput } from '@/components/form/PasswordInput';
 import { useTenantBrandingStore } from '@autional-cn/shared/branding';
 
@@ -23,9 +21,9 @@ export default function RecoverAccountPage() {
 	usePageTitle('auth.recoverAccount.title');
 	const logoUrl = useTenantBrandingStore((s) => s.branding?.logoUrl);
 
-	const [step, setStep] = useState<'request' | 'verify' | 'reset' | 'success'>('request');
+	const [step, setStep] = useState<'request' | 'reset' | 'success'>('request');
 	const [identity, setIdentity] = useState('');
-	const [recoveryToken, setRecoveryToken] = useState('');
+	const [maskedTarget, setMaskedTarget] = useState('');
 	const [code, setCode] = useState('');
 	const [newPassword, setNewPassword] = useState('');
 	const [loading, setLoading] = useState(false);
@@ -39,14 +37,10 @@ export default function RecoverAccountPage() {
 		setLoading(true);
 		setError('');
 		try {
-			const res = await authRecoveryRequestPost({
-				identity: identity.trim(),
-				method: 'backup_email',
-			});
-			if ((res as any)?.recovery_token) {
-				setRecoveryToken((res as any).recovery_token);
-				setStep('verify');
-			}
+			const res = await authRecoverAccountPost({ identity: identity.trim() });
+			// 反枚举一致响应：账号是否存在都进入验证步（提示统一，不泄露账号存在性）
+			setMaskedTarget(res?.maskedTo || '');
+			setStep('reset');
 		} catch (err: any) {
 			setError(err?.response?.data?.message || t('auth.recoverAccount.requestFailed'));
 		} finally {
@@ -54,22 +48,8 @@ export default function RecoverAccountPage() {
 		}
 	};
 
-	const handleVerifyCode = async () => {
-		if (!code.trim()) return;
-		setLoading(true);
-		setError('');
-		try {
-			await authRecoveryVerifyPost({ recovery_token: recoveryToken, code: code.trim() });
-			setStep('reset');
-		} catch (err: any) {
-			setError(err?.response?.data?.message || t('auth.recoverAccount.verifyFailed'));
-		} finally {
-			setLoading(false);
-		}
-	};
-
 	const handleResetPassword = async () => {
-		if (!newPassword || newPassword.length < 8) return;
+		if (!code.trim() || !newPassword || newPassword.length < 8) return;
 		setLoading(true);
 		setError('');
 		try {
@@ -95,11 +75,11 @@ export default function RecoverAccountPage() {
 				tenantId,
 				undefined,
 			);
-			await authRecoveryCompletePost({
-				recovery_token: recoveryToken,
+			await authRecoverAccountResetPost({
+				identity: identity.trim(),
 				code: code.trim(),
-				new_password: transmissionResult.password,
-				password_transmission: transmissionResult.passwordTransmission,
+				newPassword: transmissionResult.password,
+				passwordTransmission: transmissionResult.passwordTransmission,
 			});
 			setStep('success');
 		} catch (err: any) {
@@ -145,14 +125,19 @@ export default function RecoverAccountPage() {
 				</form>
 			)}
 
-			{step === 'verify' && (
+			{step === 'reset' && (
 				<form
 					onSubmit={(e) => {
 						e.preventDefault();
-						handleVerifyCode();
+						handleResetPassword();
 					}}
 					className="space-y-4"
 				>
+					<div className="rounded-md bg-[var(--color-bg-muted)] p-3 text-sm text-[var(--color-text-secondary)]">
+						{maskedTarget
+							? t('auth.recoverAccount.codeSent', { target: maskedTarget })
+							: t('auth.recoverAccount.codeSentGeneric')}
+					</div>
 					<div className="space-y-2">
 						<Label htmlFor="code">{t('auth.recoverAccount.codeLabel')}</Label>
 						<Input
@@ -164,25 +149,6 @@ export default function RecoverAccountPage() {
 							onChange={(e) => setCode(e.target.value)}
 						/>
 					</div>
-					{error && (
-						<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-[var(--color-danger)]">
-							{error}
-						</div>
-					)}
-					<Button type="submit" fullWidth isLoading={loading}>
-						{t('auth.recoverAccount.verifyCode')}
-					</Button>
-				</form>
-			)}
-
-			{step === 'reset' && (
-				<form
-					onSubmit={(e) => {
-						e.preventDefault();
-						handleResetPassword();
-					}}
-					className="space-y-4"
-				>
 					<div className="space-y-2">
 						<Label htmlFor="newPassword">{t('auth.recoverAccount.newPasswordLabel')}</Label>
 						<PasswordInput

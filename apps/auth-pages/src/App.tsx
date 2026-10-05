@@ -155,6 +155,7 @@ export default function App() {
 								<Route path="/login" element={<EntryRouter />} />
 								{/* Token-based routes (no slug needed) */}
 								<Route path="/reset-password" element={<ResetPasswordPage />} />
+								<Route path="/verify-email" element={<VerifyEmailPage />} />
 								<Route path="/magic-link/confirm" element={<MagicLinkConfirmPage />} />
 								<Route path="/reapply" element={<ReapplyPage />} />
 								<Route path="/verify-phone" element={<VerifyPhonePage />} />

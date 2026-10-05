@@ -8,8 +8,8 @@ import { z } from 'zod';
 import { Button, Label, Input } from '@autional-cn/ui';
 import {
 	authRegisterPost,
-	authRegisterCheckUsername,
-	authRegisterCheckEmail,
+	authRegisterCheckUsernamePost,
+	authRegisterCheckEmailPost,
 	authLoginPost,
 	authMeConsentPost,
 	tenantPublicTenants,
@@ -259,7 +259,8 @@ export default function RegisterPage() {
 		setUsernameStatus('checking');
 		usernameTimer.current = setTimeout(async () => {
 			try {
-				const res = await authRegisterCheckUsername({ username: watchedUsername });
+				// POST 变体：GET 变体只读第二参 params，传 data 会被忽略 → 后端 400（AUTH-14）
+				const res = await authRegisterCheckUsernamePost({ username: watchedUsername });
 				setUsernameStatus(res.available ? 'available' : 'taken');
 			} catch {
 				setUsernameStatus('idle');
@@ -279,7 +280,7 @@ export default function RegisterPage() {
 		setEmailStatus('checking');
 		emailTimer.current = setTimeout(async () => {
 			try {
-				const res = await authRegisterCheckEmail({ email: watchedEmail });
+				const res = await authRegisterCheckEmailPost({ email: watchedEmail });
 				setEmailStatus(res.available ? 'available' : 'taken');
 			} catch {
 				setEmailStatus('idle');
@@ -376,16 +377,13 @@ export default function RegisterPage() {
 				password: transmissionResult.password,
 				passwordTransmission: transmissionResult.passwordTransmission,
 			};
-			if (transmissionResult.client_nonce) {
-				payload.client_nonce = transmissionResult.client_nonce;
-			}
 
 			if (selectedTenantId) {
-				payload.tenant_id = selectedTenantId;
+				payload.tenantId = selectedTenantId;
 			}
 
 			if ((data as any).invitation_code) {
-				payload.invitation_code = (data as any).invitation_code;
+				payload.invitationCode = (data as any).invitation_code;
 			}
 
 			if ((data as any).reason) {
@@ -400,19 +398,41 @@ export default function RegisterPage() {
 
 			await authRegisterPost(payload);
 
-			if (isBFFAvailable()) {
-				const bffRes = await bffLogin(data.username, data.password, selectedTenantId || undefined);
-				if (bffRes.code === 0 && bffRes.data?.user) {
-					useAuthStore.getState().setAuth('', '', bffRes.data.user as any);
+			// 自动登录 = best-effort：注册已成功，登录失败绝不能把结果改写为「注册失败」（AUTH-13）。
+			// 密码必须用与注册相同的传输处理结果 —— 裸明文在 hash 租户必 401。
+			try {
+				if (isBFFAvailable()) {
+					const bffRes = await bffLogin(
+						data.username,
+						data.password,
+						selectedTenantId || undefined,
+					);
+					if (bffRes.code === 0 && bffRes.data?.user) {
+						useAuthStore.getState().setAuth('', '', bffRes.data.user as any);
+					}
+				} else {
+					const loginData: Record<string, unknown> = {
+						identity: data.username,
+						password: transmissionResult.password,
+						passwordTransmission: transmissionResult.passwordTransmission,
+						tenantId: selectedTenantId || undefined,
+					};
+					if (transmissionResult.clientNonce) {
+						loginData.clientNonce = transmissionResult.clientNonce;
+					}
+					if (transmissionResult.keyExchangeId) {
+						loginData.keyExchangeId = transmissionResult.keyExchangeId;
+					}
+					if (transmissionResult.clientPubKey) {
+						loginData.clientPubKey = transmissionResult.clientPubKey;
+					}
+					const loginRes = await authLoginPost(loginData as any);
+					if (loginRes.accessToken) {
+						loginWithTokens(loginRes.accessToken, loginRes.refreshToken, loginRes.user);
+					}
 				}
-			} else {
-				const loginRes = await authLoginPost({
-					identity: data.username,
-					password: data.password,
-				});
-				if (loginRes.accessToken) {
-					loginWithTokens(loginRes.accessToken, loginRes.refreshToken, loginRes.user);
-				}
+			} catch {
+				// 静默：不弹错误、不阻断注册成功流程；用户可随后手动登录
 			}
 
 			// 合规闭环：注册成功后记录用户对条款的同意（best-effort，失败不阻塞注册）
@@ -433,7 +453,10 @@ export default function RegisterPage() {
 			await loadAuthExtras().catch(() => {});
 			setRegistrationSuccess(true);
 		} catch (err: any) {
-			setError(err.response?.data?.message || '注册失败，请稍后重试');
+			const status = err?.response?.status;
+			const message = err?.response?.data?.message;
+			// 409 = 账号已存在（ErrCodeUserAlreadyExists 61000102）→ 给「去登录」指路，而非笼统失败
+			setError(status === 409 ? message || t('auth.register.conflict') : message || '注册失败，请稍后重试');
 			const step = parseInt(err?.response?.headers?.['x-ratelimit-step'] || '0', 10);
 			if (step >= 1) {
 				setRateLimitStep(step);

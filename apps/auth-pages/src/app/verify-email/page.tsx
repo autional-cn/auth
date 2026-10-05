@@ -19,7 +19,8 @@ function VerifyEmailContent() {
 	const { t } = useI18n();
 	const [searchParams] = useSearchParams();
 	const { tenantSlug } = useParams<{ tenantSlug?: string }>();
-	const token = searchParams.get('token') || '';
+	const email = searchParams.get('email') || '';
+	const code = searchParams.get('code') || '';
 
 	const [status, setStatus] = useState<VerifyStatus>('verifying');
 	const [message, setMessage] = useState('');
@@ -46,13 +47,13 @@ function VerifyEmailContent() {
 	});
 
 	useEffect(() => {
-		if (!token) {
+		if (!email || !code) {
 			setStatus('error');
 			setMessage(t('auth.verifyEmail.invalidToken'));
 			return;
 		}
 
-		authVerifyEmailPost({ code: token, email: '' })
+		authVerifyEmailPost({ email, code })
 			.then(() => {
 				setStatus('success');
 			})
@@ -65,7 +66,7 @@ function VerifyEmailContent() {
 					setStatus('error');
 				}
 			});
-	}, [token, t]);
+	}, [email, code, t]);
 
 	const onResend = async (data: ResendFormData) => {
 		setResending(true);

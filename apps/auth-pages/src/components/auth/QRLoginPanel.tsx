@@ -30,8 +30,9 @@ export default function QRLoginPanel() {
 		setError('');
 		try {
 			const data = await authQrLoginInitiatePost();
-			const token = data?.session_token || '';
-			const nm = data?.number_matching || '';
+			// 拦截器已解包信封并转 camelCase（AUTH-17 同族）
+			const token = data?.sessionToken || '';
+			const nm = data?.numberMatching || '';
 
 			setSessionToken(token);
 			setNumberMatching(nm);
@@ -54,8 +55,8 @@ export default function QRLoginPanel() {
 				const data = await authQrLoginStatus({ token });
 				const st = data?.status || '';
 
-				if (st === 'confirmed' && data?.access_token) {
-					loginWithTokens(data.access_token, data.refresh_token || '', null as any);
+				if (st === 'confirmed' && data?.accessToken) {
+					loginWithTokens(data.accessToken, data.refreshToken || '', null as any);
 					await loadAuthExtras().catch(() => {});
 					setStatus('success');
 					if (pollRef.current) clearInterval(pollRef.current);

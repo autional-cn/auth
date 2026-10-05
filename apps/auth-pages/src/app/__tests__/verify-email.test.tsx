@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import VerifyEmailPage from '../verify-email/page';
@@ -13,14 +13,15 @@ vi.mock('react-i18next', () => ({
 }));
 
 const mockNavigate = vi.fn();
-let mockSearchParamsToken = '';
+// AUTH-23: 邮件链接形状 = ?email=...&code=...（旧测试按 token 参数编码了错误契约）
+let mockParams: Record<string, string> = {};
 
 vi.mock('react-router', async () => {
 	const actual = await vi.importActual('react-router');
 	return {
 		...actual,
 		useNavigate: () => mockNavigate,
-		useSearchParams: () => [{ get: (_k: string) => mockSearchParamsToken }, vi.fn()],
+		useSearchParams: () => [{ get: (k: string) => mockParams[k] ?? null }, vi.fn()],
 		Link: ({ to, children }: any) => <a href={to}>{children}</a>,
 	};
 });
@@ -43,14 +44,13 @@ function renderVerifyEmail() {
 
 beforeEach(() => {
 	vi.clearAllMocks();
-	mockSearchParamsToken = '';
+	mockParams = {};
 	mockAuthVerifyEmailPost.mockReset();
 	mockAuthResendVerificationEmailPost.mockReset();
 });
 
 describe('VerifyEmailPage', () => {
-	it('shows error and resend form when no token', () => {
-		mockSearchParamsToken = '';
+	it('shows error and resend form when email/code params are missing', () => {
 		renderVerifyEmail();
 
 		expect(screen.getByText('auth.verifyEmail.invalidToken')).toBeInTheDocument();
@@ -58,27 +58,30 @@ describe('VerifyEmailPage', () => {
 		expect(screen.getByRole('button', { name: 'auth.verifyEmail.resend' })).toBeInTheDocument();
 	});
 
-	it('shows verifying state when token present and auto-verifying', async () => {
+	it('auto-verifies with email+code from the link and shows verifying state', async () => {
 		let resolveVerify: (value: unknown) => void;
 		mockAuthVerifyEmailPost.mockReturnValue(
 			new Promise((resolve) => {
 				resolveVerify = resolve;
 			}),
 		);
-		mockSearchParamsToken = 'valid-token';
+		mockParams = { email: 'user@example.com', code: '123456' };
 		renderVerifyEmail();
 
 		expect(screen.getByText('auth.verifyEmail.verifying')).toBeInTheDocument();
-		expect(mockAuthVerifyEmailPost).toHaveBeenCalledWith({ code: 'valid-token', email: '' });
+		expect(mockAuthVerifyEmailPost).toHaveBeenCalledWith({
+			email: 'user@example.com',
+			code: '123456',
+		});
 
 		await act(async () => {
 			resolveVerify({});
 		});
 	});
 
-	it('shows success state when token is valid', async () => {
+	it('shows success state when verification succeeds', async () => {
 		mockAuthVerifyEmailPost.mockResolvedValue({});
-		mockSearchParamsToken = 'valid-token';
+		mockParams = { email: 'user@example.com', code: '123456' };
 		renderVerifyEmail();
 
 		await waitFor(() => {
@@ -87,11 +90,11 @@ describe('VerifyEmailPage', () => {
 		expect(screen.getByRole('button', { name: 'auth.common.goToLogin' })).toBeInTheDocument();
 	});
 
-	it('shows error and resend form when token is invalid (not already-verified)', async () => {
+	it('shows error and resend form when code is invalid (not already-verified)', async () => {
 		mockAuthVerifyEmailPost.mockRejectedValue({
 			response: { data: { message: 'expired token' } },
 		});
-		mockSearchParamsToken = 'bad-token';
+		mockParams = { email: 'user@example.com', code: 'bad-code' };
 		renderVerifyEmail();
 
 		await waitFor(() => {
@@ -101,7 +104,6 @@ describe('VerifyEmailPage', () => {
 	});
 
 	it('submits resend form and triggers API call', async () => {
-		mockSearchParamsToken = '';
 		mockAuthResendVerificationEmailPost.mockResolvedValue({});
 		const user = userEvent.setup();
 		renderVerifyEmail();

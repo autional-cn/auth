@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { Button, Input, Label } from '@autional-cn/ui';
 import { authLoginPost, authCaptchaChallenge, authMe } from '@autional-cn/shared/generated/api';
 import { loadAuthExtras } from '@/lib/api';
-import { loginWithTokens, useAuthStore, getAccessToken, isValidRedirect, initiateOAuthLogin, extractSlugFromPath, getPortalUrl, getRootDomain } from '@autional-cn/shared';
+import { loginWithTokens, useAuthStore, getAccessToken, isValidRedirect, initiateOAuthLogin, extractSlugFromPath, getPortalUrl, getRootDomain, API_BASE_URL } from '@autional-cn/shared';
 import { createLoginSchema } from '@/lib/validators';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
 import QRLoginPanel from '@/components/auth/QRLoginPanel';
@@ -31,7 +31,6 @@ import { solveProofOfWork } from '@/lib/silent-challenge';
 import { processPasswordForTransmission } from '@/lib/password-transmission';
 import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 import { CheckCircle2, Lock, QrCode, Mail, Fingerprint, Smartphone, Inbox } from 'lucide-react';
-import { initiateOAuth } from '@/lib/api.generated';
 import { useI18n } from '@/lib/i18n';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { useTenantStore } from '@/lib/tenant-store';
@@ -445,16 +444,11 @@ export default function LoginPage() {
 
 	const rememberMe = watch('rememberMe');
 
-	const handleOAuthLogin = useCallback(async (provider: string) => {
-		try {
-			const res = await initiateOAuth(provider);
-			const authUrl = res?.data?.auth_url || res?.auth_url;
-			if (authUrl) {
-				window.location.href = authUrl;
-			}
-		} catch {
-			setError(`Failed to initiate ${provider} login`);
-		}
+	const handleOAuthLogin = useCallback((provider: string) => {
+		// 社交登录必须整页导航：identity 端点对本请求 302 到第三方授权页，
+		// XHR/axios 会因跨域重定向被 CORS 拦死（历史必败根因）；整页导航由浏览器原生跟随。
+		// 未配置凭据的 provider 已由服务端列表门禁过滤，按钮不会渲染（AUTH-01）。
+		window.location.assign(`${API_BASE_URL}/identity/api/v1/auth/oauth/${encodeURIComponent(provider)}`);
 	}, []);
 
 	const onSubmit = async (data: FormData) => {
@@ -1157,8 +1151,10 @@ export default function LoginPage() {
 					</>
 				)}
 
-				{/* Passkey login - always show */}
-				<PasskeyLoginButton tenantId={watch('tenantId')} />
+				{/* Passkey login — 仅在租户配置未禁用 passkey 时显示（loginMethods 已消化 passkeyEnabled=false） */}
+				{loginMethods.includes('passkey') && (
+					<PasskeyLoginButton tenantId={watch('tenantId')} />
+				)}
 
 				<div className="text-center text-sm">
 					{t('login.noAccount')}{' '}

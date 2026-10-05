@@ -193,20 +193,33 @@ export default function ChangePasswordPage() {
 				tenantId,
 				undefined,
 			);
+			// AUTH-19: 旧密码必须与新密码同款传输处理 —— 后端 changePasswordCore 把
+			// old_password 原样交给 hashClient.Verify，hash 租户下裸明文必 401。
+			const oldTransmissionResult = await processPasswordForTransmission(
+				data.oldPassword,
+				mode,
+				tenantId,
+				undefined,
+			);
 
 			const payload: Record<string, string> = {
-				old_password: data.oldPassword,
-				new_password: transmissionResult.password,
-				password_transmission: transmissionResult.passwordTransmission,
+				oldPassword: oldTransmissionResult.password,
+				newPassword: transmissionResult.password,
+				passwordTransmission: transmissionResult.passwordTransmission,
 			};
 			if (isForceMode && token) {
-				payload.force_token = token;
+				payload.forceToken = token;
 			}
 			await authMePasswordPut(payload as any);
 
 			setSuccess(true);
 		} catch (err: any) {
-			const message = err?.response?.data?.message || '修改密码失败，请稍后重试';
+			// 40800005 = ErrCodePasswordMismatch（旧密码校验失败）；401 另外涵盖令牌无效，不能混用。
+			const errCode = Number(err?.response?.data?.code);
+			const message =
+				errCode === 40800005
+					? t('auth.password.oldPasswordWrong') || '当前密码不正确'
+					: err?.response?.data?.message || '修改密码失败，请稍后重试';
 			setError(message);
 		} finally {
 			setLoading(false);
