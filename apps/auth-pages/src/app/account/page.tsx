@@ -100,7 +100,7 @@ export default function AccountPage() {
 						href={userPortalUrl(slug, link.path)}
 						className="flex items-start gap-4 p-4 hover:bg-[var(--color-bg-muted)] transition-colors group"
 					>
-						<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--color-bg-muted)] group-hover:bg-[var(--color-brand-soft)]/20 transition-colors">
+						<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--color-bg-muted)] group-hover:bg-brand-soft/20 transition-colors">
 							<link.icon
 								size={20}
 								className="text-[var(--color-text-muted)] group-hover:text-[var(--color-brand)] transition-colors"
@@ -123,7 +123,7 @@ export default function AccountPage() {
 						href={link.href}
 						className="flex items-start gap-4 p-4 hover:bg-[var(--color-bg-muted)] transition-colors group"
 					>
-						<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--color-bg-muted)] group-hover:bg-[var(--color-brand-soft)]/20 transition-colors">
+						<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--color-bg-muted)] group-hover:bg-brand-soft/20 transition-colors">
 							<link.icon
 								size={20}
 								className="text-[var(--color-text-muted)] group-hover:text-[var(--color-brand)] transition-colors"

@@ -59,7 +59,7 @@ export function MagicLinkForm({ tenantId, onBack, mode = 'login' }: MagicLinkFor
 	if (sent) {
 		return (
 			<div className="space-y-4 text-center">
-				<div className="rounded-lg bg-[var(--color-brand)]/10 p-6">
+				<div className="rounded-lg bg-brand/10 p-6">
 					<Mail className="mx-auto h-8 w-8 text-[var(--color-brand)]" />
 					<p className="mt-3 text-sm font-medium text-[var(--color-brand)]">
 						{t(config.sentTitleKey)}

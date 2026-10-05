@@ -236,7 +236,7 @@ export default function MFAChallengePage() {
 			)}
 
 			{error && (
-				<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-danger">
+				<div className="rounded-md bg-danger/10 p-3 text-sm text-danger">
 					{error}
 				</div>
 			)}
@@ -245,10 +245,10 @@ export default function MFAChallengePage() {
 				<div
 					className={`rounded-md p-3 text-sm font-medium ${
 						preAuth.riskLevel === 'low'
-							? 'bg-[var(--color-brand)]/10 text-[var(--color-brand)]'
+							? 'bg-brand/10 text-[var(--color-brand)]'
 							: preAuth.riskLevel === 'medium'
-								? 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'
-								: 'bg-[var(--color-danger)]/10 text-[var(--color-danger)]'
+								? 'bg-warning/10 text-[var(--color-warning)]'
+								: 'bg-danger/10 text-[var(--color-danger)]'
 					}`}
 					data-testid="mfa-risk-level-banner"
 				>

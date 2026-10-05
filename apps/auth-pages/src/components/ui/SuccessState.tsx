@@ -23,7 +23,7 @@ export function SuccessState({ title, description, action }: SuccessStateProps) 
 	return (
 		<div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
 			{/* 绿色勾选图标 */}
-			<div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-success)]/10">
+			<div className="flex h-20 w-20 items-center justify-center rounded-full bg-success/10">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					width="40"

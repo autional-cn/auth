@@ -778,7 +778,7 @@ export default function RegisterPage() {
 					</div>
 
 					{error && (
-						<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-danger">
+						<div className="rounded-md bg-danger/10 p-3 text-sm text-danger">
 							{error}
 						</div>
 					)}

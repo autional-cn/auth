@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
 
 			{submitted ? (
 				<div className="space-y-4">
-					<div className="rounded-md bg-[var(--color-success)]/10 p-4 text-center text-sm text-success">
+					<div className="rounded-md bg-success/10 p-4 text-center text-sm text-success">
 						{channel === 'email' ? t('forgot.sentHintEmail') : t('forgot.sentHintPhone')}
 					</div>
 					<CountdownButton seconds={seconds} fullWidth isLoading={loading} onClick={onResend}>

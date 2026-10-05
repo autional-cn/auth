@@ -106,7 +106,7 @@ export default function IdentifierFirstInput({ onBack }: { onBack: () => void })
 		const slug = match.slug || match.tenant_name;
 		return (
 			<div className="space-y-4 text-center">
-				<div className="rounded-lg border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 p-4">
+				<div className="rounded-lg border border-success/30 bg-success/10 p-4">
 					<p className="font-medium text-[var(--color-success)]">
 						{match.display_name || match.tenant_name}
 					</p>
@@ -140,7 +140,7 @@ export default function IdentifierFirstInput({ onBack }: { onBack: () => void })
 					key={match.tenant_id}
 					type="button"
 					onClick={() => handleSelectTenant(match)}
-					className="w-full rounded-lg border border-[var(--color-border-subtle)] p-3 text-left hover:border-[var(--color-brand)] hover:bg-[var(--color-brand)]/10 transition-colors"
+					className="w-full rounded-lg border border-[var(--color-border-subtle)] p-3 text-left hover:border-[var(--color-brand)] hover:bg-brand/10 transition-colors"
 				>
 					<p className="font-medium text-[var(--color-text-primary)]">
 						{match.display_name || match.tenant_name}

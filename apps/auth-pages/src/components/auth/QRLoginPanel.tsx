@@ -106,14 +106,14 @@ export default function QRLoginPanel() {
 
 			{status === 'pending' && (
 				<div className="text-center space-y-4">
-					<div className="rounded-lg border border-[var(--color-brand)]/30 bg-[var(--color-bg-surface)] p-4">
+					<div className="rounded-lg border border-brand/30 bg-[var(--color-bg-surface)] p-4">
 						<img src={qrCode} alt="登录二维码" className="mx-auto h-48 w-48" />
 						<p className="mt-2 text-xs text-[var(--color-text-muted)]">
 							{t('qrLogin.countdown', { countdown: seconds })}
 						</p>
 					</div>
 					{numberMatching && (
-						<div className="rounded-lg border border-[var(--color-brand)]/30 bg-[var(--color-brand)]/10 p-3">
+						<div className="rounded-lg border border-brand/30 bg-brand/10 p-3">
 							<p className="text-xs text-[var(--color-text-secondary)] mb-1">
 								{t('qrLogin.matchNumber')}
 							</p>
@@ -138,13 +138,13 @@ export default function QRLoginPanel() {
 			)}
 
 			{status === 'success' && (
-				<div className="rounded-lg border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 p-6 text-center">
+				<div className="rounded-lg border border-success/30 bg-success/10 p-6 text-center">
 					<p className="text-[var(--color-success)] font-medium">{t('qrLogin.success')}</p>
 				</div>
 			)}
 
 			{error && (
-				<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-danger text-center">
+				<div className="rounded-md bg-danger/10 p-3 text-sm text-danger text-center">
 					{error}
 					{status === 'error' && (
 						<Button

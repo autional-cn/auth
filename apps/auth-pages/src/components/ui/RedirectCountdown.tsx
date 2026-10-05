@@ -49,7 +49,7 @@ export default function RedirectCountdown({
 		<div className="flex min-h-screen items-center justify-center px-4">
 			<div className="w-full max-w-sm space-y-6 text-center">
 				{/* Success Icon */}
-				<div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-success)]/10">
+				<div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
 					<svg
 						className="h-8 w-8 text-[var(--color-success)]"
 						fill="none"

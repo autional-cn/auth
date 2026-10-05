@@ -108,7 +108,7 @@ function VerifyEmailContent() {
 		if (status === 'success') {
 			return (
 				<div className="space-y-6">
-					<div className="rounded-md bg-[var(--color-success)]/10 p-4 text-center text-sm text-success">
+					<div className="rounded-md bg-success/10 p-4 text-center text-sm text-success">
 						{t('auth.verifyEmail.successMessage')}
 					</div>
 					<Link to={tenantSlug ? `/${tenantSlug}/login` : '/'}>
@@ -121,7 +121,7 @@ function VerifyEmailContent() {
 		if (status === 'already-verified') {
 			return (
 				<div className="space-y-6">
-					<div className="rounded-md bg-[var(--color-success)]/10 p-4 text-center text-sm text-success">
+					<div className="rounded-md bg-success/10 p-4 text-center text-sm text-success">
 						{t('auth.verifyEmail.alreadyVerified')}
 					</div>
 					<Link to={tenantSlug ? `/${tenantSlug}/login` : '/'}>
@@ -134,7 +134,7 @@ function VerifyEmailContent() {
 		// error
 		return (
 			<div className="space-y-6">
-				<div className="rounded-md bg-[var(--color-danger)]/10 p-4 text-center text-sm text-danger">
+				<div className="rounded-md bg-danger/10 p-4 text-center text-sm text-danger">
 					{message ||
 						(invalidParams
 							? t('auth.verifyEmail.invalidToken')
@@ -142,7 +142,7 @@ function VerifyEmailContent() {
 				</div>
 
 				{resendSuccess ? (
-					<div className="rounded-md bg-[var(--color-success)]/10 p-4 text-center text-sm text-success">
+					<div className="rounded-md bg-success/10 p-4 text-center text-sm text-success">
 						{t('auth.verifyEmail.resendSuccess')}
 					</div>
 				) : (

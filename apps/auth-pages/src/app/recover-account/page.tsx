@@ -115,7 +115,7 @@ export default function RecoverAccountPage() {
 						/>
 					</div>
 					{error && (
-						<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-[var(--color-danger)]">
+						<div className="rounded-md bg-danger/10 p-3 text-sm text-[var(--color-danger)]">
 							{error}
 						</div>
 					)}
@@ -159,7 +159,7 @@ export default function RecoverAccountPage() {
 						/>
 					</div>
 					{error && (
-						<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-[var(--color-danger)]">
+						<div className="rounded-md bg-danger/10 p-3 text-sm text-[var(--color-danger)]">
 							{error}
 						</div>
 					)}
@@ -171,7 +171,7 @@ export default function RecoverAccountPage() {
 
 			{step === 'success' && (
 				<div className="space-y-4 text-center">
-					<div className="rounded-lg bg-[var(--color-success)]/10 p-6">
+					<div className="rounded-lg bg-success/10 p-6">
 						<p className="text-sm font-medium text-[var(--color-success)]">
 							{t('auth.recoverAccount.success')}
 						</p>

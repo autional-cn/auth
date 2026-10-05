@@ -519,7 +519,7 @@ export default function MFASetupPage() {
 		const hasCodes = backupCodes.length > 0;
 		return (
 			<div className="space-y-4">
-				<div className="rounded-md bg-[var(--color-success)]/10 p-4 text-center text-sm text-success">
+				<div className="rounded-md bg-success/10 p-4 text-center text-sm text-success">
 					{t('auth.mfa.enabled')}
 				</div>
 				{hasCodes && (
@@ -596,7 +596,7 @@ export default function MFASetupPage() {
 				<AuthHeader title={t('auth.mfa.setupTitle')} subtitle={t('auth.mfa.enabledDesc')} />
 
 				{error && (
-					<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-danger">
+					<div className="rounded-md bg-danger/10 p-3 text-sm text-danger">
 						{error}
 					</div>
 				)}
@@ -678,7 +678,7 @@ export default function MFASetupPage() {
 						}
 						isLoading={disableLoading}
 						onClick={() => handleDisableMFA(target)}
-						className="!border-[var(--color-danger)]/30 !text-[var(--color-danger)] hover:!bg-[var(--color-danger)]/10"
+						className="!border-danger/30 !text-[var(--color-danger)] hover:!bg-danger/10"
 					>
 						{t('auth.mfa.disableBtn')}
 					</Button>
@@ -733,7 +733,7 @@ export default function MFASetupPage() {
 			/>
 
 			{error && (
-				<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-danger">
+				<div className="rounded-md bg-danger/10 p-3 text-sm text-danger">
 					{error}
 				</div>
 			)}

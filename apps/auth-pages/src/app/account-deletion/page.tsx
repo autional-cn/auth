@@ -125,7 +125,7 @@ export default function AccountDeletionPage() {
 			<AuthCard>
 				<AuthHeader title={t('deletion.title')} subtitle={t('deletion.warning')} />
 
-				<div className="rounded-md bg-[var(--color-danger)]/10 p-4 text-sm text-[var(--color-danger)]">
+				<div className="rounded-md bg-danger/10 p-4 text-sm text-[var(--color-danger)]">
 					<p className="font-semibold">{t('deletion.irreversible')}</p>
 					<ul className="mt-2 list-inside list-disc space-y-1">
 						<li>{t('deletion.itemProfile')}</li>
@@ -146,7 +146,7 @@ export default function AccountDeletionPage() {
 				</div>
 
 				{error && (
-					<div className="rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-danger">
+					<div className="rounded-md bg-danger/10 p-3 text-sm text-danger">
 						{error}
 					</div>
 				)}

@@ -48,7 +48,7 @@ export default function ReapplyPage() {
 	return (
 		<AuthCard title={t('auth.reapply.title')} subtitle={t('auth.reapply.subtitle')}>
 			{error && (
-				<div className="mb-4 rounded-md bg-[var(--color-danger)]/10 p-3 text-sm text-danger">
+				<div className="mb-4 rounded-md bg-danger/10 p-3 text-sm text-danger">
 					{error}
 				</div>
 			)}

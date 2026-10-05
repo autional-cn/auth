@@ -23,7 +23,7 @@ export function ErrorState({ title, description, action }: ErrorStateProps) {
 	return (
 		<div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
 			{/* 插图占位 —— 使用简约的错误图标 */}
-			<div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-danger)]/10">
+			<div className="flex h-20 w-20 items-center justify-center rounded-full bg-danger/10">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					width="40"
