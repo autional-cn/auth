@@ -10,6 +10,7 @@ import {
 	authWebauthnAuthenticateCompletePost,
 } from '@autional-cn/shared/generated/api';
 import { loadAuthExtras } from '@/lib/api';
+import { anchorSessionFromToken } from '@/lib/anchor-session';
 import { getPostLoginTarget } from '@/lib/post-login-redirect';
 import { useI18n } from '@/lib/i18n';
 import { CredentialManagementGate } from './CredentialManagementGate';
@@ -124,6 +125,11 @@ export function PasskeyLoginButton({ email, tenantId }: PasskeyLoginButtonProps)
 				} as any);
 
 				loginWithTokens(completeData.accessToken, completeData.refreshToken, completeData.user);
+				// AUTH-53⑤：会话建立即锚定（slug 取路由上下文；tenantId 尽 prop、JWT claim 兜底）
+				anchorSessionFromToken(completeData.accessToken || '', {
+					slug: tenantSlug || null,
+					tenantId: tenantId || null,
+				});
 				await loadAuthExtras();
 				window.location.href = getPostLoginTarget({
 					tenantSlug,
@@ -204,6 +210,11 @@ export function PasskeyLoginButton({ email, tenantId }: PasskeyLoginButtonProps)
 
 			// 5. Complete login
 			loginWithTokens(data.accessToken, data.refreshToken, data.user);
+			// AUTH-53⑤：会话建立即锚定（与条件 UI 路径同法）
+			anchorSessionFromToken(data.accessToken || '', {
+				slug: tenantSlug || null,
+				tenantId: tenantId || null,
+			});
 			await loadAuthExtras().catch(() => {});
 			window.location.href = getPostLoginTarget({ tenantSlug, redirect, user: data.user });
 		} catch (err: any) {
