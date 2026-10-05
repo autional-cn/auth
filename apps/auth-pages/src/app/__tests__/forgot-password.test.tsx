@@ -83,6 +83,38 @@ describe('ForgotPasswordPage', () => {
 		expect(await screen.findByText(/重新发送（/)).toBeInTheDocument();
 	});
 
+	it('resend after countdown re-sends with retained identity (AUTH-52 ④)', async () => {
+		vi.useFakeTimers();
+		try {
+			mockAuthForgotPasswordPost.mockResolvedValue({});
+			renderForgotPassword();
+			fireEvent.change(screen.getByPlaceholderText('email@example.com'), {
+				target: { value: 'test@example.com' },
+			});
+			await act(async () => {
+				fireEvent.click(screen.getByRole('button', { name: 'forgot.submit' }));
+			});
+			expect(mockAuthForgotPasswordPost).toHaveBeenCalledTimes(1);
+
+			// 推进冷却至归零，「重新发送」恢复可用
+			await act(async () => {
+				vi.advanceTimersByTime(60000);
+			});
+			const resendBtn = screen.getByRole('button', { name: 'forgot.resend' });
+
+			// 修复点：点击必须再次发起真实请求（此前仅表单复位、零网络请求）
+			await act(async () => {
+				fireEvent.click(resendBtn);
+			});
+			expect(mockAuthForgotPasswordPost).toHaveBeenCalledTimes(2);
+			expect(mockAuthForgotPasswordPost).toHaveBeenLastCalledWith({ identity: 'test@example.com' });
+			// 重发成功 → 冷却重启
+			expect(screen.getByText(/重新发送（/)).toBeInTheDocument();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it('shows validation error for empty email', async () => {
 		renderForgotPassword();
 		await act(async () => {

@@ -38,12 +38,9 @@ export default function ForgotPasswordPage() {
 		reset,
 	} = useForm<ForgotPasswordFormData>({ resolver: zodResolver(schema) });
 
-	const onSubmit = async (data: ForgotPasswordFormData) => {
+	const sendReset = async (identity: string) => {
 		if (isActive || loading) return;
 		setLoading(true);
-
-		const identity = data.identity || data.email || '';
-		sessionStorage.setItem('reset_password_identity', identity);
 
 		try {
 			await authForgotPasswordPost({ identity });
@@ -54,6 +51,24 @@ export default function ForgotPasswordPage() {
 			setSubmitted(true);
 			start();
 		}
+	};
+
+	const onSubmit = async (data: ForgotPasswordFormData) => {
+		const identity = data.identity || data.email || '';
+		sessionStorage.setItem('reset_password_identity', identity);
+		await sendReset(identity);
+	};
+
+	// AUTH-52 ④：「重新发送」= 真重发——以留存身份再次请求 + 重启冷却。此前点击仅
+	// setSubmitted(false) 复位表单、零网络请求（文案-行为错配）。身份留存缺失
+	// （存储被清/隐私模式）时回退表单由用户重新填写。
+	const onResend = async () => {
+		const identity = sessionStorage.getItem('reset_password_identity') || '';
+		if (!identity) {
+			setSubmitted(false);
+			return;
+		}
+		await sendReset(identity);
 	};
 
 	const switchChannel = (newChannel: RecoveryChannel) => {
@@ -73,7 +88,7 @@ export default function ForgotPasswordPage() {
 					<div className="rounded-md bg-[var(--color-success)]/10 p-4 text-center text-sm text-success">
 						{channel === 'email' ? t('forgot.sentHintEmail') : t('forgot.sentHintPhone')}
 					</div>
-					<CountdownButton seconds={seconds} fullWidth onClick={() => setSubmitted(false)}>
+					<CountdownButton seconds={seconds} fullWidth isLoading={loading} onClick={onResend}>
 						{t('forgot.resend')}
 					</CountdownButton>
 				</div>
