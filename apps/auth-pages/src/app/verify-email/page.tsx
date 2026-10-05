@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense, useMemo } from 'react';
+import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
 import { useSearchParams, useParams, Link } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -46,12 +46,21 @@ function VerifyEmailContent() {
 		resolver: zodResolver(resendSchema),
 	});
 
+	const invalidParams = !email || !code;
+
+	// 初检：参数缺失直接落错误态；不在此 setMessage（避免任何重跑覆盖请求回调写入的结果）
 	useEffect(() => {
-		if (!email || !code) {
-			setStatus('error');
-			setMessage(t('auth.verifyEmail.invalidToken'));
-			return;
-		}
+		if (invalidParams) setStatus('error');
+	}, [invalidParams]);
+
+	// 验证请求按 (email, code) 单发守卫：验证码一次性消费，重复 POST 会让后续 400
+	// 覆盖首个 200 的成功态（AUTH-24；同时防 React StrictMode 开发态双调用）
+	const verifyKeyRef = useRef<string | null>(null);
+	useEffect(() => {
+		if (invalidParams) return;
+		const key = `${email}|${code}`;
+		if (verifyKeyRef.current === key) return;
+		verifyKeyRef.current = key;
 
 		authVerifyEmailPost({ email, code })
 			.then(() => {
@@ -66,7 +75,7 @@ function VerifyEmailContent() {
 					setStatus('error');
 				}
 			});
-	}, [email, code, t]);
+	}, [email, code, t, invalidParams]);
 
 	const onResend = async (data: ResendFormData) => {
 		setResending(true);
@@ -120,7 +129,10 @@ function VerifyEmailContent() {
 		return (
 			<div className="space-y-6">
 				<div className="rounded-md bg-[var(--color-danger)]/10 p-4 text-center text-sm text-danger">
-					{message || t('auth.verifyEmail.expiredOrInvalid')}
+					{message ||
+						(invalidParams
+							? t('auth.verifyEmail.invalidToken')
+							: t('auth.verifyEmail.expiredOrInvalid'))}
 				</div>
 
 				{resendSuccess ? (

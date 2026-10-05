@@ -121,4 +121,33 @@ describe('VerifyEmailPage', () => {
 		});
 		expect(screen.getByText('auth.verifyEmail.resendSuccess')).toBeInTheDocument();
 	});
+
+	// AUTH-24 回归锁：验证码一次性消费，效果重跑（依赖不稳定/StrictMode 双调用）
+	// 不得产生第二个 POST —— 否则后续 400 会给已成功的验证覆盖出「失败」界面。
+	it('AUTH-24: 成功路径只发一次 verify POST（状态更新重渲染不重发）', async () => {
+		mockAuthVerifyEmailPost.mockResolvedValue({});
+		mockParams = { email: 'user@example.com', code: 'once-ok' };
+		renderVerifyEmail();
+
+		await waitFor(() => {
+			expect(screen.getByText('auth.verifyEmail.successMessage')).toBeInTheDocument();
+		});
+		expect(mockAuthVerifyEmailPost).toHaveBeenCalledTimes(1);
+	});
+
+	it('AUTH-24: 失败路径也只发一次 verify POST（重跑不得覆盖结果）', async () => {
+		mockAuthVerifyEmailPost.mockRejectedValue({
+			response: { data: { message: 'verification code not found' } },
+		});
+		mockParams = { email: 'user@example.com', code: 'once-bad' };
+		renderVerifyEmail();
+
+		await waitFor(() => {
+			expect(screen.getByPlaceholderText('auth.verifyEmail.emailPlaceholder')).toBeInTheDocument();
+		});
+		await act(async () => {
+			await Promise.resolve();
+		});
+		expect(mockAuthVerifyEmailPost).toHaveBeenCalledTimes(1);
+	});
 });
