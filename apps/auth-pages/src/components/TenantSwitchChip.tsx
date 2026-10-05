@@ -1,10 +1,10 @@
 'use client';
 
-import { useLocation, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { ArrowLeftRight } from 'lucide-react';
 import { getPortalUrl, isValidRedirect } from '@autional-cn/shared';
 import { useI18n } from '@/lib/i18n';
-import { tenantSlugFromPath, useTenantStore } from '@/lib/tenant-store';
+import { useEffectiveTenantSlugFromPath } from '@/hooks/use-tenant-slug';
 import { useTenantBrandingStore } from '@autional-cn/shared/branding';
 
 /**
@@ -16,11 +16,11 @@ import { useTenantBrandingStore } from '@autional-cn/shared/branding';
  */
 export function TenantSwitchChip({ className }: { className?: string }) {
 	const { t } = useI18n();
-	const location = useLocation();
 	const [searchParams] = useSearchParams();
 	const companyName = useTenantBrandingStore((s) => s.branding?.companyName);
 
-	const slug = tenantSlugFromPath(location.pathname);
+	// AUTH-48/49：脏 slug（名单外）解析为 undefined → 不渲染切换出口
+	const slug = useEffectiveTenantSlugFromPath();
 	const brand = getPortalUrl('brand');
 	if (!slug || !brand) return null;
 

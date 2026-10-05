@@ -5,18 +5,38 @@ import { useNavigate, useParams } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Label } from '@autional-cn/ui';
-import { logout, END_USER_PORTAL_URL, crossAppUrl } from '@autional-cn/shared';
+import { logout, useAuthStore } from '@autional-cn/shared';
 import { createAccountDeletionSchema } from '@/lib/validators';
 import type { AccountDeletionFormData } from '@/lib/validators';
 import { useI18n } from '@/lib/i18n';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthHeader } from '@/components/auth/AuthHeader';
+import { useTenantAuthConfigBySlug } from '@/hooks/use-tenant-auth-config';
+import { useEffectiveTenantSlug } from '@/hooks/use-tenant-slug';
+import { userPortalUrl } from '@/lib/portal-links';
+import {
+	fetchPasswordTransmissionMode,
+	processPasswordForTransmission,
+} from '@/lib/password-transmission';
+import { deleteAccount, reAuthenticate } from '@/lib/api.generated';
+
+// 头名单点对齐后端 constant_cross.HeaderStepUpToken = "X-StepUp-Token"
+const STEP_UP_HEADER = 'X-StepUp-Token';
+
+// 业务错误码（identity）：61000104 = ErrPasswordMismatch（密码内容不匹配）；
+// 40000502 = ErrInvalidPassword（兜底密码校验失败）；40800251 = ErrCodeStepUpRequired（HTTP 401）。
+const ERR_PASSWORD_MISMATCH = 61000104;
+const ERR_INVALID_PASSWORD = 40000502;
+const ERR_STEP_UP_REQUIRED = 40800251;
 
 export default function AccountDeletionPage() {
 	const { t } = useI18n();
 	const navigate = useNavigate();
 	const { tenantSlug } = useParams<{ tenantSlug?: string }>();
+	const slug = useEffectiveTenantSlug();
 	const schema = createAccountDeletionSchema(t);
+	// AUTH-53 约束⑤：盐源权威值 = slug 配置的 tenantId（store 可能被跨租户残留污染）
+	const { data: slugAuthConfig } = useTenantAuthConfigBySlug(tenantSlug || null);
 	const [showModal, setShowModal] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
@@ -47,13 +67,42 @@ export default function AccountDeletionPage() {
 		setLoading(true);
 		setError('');
 		try {
-			const { authMeDeleteAccountPost } = await import('@autional-cn/shared/generated/api');
-			await (authMeDeleteAccountPost as any)({ password: passwordValue });
+			// AUTH-42：删除端点由 RequireStepUp 中间件保护（identity sensitive 组），
+			// 必须先经 re-authenticate 取单次 step-up token（防重放，一次一用），
+			// 再携 X-StepUp-Token 调删除；两步密码均按租户传输模式预处理
+			// （后端 VerifyPassword 原样校验，hash/symmetric 租户裸明文必 401）。
+			const tenantId = slugAuthConfig?.tenantId || useAuthStore.getState().currentTenantId || '';
+			const mode = await fetchPasswordTransmissionMode(tenantId);
+			const transmission = await processPasswordForTransmission(
+				passwordValue,
+				mode,
+				tenantId,
+				undefined,
+			);
+
+			const reauth = await reAuthenticate({ password: transmission.password });
+			const stepUpToken = reauth?.stepUpToken;
+			if (!stepUpToken) {
+				// 200 却无 step-up token = 服务端 step-up 密钥未配置（契约错误），fail-closed
+				throw new Error('step-up token missing from re-authenticate response (contract error)');
+			}
+
+			await deleteAccount(
+				{ password: transmission.password },
+				{ headers: { [STEP_UP_HEADER]: stepUpToken } },
+			);
 			setSuccess(true);
 			setShowModal(false);
 			logout(tenantSlug ? `/${tenantSlug}/login?account_deleted=true` : '/login?account_deleted=true');
 		} catch (err: any) {
-			setError(err.response?.data?.message || t('deletion.deleteFailed'));
+			const errCode = Number(err?.response?.data?.code);
+			if (errCode === ERR_STEP_UP_REQUIRED) {
+				setError(t('deletion.reauthExpired'));
+			} else if (errCode === ERR_PASSWORD_MISMATCH || errCode === ERR_INVALID_PASSWORD) {
+				setError(t('auth.password.oldPasswordWrong'));
+			} else {
+				setError(err?.response?.data?.message || t('deletion.deleteGeneric'));
+			}
 			setShowModal(false);
 		} finally {
 			setLoading(false);
@@ -89,7 +138,7 @@ export default function AccountDeletionPage() {
 				<div className="rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] p-4 text-sm text-[var(--color-text-secondary)] space-y-1">
 					<p>{t('deletion.alsoInAccountCenter')}</p>
 					<a
-						href={crossAppUrl(`${END_USER_PORTAL_URL()}/security`)}
+						href={userPortalUrl(slug, '/security')}
 						className="text-[var(--color-brand)] hover:underline font-medium"
 					>
 						{t('deletion.goToAccountCenter')} →

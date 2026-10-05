@@ -6,16 +6,21 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Label } from '@autional-cn/ui';
-import { useAuthStore, END_USER_PORTAL_URL, crossAppUrl, isValidRedirect } from '@autional-cn/shared';
-import { authMePasswordPut, PublicAuthConfigByAuthConfig } from '@autional-cn/shared/generated/api';
+import { useAuthStore, isValidRedirect } from '@autional-cn/shared';
+import { authMePasswordPut } from '@autional-cn/shared/generated/api';
 import { checkPasswordBreached } from '@/lib/breach-check';
-import { processPasswordForTransmission } from '@/lib/password-transmission';
+import {
+	processPasswordForTransmission,
+	fetchPasswordTransmissionMode,
+} from '@/lib/password-transmission';
 import { useI18n } from '@/lib/i18n';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { PasswordInput } from '@/components/form/PasswordInput';
-import { type PasswordPolicy } from '@/hooks/use-tenant-auth-config';
+import { type PasswordPolicy, useTenantAuthConfigBySlug } from '@/hooks/use-tenant-auth-config';
+import { useEffectiveTenantSlug } from '@/hooks/use-tenant-slug';
+import { userPortalUrl } from '@/lib/portal-links';
 import RedirectCountdown from '@/components/ui/RedirectCountdown';
 
 function createPasswordSchema(
@@ -121,6 +126,11 @@ export default function ChangePasswordPage() {
 	const token = searchParams.get('token') || '';
 	const isForceMode = mode === 'force';
 
+	// AUTH-53 约束⑤：盐源权威值 = slug 配置的 tenantId（store 值可能被跨租户残留污染）
+	const { data: slugAuthConfig } = useTenantAuthConfigBySlug(tenantSlug || null);
+	// AUTH-41：跨门户深链（账户中心 /security）必须带生效租户 slug，裸链会 404
+	const slug = useEffectiveTenantSlug();
+
 	const [error, setError] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [success, setSuccess] = useState(false);
@@ -175,18 +185,13 @@ export default function ChangePasswordPage() {
 
 		setLoading(true);
 		try {
-			// 密码传输预处理 (遵循租户策略)
-			const tenantId = useAuthStore.getState().currentTenantId || '';
-			// 2026-08-17 安全修复：禁止硬编码 plain。
-			// 后端恒返回 password_transmission（GetPasswordPolicy 有全局默认兜底）；
-			// undefined/空串 = 契约错误必须抛错暴露，不能降级明文（hash/symmetric 租户会 61000104）。
-			const authConfig = await PublicAuthConfigByAuthConfig(tenantId);
-			const mode = authConfig?.passwordPolicy?.passwordTransmission;
-			if (mode === undefined || mode === '' || mode === null) {
-				throw new Error(
-					'password transmission mode is missing from tenant auth-config (contract error)',
-				);
-			}
+			// AUTH-53 约束⑤：盐源 = slug 配置权威 tenantId（store 可能残留污染值——W2 实锤
+			// 正确口令被误判），store 仅兜底。
+			const tenantId =
+				slugAuthConfig?.tenantId || useAuthStore.getState().currentTenantId || '';
+			// 密码传输预处理 (遵循租户策略)；模式契约单点见 lib/password-transmission：
+			// 禁止硬编码 plain，缺配置必须抛错暴露，不能降级明文（hash/symmetric 租户会 61000104）。
+			const mode = await fetchPasswordTransmissionMode(tenantId);
 			const transmissionResult = await processPasswordForTransmission(
 				data.newPassword,
 				mode,
@@ -377,7 +382,7 @@ export default function ChangePasswordPage() {
 				<div className="rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] p-4 text-sm text-[var(--color-text-secondary)] space-y-1">
 					<p>{t('changePassword.accountCenter')}</p>
 					<a
-						href={crossAppUrl(`${END_USER_PORTAL_URL()}/security`)}
+						href={userPortalUrl(slug, '/security')}
 						className="text-[var(--color-brand)] hover:underline font-medium"
 					>
 						{t('changePassword.goToAccountCenter')} →

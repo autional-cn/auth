@@ -19,6 +19,7 @@ import { checkPasswordBreached } from '@/lib/breach-check';
 import { fetchLegalDocumentVersion } from '@/lib/legal-document';
 import { loadAuthExtras } from '@/lib/api';
 import { loginWithTokens, bffLogin, isBFFAvailable, useAuthStore, navigateTo } from '@autional-cn/shared';
+import { anchorSessionFromToken } from '@/lib/anchor-session';
 import { processPasswordForTransmission } from '@/lib/password-transmission';
 import { createRegisterSchema } from '@/lib/validators';
 import { useI18n } from '@/lib/i18n';
@@ -167,6 +168,7 @@ export default function RegisterPage() {
 
 	const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const emailTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const prevTenantIdRef = useRef(''); // AUTH-04: 上次选中的租户 id（检测真实切换以清字段）
 
 	// Tenant loading
 	const [tenants, setTenants] = useState<TenantOption[]>([]);
@@ -216,8 +218,8 @@ export default function RegisterPage() {
 	const [inlineConfigId, setInlineConfigId] = useState<string | null>(null);
 	const { data: inlineAuthConfig } = useTenantAuthConfig(inlineConfigId);
 
-	// Resolved config
-	const authConfig = tenantSlug ? slugAuthConfig : inlineAuthConfig;
+	// Resolved config：slug 配置优先；未知 slug（探测失败）时回落手动选择的租户配置
+	const authConfig = slugAuthConfig || inlineAuthConfig;
 
 	// Resolved membership mode
 	const membershipMode = authConfig?.membershipApproval;
@@ -400,6 +402,8 @@ export default function RegisterPage() {
 
 			// 自动登录 = best-effort：注册已成功，登录失败绝不能把结果改写为「注册失败」（AUTH-13）。
 			// 密码必须用与注册相同的传输处理结果 —— 裸明文在 hash 租户必 401。
+			let sessionEstablished = false;
+			let establishedToken = '';
 			try {
 				if (isBFFAvailable()) {
 					const bffRes = await bffLogin(
@@ -409,6 +413,7 @@ export default function RegisterPage() {
 					);
 					if (bffRes.code === 0 && bffRes.data?.user) {
 						useAuthStore.getState().setAuth('', '', bffRes.data.user as any);
+						sessionEstablished = true;
 					}
 				} else {
 					const loginData: Record<string, unknown> = {
@@ -429,10 +434,22 @@ export default function RegisterPage() {
 					const loginRes = await authLoginPost(loginData as any);
 					if (loginRes.accessToken) {
 						loginWithTokens(loginRes.accessToken, loginRes.refreshToken, loginRes.user);
+						sessionEstablished = true;
+						establishedToken = loginRes.accessToken;
 					}
 				}
 			} catch {
 				// 静默：不弹错误、不阻断注册成功流程；用户可随后手动登录
+			}
+
+			// AUTH-53 约束⑤ / U384：自动登录建成会话后必须锚定租户（store 租户 id +
+			// slug 标记）——否则残留的旧租户上下文让后续请求按错租户发出（注册后 403×4 实锤）
+			if (sessionEstablished) {
+				anchorSessionFromToken(establishedToken, {
+					slug: slugAuthConfig?.tenantId ? tenantSlug : null,
+					tenantId: selectedTenantId || slugAuthConfig?.tenantId || null,
+					knownTenants: tenants,
+				});
 			}
 
 			// 合规闭环：注册成功后记录用户对条款的同意（best-effort，失败不阻塞注册）
@@ -504,12 +521,22 @@ export default function RegisterPage() {
 		}
 	}
 
-	const handleTenantChange = useCallback((tenantId: string) => {
-		setSelectedTenantId(tenantId);
-		if (tenantId) {
-			setInlineConfigId(tenantId);
-		}
-	}, []);
+	const handleTenantChange = useCallback(
+		(tenantId: string) => {
+			// AUTH-04/H5：实际切换租户时清空已填字段（同值重选不动），防前租户输入残留
+			if (tenantId !== prevTenantIdRef.current) {
+				prevTenantIdRef.current = tenantId;
+				setValue('username', '');
+				setValue('email', '');
+				setValue('password', '');
+			}
+			setSelectedTenantId(tenantId);
+			if (tenantId) {
+				setInlineConfigId(tenantId);
+			}
+		},
+		[setValue],
+	);
 
 	const handleAuthConfigLoaded = useCallback((config: any) => {
 		if (config) {

@@ -116,7 +116,7 @@ beforeEach(() => {
 	mockSession.token = null;
 	mockSession.tenants = [];
 	mockSession.currentTenantId = null;
-	sessionStorage.clear();
+	localStorage.clear();
 	vi.stubGlobal('fetch', mockFetch);
 	stubTenantsFetch({
 		code: 0,
@@ -193,7 +193,7 @@ describe('EntryRouter', () => {
 		// 真实契约：/auth/me/tenants 的 name 是**展示名**（非 slug）—— 见 E10
 		mockSession.tenants = [{ id: 't1', name: 'Demo Tenant', role: 'owner' }];
 		mockSession.currentTenantId = 't1';
-		sessionStorage.setItem('auth_dashboard_slug', 'demo');
+		localStorage.setItem('auth_dashboard_slug', 'demo');
 		renderEntry();
 		await waitFor(() => {
 			expect(mockNavigate).toHaveBeenCalledWith('/demo/dashboard', { replace: true });
@@ -207,7 +207,7 @@ describe('EntryRouter', () => {
 		// 线上实测把它当 slug 会拼出 /Demo%20Tenant/dashboard（branding 全 404）
 		mockSession.tenants = [{ id: 't1', name: 'Demo Tenant', role: 'super_admin' }];
 		mockSession.currentTenantId = 't1';
-		// 不给 sessionStorage 标记：只能从公开名单（t1 → demo）解析
+		// 不给 localStorage 标记：只能从公开名单（t1 → demo）解析
 		renderEntry();
 		await waitFor(() => {
 			expect(mockNavigate).toHaveBeenCalledWith('/demo/dashboard', { replace: true });
@@ -218,7 +218,9 @@ describe('EntryRouter', () => {
 
 	it('E11 陈旧标记（不在名单内）→ 丢弃，不拿它当会话租户', async () => {
 		mockSession.token = 'token-xyz';
-		sessionStorage.setItem('auth_dashboard_slug', 'ghost-tenant');
+		// AUTH-53：标记必须是 localStorage（与会话跨 tab 同生命周期）；
+		// 陈旧标记（名单外）→ 丢弃，不得当会话租户
+		localStorage.setItem('auth_dashboard_slug', 'ghost-tenant');
 		renderEntry();
 		await waitFor(() => {
 			expect(replaceUrlWithoutRt()).toBe('https://brand.autional.cn/');

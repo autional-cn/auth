@@ -1,13 +1,14 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ErrorState } from '@autional-cn/ui';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { useI18n } from '@/lib/i18n';
 import { usePageTitle } from '@/hooks/use-page-title';
+import { useResolvedTenantSlug } from '@/hooks/use-tenant-slug';
 import { compliancePublicLegalDocuments } from '@autional-cn/shared/generated/api';
 
 /**
@@ -30,8 +31,9 @@ export default function PrivacyPage() {
 
 	usePageTitle('privacy.title');
 
-	const { tenantSlug: slugParam } = useParams();
-	const tenantSlug = slugParam || null;
+	// AUTH-48/49：返回链按「已解析租户」拼链 —— 脏 slug 解析为 undefined → 回落 '/'，
+	// 不再把未知 slug 递归带进登录路由
+	const tenantSlug = useResolvedTenantSlug();
 
 	// 法律正文的唯一来源 = compliance 公共接口；本页不内置正文副本。
 	// 接口不可用时显示错误态而非回落本地文案：用户读到的文本必须与其同意记录

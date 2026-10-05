@@ -44,7 +44,9 @@ export const beginPasskeyLogin = Generated.authWebauthnLoginBeginPost;
 export const completePasskeyLogin = Generated.authWebauthnLoginCompletePost;
 export const beginPasskeyRegister = Generated.authWebauthnRegisterBeginPost;
 export const completePasskeyRegister = Generated.authWebauthnRegisterCompletePost;
-// MISSING in generated: deleteAccount (DELETE /auth/me)
+export const deactivateAccount = Generated.authMeDelete;
+export const deleteAccount = Generated.authMeDeleteAccountPost;
+export const reAuthenticate = Generated.authReAuthenticatePost;
 export const changePassword = Generated.authMePasswordPut;
 export const updateProfile = Generated.authMePut;
 export const getMe = Generated.authMe;

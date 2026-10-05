@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { AuthHeader } from './AuthHeader';
-import { Link, useParams } from 'react-router';
+import { Link } from 'react-router';
 import { useI18n } from '@/lib/i18n';
+import { useResolvedTenantSlug } from '@/hooks/use-tenant-slug';
 
 interface AuthCardProps {
 	/** 卡片内容 */
@@ -40,7 +41,9 @@ export function AuthCard({
 	maxWidth = 'sm',
 }: AuthCardProps) {
 	const { t } = useI18n();
-	const { tenantSlug } = useParams<{ tenantSlug?: string }>();
+	// AUTH-48/49：页脚法律链按「已解析租户」拼链 —— 脏 slug（名单外）解析为
+	// undefined → 回落绝对链，不再把未知 slug 递归带进法律页
+	const tenantSlug = useResolvedTenantSlug();
 	const showFooter = !hideFooter;
 
 	return (

@@ -11,8 +11,11 @@ import {
 	crossAppUrl,
 	ADMIN_CONSOLE_URL,
 	SECURITY_DASHBOARD_URL,
+	usePublicTenantSlugs,
 } from '@autional-cn/shared';
 import { loadAuthExtras } from '@/lib/api';
+import { anchorSessionFromToken } from '@/lib/anchor-session';
+import { getDashboardSlug } from '@/lib/dashboard-slug';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { ErrorState } from '@autional-cn/ui';
@@ -27,6 +30,7 @@ function MagicLinkConfirmContent() {
 	const { tenantSlug } = useParams<{ tenantSlug?: string }>();
 	const token = searchParams.get('token') || '';
 	const redirectUrl = searchParams.get('redirect') || '';
+	const { data: knownTenants } = usePublicTenantSlugs();
 
 	const [status, setStatus] = useState<ConfirmStatus>('verifying');
 	const [message, setMessage] = useState('');
@@ -54,6 +58,12 @@ function MagicLinkConfirmContent() {
 
 				loginWithTokens(accessToken, refreshToken, user);
 
+				// AUTH-53 约束⑤：会话建立即锚定租户（JWT id + slug 参数/名单解析）
+				anchorSessionFromToken(accessToken, {
+					slug: tenantSlug || null,
+					knownTenants,
+				});
+
 				if (user?.email) {
 					setUserEmail(user.email);
 				}
@@ -72,7 +82,7 @@ function MagicLinkConfirmContent() {
 						} else if (role === 'security_admin') {
 							window.location.href = crossAppUrl(SECURITY_DASHBOARD_URL());
 						} else {
-							const slug = tenantSlug || sessionStorage.getItem('auth_dashboard_slug');
+							const slug = tenantSlug || getDashboardSlug();
 							navigate(slug ? `/${slug}/dashboard` : '/dashboard', { replace: true });
 						}
 					}
@@ -108,7 +118,7 @@ function MagicLinkConfirmContent() {
 					<Button
 						fullWidth
 						onClick={() => {
-							const slug = tenantSlug || sessionStorage.getItem('auth_dashboard_slug');
+							const slug = tenantSlug || getDashboardSlug();
 							navigate(slug ? `/${slug}/dashboard` : '/dashboard', { replace: true });
 						}}
 					>

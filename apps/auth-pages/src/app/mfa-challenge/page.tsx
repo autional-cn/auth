@@ -6,10 +6,16 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Input, Label } from '@autional-cn/ui';
-import { loginWithTokens, decodeJwtPayload, extractApiError } from '@autional-cn/shared';
+import {
+	loginWithTokens,
+	decodeJwtPayload,
+	extractApiError,
+	usePublicTenantSlugs,
+} from '@autional-cn/shared';
 import { createMfaTOTPSchema, createMfaSMSSchema } from '@/lib/validators';
 import type { MFATOTPFormData, MFASMSFormData } from '@/lib/validators';
 import { verifyMFAChallenge } from '@/lib/api.generated';
+import { anchorSessionFromToken } from '@/lib/anchor-session';
 import { useI18n } from '@/lib/i18n';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthHeader } from '@/components/auth/AuthHeader';
@@ -64,6 +70,7 @@ export default function MFAChallengePage() {
 	const { tenantSlug } = useParams<{ tenantSlug?: string }>();
 	const loginPath = tenantSlug ? `/${tenantSlug}/login` : '/';
 	const dashboardPath = tenantSlug ? `/${tenantSlug}/dashboard` : '/dashboard';
+	const { data: knownTenants } = usePublicTenantSlugs();
 
 	const mfaTotpSchema = createMfaTOTPSchema(t);
 	const mfaSmsSchema = createMfaSMSSchema(t);
@@ -129,6 +136,13 @@ export default function MFAChallengePage() {
 				mfaMethod: type,
 			});
 			loginWithTokens(res?.accessToken || '', res?.refreshToken || '', res?.user);
+			// AUTH-53 约束⑤：会话建立即锚定租户（tenantId = 登录页写入的权威值；
+			// oauth 挑战链无 tenantId → 由 JWT claim 兜底）
+			anchorSessionFromToken(res?.accessToken || '', {
+				slug: tenantSlug || null,
+				tenantId: preAuth.tenantId || null,
+				knownTenants,
+			});
 			sessionStorage.removeItem('mfa_pre_auth');
 			navigate(dashboardPath);
 		} catch (err) {

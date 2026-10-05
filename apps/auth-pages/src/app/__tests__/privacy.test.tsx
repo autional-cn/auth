@@ -26,6 +26,13 @@ vi.mock('react-router', async () => {
 	};
 });
 
+// AUTH-48/49：返回链按「已解析租户」拼链；默认不可解析（→ '/' 绝对链），
+// 租户路由用例显式放行
+const mockResolvedSlug = vi.fn(() => undefined as string | undefined);
+vi.mock('@/hooks/use-tenant-slug', () => ({
+	useResolvedTenantSlug: () => mockResolvedSlug(),
+}));
+
 vi.mock('@/lib/i18n', () => ({
 	useI18n: () => ({
 		t: (key: string, opts?: any) => {
@@ -65,6 +72,7 @@ beforeEach(() => {
 	mockedGet.mockReset();
 	// 基线 = 一份正常的已发布文档；各用例再按需 mockResolvedValueOnce / mockRejectedValue 偏离
 	mockedGet.mockResolvedValue(serverDoc);
+	mockResolvedSlug.mockReturnValue(undefined);
 });
 
 const renderPage = () =>
@@ -176,6 +184,7 @@ describe('PrivacyPage', () => {
 	});
 
 	it('keeps tenant slug in back-to-login link when accessed under /:tenantSlug/privacy', () => {
+		mockResolvedSlug.mockReturnValue('acme-corp');
 		render(
 			<QueryClientProvider client={queryClient}>
 				<MemoryRouter initialEntries={['/acme-corp/privacy']}>

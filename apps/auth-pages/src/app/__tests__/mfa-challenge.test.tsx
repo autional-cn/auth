@@ -39,6 +39,14 @@ vi.mock('@autional-cn/shared', () => ({
 		code: err?.response?.data?.code ?? 'UNKNOWN',
 		message: err?.response?.data?.message ?? err?.message ?? fallback,
 	}),
+	usePublicTenantSlugs: () => ({ data: [{ name: 'demo' }] }),
+	useAuthStore: {
+		getState: () => ({
+			setCurrentTenant: vi.fn(),
+			setAuth: vi.fn(),
+			setUser: vi.fn(),
+		}),
+	},
 }));
 
 vi.mock('@/lib/i18n', () => ({

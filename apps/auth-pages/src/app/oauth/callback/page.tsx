@@ -3,8 +3,14 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router';
 import { Button } from '@autional-cn/ui';
-import { loginWithTokens, extractApiError, decodeJwtPayload } from '@autional-cn/shared';
+import {
+	loginWithTokens,
+	extractApiError,
+	decodeJwtPayload,
+	usePublicTenantSlugs,
+} from '@autional-cn/shared';
 import { loadAuthExtras } from '@/lib/api';
+import { anchorSessionFromToken } from '@/lib/anchor-session';
 import { exchangeCodeForToken } from '@/lib/api.generated';
 import RedirectCountdown from '@/components/ui/RedirectCountdown';
 import { useI18n } from '@/lib/i18n';
@@ -22,6 +28,7 @@ function OAuthCallbackContent() {
 	const state = searchParams.get('state') || '';
 	const errorParam = searchParams.get('error') || '';
 	const errorDescription = searchParams.get('error_description') || '';
+	const { data: knownTenants } = usePublicTenantSlugs();
 
 	// 从URL路径提取provider: /oauth/callback/github → github
 	const pathProvider = (() => {
@@ -90,6 +97,10 @@ function OAuthCallbackContent() {
 						data.refreshToken || '',
 						(user || { id: '', username: '', email: '', status: 'active' }) as any,
 					);
+
+					// AUTH-53 约束⑤：会话建立即锚定租户（JWT tenant_id + 名单解析 slug），
+					// 防从旧租户上下文发起的 OAuth 新会话被跨租户守卫误清
+					anchorSessionFromToken(data.accessToken, { knownTenants });
 
 					// Fire-and-forget: 从 /auth/me 获取完整用户信息
 					loadAuthExtras().catch(() => {});

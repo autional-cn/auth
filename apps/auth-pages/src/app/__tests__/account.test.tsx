@@ -21,6 +21,13 @@ vi.mock('react-router', async () => {
 
 vi.mock('@autional-cn/shared', () => ({
 	END_USER_PORTAL_URL: () => 'http://user.example.com',
+	crossAppUrl: (base: string, path?: string) => base + (path || ''),
+}));
+
+vi.mock('@/hooks/use-tenant-slug', () => ({
+	useEffectiveTenantSlug: () => 'demo',
+	// AUTH-48/49：AuthCard 页脚法律链消费已解析 slug
+	useResolvedTenantSlug: () => 'demo',
 }));
 
 vi.mock('@/lib/i18n', () => ({

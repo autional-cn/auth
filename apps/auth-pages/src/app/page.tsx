@@ -33,7 +33,8 @@ import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 import { CheckCircle2, Lock, QrCode, Mail, Fingerprint, Smartphone, Inbox } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { usePageTitle } from '@/hooks/use-page-title';
-import { useTenantStore } from '@/lib/tenant-store';
+import { clearDashboardSlug, getDashboardSlug } from '@/lib/dashboard-slug';
+import { anchorSessionFromToken } from '@/lib/anchor-session';
 import { PasskeyLoginButton } from '@/components/auth/PasskeyLoginButton';
 import { MagicLinkForm } from '@/components/auth/MagicLinkForm';
 import { PasswordInput } from '@/components/form/PasswordInput';
@@ -134,6 +135,7 @@ export default function LoginPage() {
 	type CaptchaStatus = 'idle' | 'fetching' | 'solving' | 'solved' | 'expired' | 'error';
 	const [captchaStatus, setCaptchaStatus] = useState<CaptchaStatus>('idle');
 	const accountDeleted = searchParams.get('account_deleted') === 'true';
+	const prevTenantIdRef = useRef(''); // AUTH-04: 上次选中的租户 id（检测真实切换以清字段）
 
 	usePageTitle('login.title');
 
@@ -149,20 +151,14 @@ export default function LoginPage() {
 		return !!tenantSlug && !slugConfigLoading && !slugAuthConfig?.tenantId;
 	}, [tenantSlug, slugConfigLoading, slugAuthConfig]);
 
-	// When tenant-slug is present, auto-select tenant after config loads
-	useEffect(() => {
-		const tid = slugAuthConfig?.tenantId;
-		if (tid) {
-			useAuthStore.getState().setCurrentTenant(tid);
-		}
-	}, [slugAuthConfig]);
-
 	// Auth config from TenantSelector selection (for non-slug path)
 	const [inlineAuthConfigId, setInlineAuthConfigId] = useState<string | null>(null);
 	const { data: inlineAuthConfig } = useTenantAuthConfig(inlineAuthConfigId);
 
-	// Resolved auth config: slug path takes precedence
-	const authConfig = tenantSlug ? slugAuthConfig : inlineAuthConfig;
+	// Resolved auth config: slug config takes precedence; slug 探测失败（未知 slug）时
+	// 回落手动选择的租户配置（此前 `tenantSlug ? slugAuthConfig : inlineAuthConfig`
+	// 使失败后手工选择的配置永不生效——AUTH-04 伴生缺陷）
+	const authConfig = slugAuthConfig || inlineAuthConfig;
 
 	// Determine login methods from auth config
 	const loginMethods = useMemo<string[]>(() => {
@@ -204,9 +200,15 @@ export default function LoginPage() {
 		return availableOAuthProviders;
 	}, [authConfig, availableOAuthProviders]);
 
+	// 守卫只跑一次：等 slug 配置探测有结果后再判定（AUTH-04 骨架态语义 ——
+	// slugConfigLoading 期间 autoRedirectChecking 恒真，页面停留 spinner，
+	// 不渲染回落到默认配置的「冒充」表单）
+	const slugGuardRanRef = useRef(false);
 	useEffect(() => {
+		if (slugGuardRanRef.current) return;
 		const fromRequireAuth = searchParams.get('from_requireauth') === '1';
 		if (fromRequireAuth) {
+			slugGuardRanRef.current = true;
 			// Cross-domain OAuth PKCE: user is at auth with an existing session,
 			// redirect came from another portal via RequireAuth.
 			// Check token, then auto-initiate OAuth PKCE for the requesting portal.
@@ -259,6 +261,8 @@ export default function LoginPage() {
 			})();
 			return;
 		}
+		if (slugConfigLoading) return; // 身份未决期间不判定、不落 spinner（AUTH-04）
+		slugGuardRanRef.current = true;
 		const checkAndRedirect = async () => {
 			const token = getAccessToken();
 			if (!token || token === 'undefined' || token === 'null') {
@@ -267,20 +271,23 @@ export default function LoginPage() {
 			}
 			try {
 				await authMe();
-				// 切换品牌：本 tab 上次登录的租户 ≠ 当前 URL 租户 → 清旧会话，停在本租户登录态
-				// （唯一选择器已移交 brand 站，这里的旧兜底路径必须显式承接）
-				//
-				// 标记 `auth_dashboard_slug` 由登录成功时按 URL slug 写入，是**同步可用**的
-				// slug 来源；不能改用 `/auth/me/tenants` 的 `name`（那是展示名，会让同租户
-				// 访问自己登录页也误判为切换 → 静默清会话）
-				let lastSlug: string | null = null;
-				try {
-					lastSlug = sessionStorage.getItem('auth_dashboard_slug');
-				} catch {
-					lastSlug = null;
+				// 跨租户守卫（AUTH-53）：**id 级比对为主**——会话租户（store.currentTenantId，
+				// 随会话跨 tab 持久）vs URL 租户（slug 配置的 tenantId）。任一侧缺失时回落到
+				// 登录时写入的 slug 标记（跨 tab 持久源），标记缺失不拦截（首访新 tab 无上下文
+				// 残留可比），标记不一致才视为跨租户。
+				const sessionTenantId = useAuthStore.getState().currentTenantId;
+				const urlTenantId = slugAuthConfig?.tenantId || null;
+				let sameTenant: boolean;
+				if (sessionTenantId && urlTenantId) {
+					sameTenant = sessionTenantId === urlTenantId;
+				} else {
+					const lastSlug = getDashboardSlug();
+					sameTenant = !lastSlug || lastSlug === tenantSlug;
 				}
-				if (lastSlug && lastSlug !== tenantSlug) {
+				if (!sameTenant) {
+					// 清旧会话 + 清标记，停在本租户登录态（唯一选择器已移交 brand 站）
 					useAuthStore.getState().clearAuth();
+					clearDashboardSlug();
 					setAutoRedirectChecking(false);
 					return;
 				}
@@ -298,7 +305,7 @@ export default function LoginPage() {
 			}
 		};
 		checkAndRedirect();
-	}, []);
+	}, [slugConfigLoading]);
 
 	// 公开租户列表（仅在无 tenantSlug 时自动选择）
 	const prevPublicRef = useRef<TenantOption[] | null>(null);
@@ -645,9 +652,12 @@ export default function LoginPage() {
 			// P1-09: Reset local failure counter on successful login
 			localFailureRef.current = 0;
 
-			if (tenantSlug) {
-				sessionStorage.setItem('auth_dashboard_slug', tenantSlug);
-			}
+			// AUTH-53 约束⑤：会话建立即锚定（store 租户 id 优先表单值、JWT claim 兜底；
+			// slug 标记取 URL 上下文）
+			anchorSessionFromToken(
+				loginResult.accessToken || loginResult.data?.accessToken || '',
+				{ slug: tenantSlug, tenantId: data.tenantId },
+			);
 
 			if (data.rememberMe) {
 				localStorage.setItem('remember_me', 'true');
@@ -745,6 +755,13 @@ export default function LoginPage() {
 
 	const handleTenantChange = useCallback(
 		(tenantId: string) => {
+			// AUTH-04/H5：实际切换租户时清空已输入凭据（同值重选不动），防前租户输入残留
+			if (tenantId !== prevTenantIdRef.current) {
+				prevTenantIdRef.current = tenantId;
+				setValue('identity', '');
+				setValue('password', '');
+				setError('');
+			}
 			setValue('tenantId', tenantId);
 			if (tenantId) {
 				setInlineAuthConfigId(tenantId);
@@ -756,6 +773,22 @@ export default function LoginPage() {
 	const logoUrl = useTenantBrandingStore((s) => s.branding?.logoUrl);
 	const brandingTitle = useTenantBrandingStore((s) => s.branding?.loginPageTitle);
 	const brandingDesc = useTenantBrandingStore((s) => s.branding?.loginPageDescription);
+
+	const cardHeader = (
+		<div className="text-center">
+			{logoUrl && (
+				<div className="mb-4 flex justify-center">
+					<img src={logoUrl} alt="租户标志" className="h-12 w-auto object-contain" />
+				</div>
+			)}
+			<h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
+				{brandingTitle || t('login.title')}
+			</h1>
+			<p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+				{brandingDesc || t('login.subtitle')}
+			</p>
+		</div>
+	);
 
 	const handleAuthConfigLoaded = useCallback((config: any) => {
 		if (config) {
@@ -778,22 +811,34 @@ export default function LoginPage() {
 		);
 	}
 
+	// AUTH-04：未知 slug 探测失败且尚未选租户 → 只渲染租户选择，不渲染表单
+	// （消除「默认配置冒充表单 + 租户下拉并存」矛盾态；选中后回落本表单）
+	const slugNeedsPick = !!tenantSlug && slugConfigFailed && !watch('tenantId');
+	if (slugNeedsPick) {
+		return (
+			<div className="flex min-h-screen items-center justify-center px-4 py-8">
+				<div className="w-full max-w-sm space-y-6 rounded-2xl bg-[var(--color-bg-surface)] p-8 shadow-lg">
+					{cardHeader}
+					<div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+						{t('login.tenantNotFound') || '未找到该组织的配置，请手动选择租户'}
+					</div>
+					<TenantSelector
+						value={watch('tenantId') || ''}
+						tenants={tenants}
+						loading={tenantsLoading || slugConfigLoading}
+						onChange={handleTenantChange}
+						onAuthConfigLoaded={handleAuthConfigLoaded}
+						variant="login"
+					/>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div className="flex min-h-screen items-center justify-center px-4 py-8">
 			<div className="w-full max-w-sm space-y-6 rounded-2xl bg-[var(--color-bg-surface)] p-8 shadow-lg">
-				<div className="text-center">
-					{logoUrl && (
-						<div className="mb-4 flex justify-center">
-							<img src={logoUrl} alt="租户标志" className="h-12 w-auto object-contain" />
-						</div>
-					)}
-					<h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
-						{brandingTitle || t('login.title')}
-					</h1>
-					<p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-						{brandingDesc || t('login.subtitle')}
-					</p>
-				</div>
+				{cardHeader}
 
 				{accountDeleted && (
 					<div className="rounded-md bg-[var(--color-success)]/10 p-4 flex items-center gap-3">

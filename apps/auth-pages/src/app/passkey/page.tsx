@@ -3,13 +3,20 @@
 import { useState, Suspense } from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router';
 import { Button } from '@autional-cn/ui';
-import { loginWithTokens, extractApiError, END_USER_PORTAL_URL, crossAppUrl } from '@autional-cn/shared';
+import {
+	loginWithTokens,
+	extractApiError,
+	usePublicTenantSlugs,
+} from '@autional-cn/shared';
 import { loadAuthExtras } from '@/lib/api';
+import { anchorSessionFromToken } from '@/lib/anchor-session';
 import { beginPasskeyLogin, completePasskeyLogin } from '@/lib/api.generated';
 import RedirectCountdown from '@/components/ui/RedirectCountdown';
 import { useI18n } from '@/lib/i18n';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthHeader } from '@/components/auth/AuthHeader';
+import { userPortalUrl } from '@/lib/portal-links';
+import { useEffectiveTenantSlug } from '@/hooks/use-tenant-slug';
 
 function bufferToBase64url(buffer: ArrayBuffer): string {
 	const bytes = new Uint8Array(buffer);
@@ -60,6 +67,9 @@ function PasskeyContent() {
 	const navigate = useNavigate();
 	const { tenantSlug } = useParams<{ tenantSlug?: string }>();
 	const mode = (searchParams.get('mode') as 'login' | 'register') || 'login';
+	const { data: knownTenants } = usePublicTenantSlugs();
+	// AUTH-41：跨门户深链（账户中心 /security）必须带生效租户 slug，裸链会 404
+	const slug = useEffectiveTenantSlug();
 
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
@@ -98,6 +108,11 @@ function PasskeyContent() {
 			const data = (loginRes as any)?.data || loginRes;
 			if (data.accessToken) {
 				loginWithTokens(data.accessToken, data.refreshToken, data.user);
+				// AUTH-53 约束⑤：会话建立即锚定租户（JWT id + slug 参数/名单解析）
+				anchorSessionFromToken(data.accessToken, {
+					slug: tenantSlug || null,
+					knownTenants,
+				});
 				loadAuthExtras();
 			}
 			setSuccess(true);
@@ -117,7 +132,7 @@ function PasskeyContent() {
 					<div className="rounded-md bg-blue-50 p-4 text-sm text-blue-700 space-y-2">
 						<p className="font-medium">{t('passkey.registerMoved')}</p>
 						<a
-							href={crossAppUrl(`${END_USER_PORTAL_URL()}/security`)}
+							href={userPortalUrl(slug, '/security')}
 							className="inline-block text-[var(--color-brand)] hover:underline font-medium"
 						>
 							{t('passkey.goToAccountCenter')} →
@@ -174,7 +189,7 @@ function PasskeyContent() {
 					<div className="rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] p-4 text-sm text-[var(--color-text-secondary)] space-y-1">
 						<p>{t('passkey.registerMoved')}</p>
 						<a
-							href={crossAppUrl(`${END_USER_PORTAL_URL()}/security`)}
+							href={userPortalUrl(slug, '/security')}
 							className="text-[var(--color-brand)] hover:underline font-medium"
 						>
 							{t('passkey.goToAccountCenter')} →

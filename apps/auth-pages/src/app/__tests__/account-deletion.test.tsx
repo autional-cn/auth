@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import AccountDeletionPage from '../account-deletion/page';
 
@@ -23,21 +22,36 @@ vi.mock('react-router', async () => {
 });
 
 const mockLogout = vi.fn();
-const mockApiClientPost = vi.fn();
-const mockAuthMeDeleteAccountPost = vi.fn();
+const mockReAuthenticate = vi.fn();
+const mockDeleteAccount = vi.fn();
+const mockFetchMode = vi.fn();
+const mockProcessPassword = vi.fn();
+
 vi.mock('@autional-cn/shared', () => ({
-	apiClient: {
-		post: (...args: any[]) => (mockApiClientPost as any)(...args),
-	},
 	logout: (...args: any[]) => mockLogout(...args),
+	useAuthStore: { getState: () => ({ currentTenantId: 'tenant-1' }) },
 	END_USER_PORTAL_URL: () => '/user',
-	crossAppUrl: (path: string) => path,
-	loginWithTokens: vi.fn(),
-	getAccessToken: () => null,
+	crossAppUrl: (base: string, path?: string) => base + (path || ''),
 }));
 
-vi.mock('@autional-cn/shared/generated/api', () => ({
-	authMeDeleteAccountPost: (...args: any[]) => mockAuthMeDeleteAccountPost(...args),
+vi.mock('@/hooks/use-tenant-slug', () => ({
+	useEffectiveTenantSlug: () => 'demo',
+	// AUTH-48/49：AuthCard 页脚法律链消费已解析 slug
+	useResolvedTenantSlug: () => 'demo',
+}));
+
+vi.mock('@/hooks/use-tenant-auth-config', () => ({
+	useTenantAuthConfigBySlug: () => ({ data: { tenantId: 'tenant-1' } }),
+}));
+
+vi.mock('@/lib/password-transmission', () => ({
+	fetchPasswordTransmissionMode: (...args: any[]) => mockFetchMode(...args),
+	processPasswordForTransmission: (...args: any[]) => mockProcessPassword(...args),
+}));
+
+vi.mock('@/lib/api.generated', () => ({
+	reAuthenticate: (...args: any[]) => mockReAuthenticate(...args),
+	deleteAccount: (...args: any[]) => mockDeleteAccount(...args),
 }));
 
 function renderAccountDeletion() {
@@ -48,9 +62,22 @@ function renderAccountDeletion() {
 	);
 }
 
+async function openModalAndConfirm(password = 'MyPassword123') {
+	const passwordInput = screen.getByPlaceholderText('deletion.passwordPlaceholder');
+	fireEvent.change(passwordInput, { target: { value: password } });
+	fireEvent.click(screen.getByRole('button', { name: 'deletion.confirm' }));
+	await waitFor(() => {
+		expect(screen.getByText('deletion.modalTitle')).toBeInTheDocument();
+	});
+	fireEvent.click(screen.getByRole('button', { name: 'deletion.modalConfirm' }));
+}
+
 beforeEach(() => {
 	vi.clearAllMocks();
-	mockAuthMeDeleteAccountPost.mockResolvedValue({ data: { code: 1, message: 'ok' } });
+	mockFetchMode.mockResolvedValue('plain');
+	mockProcessPassword.mockImplementation(async (password: string) => ({ password }));
+	mockReAuthenticate.mockResolvedValue({ stepUpToken: 'step-up-token-1' });
+	mockDeleteAccount.mockResolvedValue({ message: 'ok' });
 });
 
 describe('AccountDeletionPage - Rendering', () => {
@@ -109,11 +136,11 @@ describe('AccountDeletionPage - Account Center Notice', () => {
 		expect(screen.getByText(/deletion\.goToAccountCenter/)).toBeInTheDocument();
 	});
 
-	it('renders account center link pointing to end user portal security page', () => {
+	it('renders account center link with tenant slug in deep link', () => {
 		renderAccountDeletion();
 		const accountLink = screen.getByText(/deletion\.goToAccountCenter/).closest('a');
 		expect(accountLink).toBeInTheDocument();
-		expect(accountLink).toHaveAttribute('href', '/user/security');
+		expect(accountLink).toHaveAttribute('href', '/user/demo/security');
 	});
 });
 
@@ -205,41 +232,57 @@ describe('AccountDeletionPage - Confirmation Modal', () => {
 	});
 });
 
-describe('AccountDeletionPage - Successful Deletion', () => {
-	it('calls API to delete account on modal confirm', async () => {
-		mockAuthMeDeleteAccountPost.mockResolvedValue({ data: { code: 1, message: 'ok' } });
+describe('AccountDeletionPage - Step-up Flow (AUTH-42)', () => {
+	it('pre-processes password by tenant transmission mode before both calls', async () => {
+		mockFetchMode.mockResolvedValue('hash');
+		mockProcessPassword.mockImplementation(async (password: string) => ({
+			password: `hashed:${password}`,
+		}));
 
 		renderAccountDeletion();
-
-		const passwordInput = screen.getByPlaceholderText('deletion.passwordPlaceholder');
-		fireEvent.change(passwordInput, { target: { value: 'MyPassword123' } });
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.confirm' }));
+		await openModalAndConfirm('MyPassword123');
 
 		await waitFor(() => {
-			expect(screen.getByText('deletion.modalTitle')).toBeInTheDocument();
-		});
-
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.modalConfirm' }));
-
-		await waitFor(() => {
-			expect(mockAuthMeDeleteAccountPost).toHaveBeenCalledWith({ password: 'MyPassword123' });
+			expect(mockFetchMode).toHaveBeenCalledWith('tenant-1');
+			expect(mockProcessPassword).toHaveBeenCalledWith(
+				'MyPassword123',
+				'hash',
+				'tenant-1',
+				undefined,
+			);
 		});
 	});
 
-	it('calls logout with account_deleted redirect after successful deletion', async () => {
-		mockAuthMeDeleteAccountPost.mockResolvedValue({ data: { code: 1, message: 'ok' } });
-
+	it('re-authenticates then deletes with single-use step-up token header', async () => {
 		renderAccountDeletion();
-
-		const passwordInput = screen.getByPlaceholderText('deletion.passwordPlaceholder');
-		fireEvent.change(passwordInput, { target: { value: 'MyPassword123' } });
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.confirm' }));
+		await openModalAndConfirm('MyPassword123');
 
 		await waitFor(() => {
-			expect(screen.getByText('deletion.modalTitle')).toBeInTheDocument();
+			expect(mockReAuthenticate).toHaveBeenCalledWith({ password: 'MyPassword123' });
+			expect(mockDeleteAccount).toHaveBeenCalledWith(
+				{ password: 'MyPassword123' },
+				{ headers: { 'X-StepUp-Token': 'step-up-token-1' } },
+			);
 		});
+	});
 
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.modalConfirm' }));
+	it('fails closed when re-authenticate returns no step-up token', async () => {
+		mockReAuthenticate.mockResolvedValue({ message: 'ok' });
+
+		renderAccountDeletion();
+		await openModalAndConfirm('MyPassword123');
+
+		await waitFor(() => {
+			expect(screen.getByText('deletion.deleteGeneric')).toBeInTheDocument();
+		});
+		expect(mockDeleteAccount).not.toHaveBeenCalled();
+	});
+});
+
+describe('AccountDeletionPage - Successful Deletion', () => {
+	it('calls logout with account_deleted redirect after successful deletion', async () => {
+		renderAccountDeletion();
+		await openModalAndConfirm('MyPassword123');
 
 		await waitFor(() => {
 			expect(mockLogout).toHaveBeenCalledWith('/login?account_deleted=true');
@@ -247,19 +290,8 @@ describe('AccountDeletionPage - Successful Deletion', () => {
 	});
 
 	it('displays success screen after deletion', async () => {
-		mockAuthMeDeleteAccountPost.mockResolvedValue({ data: { code: 1, message: 'ok' } });
-
 		renderAccountDeletion();
-
-		const passwordInput = screen.getByPlaceholderText('deletion.passwordPlaceholder');
-		fireEvent.change(passwordInput, { target: { value: 'MyPassword123' } });
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.confirm' }));
-
-		await waitFor(() => {
-			expect(screen.getByText('deletion.modalTitle')).toBeInTheDocument();
-		});
-
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.modalConfirm' }));
+		await openModalAndConfirm('MyPassword123');
 
 		await waitFor(() => {
 			expect(screen.getByText('deletion.success')).toBeInTheDocument();
@@ -268,19 +300,8 @@ describe('AccountDeletionPage - Successful Deletion', () => {
 	});
 
 	it('shows back to home button on success screen', async () => {
-		mockAuthMeDeleteAccountPost.mockResolvedValue({ data: { code: 1, message: 'ok' } });
-
 		renderAccountDeletion();
-
-		const passwordInput = screen.getByPlaceholderText('deletion.passwordPlaceholder');
-		fireEvent.change(passwordInput, { target: { value: 'MyPassword123' } });
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.confirm' }));
-
-		await waitFor(() => {
-			expect(screen.getByText('deletion.modalTitle')).toBeInTheDocument();
-		});
-
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.modalConfirm' }));
+		await openModalAndConfirm('MyPassword123');
 
 		await waitFor(() => {
 			expect(screen.getByRole('button', { name: 'deletion.backHome' })).toBeInTheDocument();
@@ -288,19 +309,8 @@ describe('AccountDeletionPage - Successful Deletion', () => {
 	});
 
 	it('navigates to home when back home button is clicked on success screen', async () => {
-		mockAuthMeDeleteAccountPost.mockResolvedValue({ data: { code: 1, message: 'ok' } });
-
 		renderAccountDeletion();
-
-		const passwordInput = screen.getByPlaceholderText('deletion.passwordPlaceholder');
-		fireEvent.change(passwordInput, { target: { value: 'MyPassword123' } });
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.confirm' }));
-
-		await waitFor(() => {
-			expect(screen.getByText('deletion.modalTitle')).toBeInTheDocument();
-		});
-
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.modalConfirm' }));
+		await openModalAndConfirm('MyPassword123');
 
 		await waitFor(() => {
 			expect(screen.getByRole('button', { name: 'deletion.backHome' })).toBeInTheDocument();
@@ -313,21 +323,12 @@ describe('AccountDeletionPage - Successful Deletion', () => {
 
 describe('AccountDeletionPage - API Error Handling', () => {
 	it('shows error message when deletion API fails', async () => {
-		mockAuthMeDeleteAccountPost.mockRejectedValue({
+		mockDeleteAccount.mockRejectedValue({
 			response: { data: { message: '密码错误，无法删除账户' } },
 		});
 
 		renderAccountDeletion();
-
-		const passwordInput = screen.getByPlaceholderText('deletion.passwordPlaceholder');
-		fireEvent.change(passwordInput, { target: { value: 'WrongPassword' } });
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.confirm' }));
-
-		await waitFor(() => {
-			expect(screen.getByText('deletion.modalTitle')).toBeInTheDocument();
-		});
-
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.modalConfirm' }));
+		await openModalAndConfirm('WrongPassword');
 
 		await waitFor(() => {
 			expect(screen.getByText('密码错误，无法删除账户')).toBeInTheDocument();
@@ -335,21 +336,12 @@ describe('AccountDeletionPage - API Error Handling', () => {
 	});
 
 	it('closes modal after API error', async () => {
-		mockAuthMeDeleteAccountPost.mockRejectedValue({
+		mockReAuthenticate.mockRejectedValue({
 			response: { data: { message: '服务器错误' } },
 		});
 
 		renderAccountDeletion();
-
-		const passwordInput = screen.getByPlaceholderText('deletion.passwordPlaceholder');
-		fireEvent.change(passwordInput, { target: { value: 'MyPassword123' } });
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.confirm' }));
-
-		await waitFor(() => {
-			expect(screen.getByText('deletion.modalTitle')).toBeInTheDocument();
-		});
-
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.modalConfirm' }));
+		await openModalAndConfirm('MyPassword123');
 
 		await waitFor(() => {
 			expect(screen.queryByText('deletion.modalTitle')).toBeNull();
@@ -357,25 +349,36 @@ describe('AccountDeletionPage - API Error Handling', () => {
 		expect(screen.getByText('deletion.title')).toBeInTheDocument();
 	});
 
-	it('shows fallback error message when API response has no message', async () => {
-		mockAuthMeDeleteAccountPost.mockRejectedValue({
-			response: {},
-		});
+	it('maps step-up required code (40800251) to reauth-expired message', async () => {
+		mockDeleteAccount.mockRejectedValue({ response: { data: { code: 40800251 } } });
 
 		renderAccountDeletion();
-
-		const passwordInput = screen.getByPlaceholderText('deletion.passwordPlaceholder');
-		fireEvent.change(passwordInput, { target: { value: 'MyPassword123' } });
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.confirm' }));
+		await openModalAndConfirm('MyPassword123');
 
 		await waitFor(() => {
-			expect(screen.getByText('deletion.modalTitle')).toBeInTheDocument();
+			expect(screen.getByText('deletion.reauthExpired')).toBeInTheDocument();
 		});
+	});
 
-		fireEvent.click(screen.getByRole('button', { name: 'deletion.modalConfirm' }));
+	it('maps password mismatch codes (61000104 / 40000502) to wrong-password message', async () => {
+		mockReAuthenticate.mockRejectedValue({ response: { data: { code: 61000104 } } });
+
+		renderAccountDeletion();
+		await openModalAndConfirm('WrongPassword');
 
 		await waitFor(() => {
-			expect(screen.getByText('deletion.deleteFailed')).toBeInTheDocument();
+			expect(screen.getByText('auth.password.oldPasswordWrong')).toBeInTheDocument();
+		});
+	});
+
+	it('shows fallback error message when API response has no message or code', async () => {
+		mockDeleteAccount.mockRejectedValue({ response: {} });
+
+		renderAccountDeletion();
+		await openModalAndConfirm('MyPassword123');
+
+		await waitFor(() => {
+			expect(screen.getByText('deletion.deleteGeneric')).toBeInTheDocument();
 		});
 	});
 });

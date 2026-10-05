@@ -10,12 +10,10 @@ import { AuthCard } from '@/components/auth/AuthCard';
 import {
 	getAccessToken,
 	useLogout,
-	crossAppUrl,
 	usePortalCatalog,
 	getCurrentTenantId,
 	usePublicTenantSlugs,
 	API_BASE_URL,
-	END_USER_PORTAL_URL,
 } from '@autional-cn/shared';
 import {
 	Shield,
@@ -33,6 +31,8 @@ import { PendingApprovalBanner } from '@/components/auth/PendingApprovalBanner';
 import { MembershipStatusCard, type MembershipInfo } from '@/components/auth/MembershipStatusCard';
 import { useI18n } from '@/lib/i18n';
 import { usePageTitle } from '@/hooks/use-page-title';
+import { userPortalUrl } from '@/lib/portal-links';
+import { useEffectiveTenantSlug } from '@/hooks/use-tenant-slug';
 
 const PORTAL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
 	admin: Shield,
@@ -61,6 +61,8 @@ const PORTAL_LABELS: Record<string, string> = {
 export default function DashboardPage() {
 	const navigate = useNavigate();
 	const { tenantSlug } = useParams<{ tenantSlug?: string }>();
+	// AUTH-41：跨门户深链（账户中心 /security、/sessions）必须带生效租户 slug
+	const slug = useEffectiveTenantSlug();
 	const { user } = useAuth();
 	const accessToken = getAccessToken();
 	const { t } = useI18n();
@@ -307,7 +309,7 @@ export default function DashboardPage() {
 							</span>
 						</div>
 						<a
-							href={crossAppUrl(END_USER_PORTAL_URL(), '/security')}
+							href={userPortalUrl(slug, '/security')}
 							className="inline-block text-sm text-[var(--color-brand)] transition-all duration-200 hover:underline decoration-2 underline-offset-4 font-medium"
 						>
 							{t('dashboard.manageSecurity')} →
@@ -334,7 +336,7 @@ export default function DashboardPage() {
 							</div>
 						))}
 						<a
-							href={crossAppUrl(END_USER_PORTAL_URL(), '/sessions')}
+							href={userPortalUrl(slug, '/sessions')}
 							className="text-xs text-[var(--color-brand)] transition-all duration-200 hover:underline decoration-2 underline-offset-4 block mt-2"
 						>
 							{t('dashboard.viewAllSessions')}

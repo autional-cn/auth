@@ -19,8 +19,15 @@ vi.mock('react-router', async () => {
 vi.mock('@autional-cn/shared', () => ({
 	loginWithTokens: vi.fn(),
 	extractApiError: vi.fn((_err: unknown, fallback: string) => ({ message: fallback })),
-	crossAppUrl: (url: string) => url,
+	crossAppUrl: (base: string, path?: string) => base + (path || ''),
 	END_USER_PORTAL_URL: () => '/user',
+	usePublicTenantSlugs: () => ({ data: [{ name: 'demo' }] }),
+}));
+
+vi.mock('@/hooks/use-tenant-slug', () => ({
+	useEffectiveTenantSlug: () => 'demo',
+	// AUTH-48/49：AuthCard 页脚法律链消费已解析 slug
+	useResolvedTenantSlug: () => 'demo',
 }));
 
 vi.mock('@/lib/api', () => ({

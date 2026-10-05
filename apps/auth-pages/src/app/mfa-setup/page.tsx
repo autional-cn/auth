@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Label } from '@autional-cn/ui';
-import { extractApiError, useAuth, END_USER_PORTAL_URL, crossAppUrl } from '@autional-cn/shared';
+import { extractApiError, useAuth } from '@autional-cn/shared';
 import {
 	enableMFA,
 	verifyTOTPMFA,
@@ -31,6 +31,8 @@ import type {
 import { useI18n } from '@/lib/i18n';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthHeader } from '@/components/auth/AuthHeader';
+import { userPortalUrl } from '@/lib/portal-links';
+import { useEffectiveTenantSlug } from '@/hooks/use-tenant-slug';
 
 type MFAMethod = 'totp' | 'sms' | 'email';
 type Step = 1 | 2 | 3;
@@ -55,6 +57,8 @@ export default function MFASetupPage() {
 	const { t } = useI18n();
 	const navigate = useNavigate();
 	const { tenantSlug } = useParams<{ tenantSlug?: string }>();
+	// AUTH-41：跨门户深链（账户中心 /security）必须带生效租户 slug，裸链会 404
+	const slug = useEffectiveTenantSlug();
 	const totpSetupSchema = createMfaTOTPSetupSchema(t);
 	const phoneSetupSchema = createMfaPhoneSetupSchema(t);
 	const emailSetupSchema = createMfaEmailSetupSchema(t);
@@ -683,7 +687,7 @@ export default function MFASetupPage() {
 				<div className="rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] p-4 text-sm text-[var(--color-text-secondary)] space-y-1">
 					<p>{t('mfa.accountCenter')}</p>
 					<a
-						href={crossAppUrl(`${END_USER_PORTAL_URL()}/security`)}
+						href={userPortalUrl(slug, '/security')}
 						className="text-[var(--color-brand)] hover:underline font-medium"
 					>
 						{t('mfa.goToAccountCenter')} →
@@ -753,7 +757,7 @@ export default function MFASetupPage() {
 			<div className="rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-muted)] p-4 text-sm text-[var(--color-text-secondary)] space-y-1">
 				<p>{t('mfa.accountCenter')}</p>
 				<a
-					href={crossAppUrl(`${END_USER_PORTAL_URL()}/security`)}
+					href={userPortalUrl(slug, '/security')}
 					className="text-[var(--color-brand)] hover:underline font-medium"
 				>
 					{t('mfa.goToAccountCenter')} →

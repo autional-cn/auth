@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router';
 import { useAuthStore, RequireAuth, TenantIndexGuard, useLogout, OAuthCallbackPage as OAuthLoginCallbackPage, useBranding } from '@autional-cn/shared';
 import { useEffect, lazy, Suspense } from 'react';
 import { I18nProvider, useI18n } from '@/lib/i18n';
+import { clearDashboardSlug, getDashboardSlug } from '@/lib/dashboard-slug';
 import { ThemeProvider, ThemeToggle, LanguageSwitcher, ErrorBoundary } from '@autional-cn/ui';
 import { AuthBrandingInitializer } from '@/components/auth/AuthBrandingInitializer';
 import { AuthCard } from '@/components/auth/AuthCard';
@@ -56,6 +57,8 @@ function LogoutHandler() {
 	const handleLogout = useLogout();
 	useEffect(() => {
 		handleLogout();
+		// 登出即清跨 tab 的看板 slug 标记（AUTH-53 卫生：不留陈旧租户上下文）
+		clearDashboardSlug();
 	}, [handleLogout]);
 	return null;
 }
@@ -76,7 +79,7 @@ function NotFoundPage() {
 }
 
 function DashboardSlugRedirect() {
-	const slug = sessionStorage.getItem('auth_dashboard_slug');
+	const slug = getDashboardSlug();
 	const to = slug ? `/${slug}/dashboard` : '/';
 	return (
 		<RequireAuth>
@@ -283,8 +286,23 @@ export default function App() {
 								<Route path="/:tenantSlug/change-password" element={<ChangePasswordPage />} />
 								<Route path="/:tenantSlug/magic-link/confirm" element={<MagicLinkConfirmPage />} />
 								<Route path="/:tenantSlug/verify-email" element={<VerifyEmailPage />} />
-								<Route path="/:tenantSlug/terms" element={<TermsPage />} />
-								<Route path="/:tenantSlug/privacy" element={<PrivacyPage />} />
+								{/* AUTH-48/49：脏 slug 不得把条款/隐私页租户化（未命中白名单 → 404 兜底） */}
+								<Route
+									path="/:tenantSlug/terms"
+									element={
+										<TenantIndexGuard notFound={<NotFoundPage />}>
+											<TermsPage />
+										</TenantIndexGuard>
+									}
+								/>
+								<Route
+									path="/:tenantSlug/privacy"
+									element={
+										<TenantIndexGuard notFound={<NotFoundPage />}>
+											<PrivacyPage />
+										</TenantIndexGuard>
+									}
+								/>
 
 								{/* 404 */}
 								<Route path="*" element={<NotFoundPage />} />

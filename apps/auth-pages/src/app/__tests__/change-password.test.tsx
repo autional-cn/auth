@@ -63,6 +63,10 @@ vi.mock('@/lib/api', () => ({
 	loadAuthExtras: vi.fn(() => Promise.resolve()),
 }));
 
+vi.mock('@/hooks/use-tenant-auth-config', () => ({
+	useTenantAuthConfigBySlug: () => ({ data: { tenantId: 'tid' } }),
+}));
+
 vi.mock('@/lib/i18n', () => ({
 	useI18n: () => ({
 		t: (key: string, opts?: any) => (opts ? `${key} ${JSON.stringify(opts)}` : key),
