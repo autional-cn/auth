@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'react-router';
 import { Button } from '@autional-cn/ui';
-import { getAccessToken, apiClient, extractItem } from '@autional-cn/shared';
+import { getAccessToken, apiClient, extractItem, decodeJwtPayload } from '@autional-cn/shared';
 import { getOAuthClient } from '@/lib/api.generated';
 import { PublicAuthConfigByAuthConfig } from '@autional-cn/shared/generated/api';
 import { buildTenantLoginUrl, fetchTenantSlugByClientId } from '@/lib/oauth-cold-start';
@@ -77,12 +77,10 @@ function OAuthAuthorizeContent() {
 			void redirectToLogin();
 			return;
 		}
-		try {
-			const payload = JSON.parse(atob(token.split('.')[1]));
-			setUserId(payload.user_id || payload.sub || '');
-			setTenantId(payload.tenant_id || (payload as any).tenantId || '');
-		} catch {
-			/* ignore */
+		const payload = decodeJwtPayload(token);
+		if (payload) {
+			setUserId((payload.user_id || payload.sub || '') as string);
+			setTenantId((payload.tenant_id || payload.tenantId || '') as string);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);

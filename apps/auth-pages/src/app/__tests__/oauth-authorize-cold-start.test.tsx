@@ -19,11 +19,16 @@ const { mockState, mockFetch, mockReplace, mockGetOAuthClient, mockApiGet } = vi
 	mockApiGet: vi.fn(),
 }));
 
-vi.mock('@autional-cn/shared', () => ({
-	getAccessToken: () => mockState.token,
-	apiClient: { get: (...args: any[]) => mockApiGet(...args), post: vi.fn() },
-	extractItem: (payload: any) => payload?.data ?? payload,
-}));
+vi.mock('@autional-cn/shared', async () => {
+	// decodeJwtPayload 取真实现（授权页据它解析 claim）：白名单 mock 其余键保持隔离
+	const actual = await vi.importActual<typeof import('@autional-cn/shared')>('@autional-cn/shared');
+	return {
+		decodeJwtPayload: actual.decodeJwtPayload,
+		getAccessToken: () => mockState.token,
+		apiClient: { get: (...args: any[]) => mockApiGet(...args), post: vi.fn() },
+		extractItem: (payload: any) => payload?.data ?? payload,
+	};
+});
 
 vi.mock('@autional-cn/shared/generated/api', () => ({
 	PublicAuthConfigByAuthConfig: vi.fn(() => Promise.resolve({ data: {} })),

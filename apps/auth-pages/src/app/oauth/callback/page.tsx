@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router';
 import { Button } from '@autional-cn/ui';
-import { loginWithTokens, extractApiError } from '@autional-cn/shared';
+import { loginWithTokens, extractApiError, decodeJwtPayload } from '@autional-cn/shared';
 import { loadAuthExtras } from '@/lib/api';
 import { exchangeCodeForToken } from '@/lib/api.generated';
 import RedirectCountdown from '@/components/ui/RedirectCountdown';
@@ -68,17 +68,17 @@ function OAuthCallbackContent() {
 				}
 				if (data.accessToken) {
 					// 持久化 token：从 JWT 解码用户信息写入 store → persist → localStorage
+					// （shared decodeJwtPayload：base64url 归一化解码，失败返回 null 交下方兜底）
 					let user: { id: string; username: string; email: string; status: string } | null = null;
-					try {
-						const payload = JSON.parse(atob(data.accessToken.split('.')[1]));
+					const payload = decodeJwtPayload(data.accessToken);
+					if (payload) {
+						const custom = payload.custom as Record<string, unknown> | undefined;
 						user = {
 							id: (payload.sub || payload.user_id || '') as string,
-							username: (payload.custom?.username || payload.username || '') as string,
+							username: (custom?.username || payload.username || '') as string,
 							email: (payload.email || '') as string,
 							status: 'active',
 						};
-					} catch {
-						/* JWT decode best-effort */
 					}
 
 					loginWithTokens(

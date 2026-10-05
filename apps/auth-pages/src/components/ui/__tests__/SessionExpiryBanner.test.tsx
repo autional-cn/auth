@@ -30,12 +30,17 @@ vi.mock('react-router', async () => {
 	return { ...actual, useNavigate: () => mockNavigate };
 });
 
-vi.mock('@autional-cn/shared', () => ({
-	AuthService: { refreshToken: mockRefresh },
-	getAccessToken: () => session.token,
-	useAccessToken: () => session.token,
-	buildLoginUrl: (u: string) => u,
-}));
+vi.mock('@autional-cn/shared', async () => {
+	// decodeJwtPayload 取真实现（useSessionTimeout 据它解 exp）：白名单 mock 其余键保持隔离
+	const actual = await vi.importActual<typeof import('@autional-cn/shared')>('@autional-cn/shared');
+	return {
+		decodeJwtPayload: actual.decodeJwtPayload,
+		AuthService: { refreshToken: mockRefresh },
+		getAccessToken: () => session.token,
+		useAccessToken: () => session.token,
+		buildLoginUrl: (u: string) => u,
+	};
+});
 
 /** JWT 三段形状 + payload.exp（useSessionTimeout 只解 exp） */
 function makeToken(expiresInMs: number): string {

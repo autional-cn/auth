@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
-import { useAccessToken, AuthService, buildLoginUrl } from '@autional-cn/shared';
+import { useAccessToken, AuthService, buildLoginUrl, decodeJwtPayload } from '@autional-cn/shared';
 
 /**
  * onWarning：预警点（到期前 60 秒）**静默续期失败**时回调——会话此刻仍有效，
@@ -40,8 +40,11 @@ export function useSessionTimeout(
 		if (!token) return;
 
 		try {
-			const payload = JSON.parse(atob(token.split('.')[1]));
-			const exp = payload.exp * 1000;
+			// shared decodeJwtPayload（base64url 归一化 + 填充）：裸 atob 对含 -/_ 的
+			// 载荷抛 InvalidCharacterError → 曾整链落 catch（不调度任何定时器）。
+			const payload = decodeJwtPayload(token);
+			if (!payload) return;
+			const exp = (payload.exp as number) * 1000;
 			const now = Date.now();
 			const timeLeft = exp - now;
 

@@ -61,7 +61,6 @@ vi.mock('@autional-cn/shared', () => ({
 	getAccessToken: () => mockAccessToken,
 	getCurrentTenantId: () => 'tenant-1',
 	ADMIN_CONSOLE_URL: () => '/admin',
-	AUTH_PAGES_URL: () => '/auth',
 	AUTHENTICATOR_APP_URL: () => '/authenticator',
 	DEVELOPER_PORTAL_URL: () => '/developer',
 	END_USER_PORTAL_URL: () => '/user',
