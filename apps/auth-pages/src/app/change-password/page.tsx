@@ -214,10 +214,10 @@ export default function ChangePasswordPage() {
 
 			setSuccess(true);
 		} catch (err: any) {
-			// 40800005 = ErrCodePasswordMismatch（旧密码校验失败）；401 另外涵盖令牌无效，不能混用。
+			// 61000104 = ErrCodePasswordMismatch（identity errors.go:37）；401 另外涵盖令牌无效，不能混用。
 			const errCode = Number(err?.response?.data?.code);
 			const message =
-				errCode === 40800005
+				errCode === 61000104
 					? t('auth.password.oldPasswordWrong') || '当前密码不正确'
 					: err?.response?.data?.message || '修改密码失败，请稍后重试';
 			setError(message);

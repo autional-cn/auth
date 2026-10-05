@@ -242,4 +242,37 @@ describe('ChangePasswordPage', () => {
 			expect(screen.getByText('原密码不正确')).toBeInTheDocument();
 		});
 	});
+
+	// AUTH-19 回归锁（W2 独立验证 GAP 收口）：旧密码错须匹配 identity 61000104
+	//（ErrCodePasswordMismatch）；此前按 40800005（他服务码）比对必然落空、专属文案不可达。
+	it('AUTH-19: 旧密码错误（61000104）显示专属文案而非原始 message', async () => {
+		mockAuthMePasswordPut.mockRejectedValue({
+			response: { data: { code: 61000104, message: 'password mismatch' } },
+		});
+
+		searchParams = new URLSearchParams();
+		mockUseSearchParams.mockReturnValue([searchParams, vi.fn()]);
+
+		const user = userEvent.setup();
+		renderPage();
+
+		await user.type(
+			screen.getByPlaceholderText('auth.password.oldPasswordPlaceholder'),
+			'OldPass1',
+		);
+		await user.type(
+			screen.getByPlaceholderText('auth.password.newPasswordPlaceholder'),
+			'NewStr0ng!',
+		);
+		await user.type(
+			screen.getByPlaceholderText('auth.password.confirmPasswordPlaceholder'),
+			'NewStr0ng!',
+		);
+		await user.click(screen.getByRole('button', { name: 'auth.password.changeBtn' }));
+
+		await waitFor(() => {
+			expect(screen.getByText('auth.password.oldPasswordWrong')).toBeInTheDocument();
+		});
+		expect(screen.queryByText('password mismatch')).not.toBeInTheDocument();
+	});
 });
