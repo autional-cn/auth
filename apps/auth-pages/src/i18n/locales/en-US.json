@@ -1410,6 +1410,7 @@
   "auth.verifyEmail.invalidToken": "Invalid verification link. Token not found",
   "auth.verifyEmail.failed": "Verification failed",
   "auth.verifyEmail.sendFailed": "Failed to send. Please try again later",
+  "auth.verifyEmail.resendTooFrequent": "Sending too frequently. Please try again later",
   "auth.verifyPhone.title": "Phone Verification",
   "auth.verifyPhone.subtitle": "Enter your phone number and complete verification",
   "auth.verifyPhone.phoneLabel": "Phone Number",

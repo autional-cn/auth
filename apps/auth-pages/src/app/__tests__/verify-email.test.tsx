@@ -150,4 +150,22 @@ describe('VerifyEmailPage', () => {
 		});
 		expect(mockAuthVerifyEmailPost).toHaveBeenCalledTimes(1);
 	});
+
+	it('AUTH-24: 重发 429 显示限流专属文案（不再落通用「发送失败」）', async () => {
+		mockAuthResendVerificationEmailPost.mockRejectedValue({
+			response: { status: 429, data: {} },
+		});
+		const user = userEvent.setup();
+		renderVerifyEmail();
+
+		await user.type(
+			screen.getByPlaceholderText('auth.verifyEmail.emailPlaceholder'),
+			'test@example.com',
+		);
+		await user.click(screen.getByRole('button', { name: 'auth.verifyEmail.resend' }));
+
+		await waitFor(() => {
+			expect(screen.getByText('auth.verifyEmail.resendTooFrequent')).toBeInTheDocument();
+		});
+	});
 });

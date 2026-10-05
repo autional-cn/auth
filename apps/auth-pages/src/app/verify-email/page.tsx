@@ -84,7 +84,13 @@ function VerifyEmailContent() {
 			await authResendVerificationEmailPost({ email: data.email });
 			setResendSuccess(true);
 		} catch (err: any) {
-			setMessage(err.response?.data?.message || t('auth.verifyEmail.sendFailed'));
+			// 429 限流专属文案（AUTH-24③）：后端 RFC7807 无 message 字段，
+			// 之前落通用「发送失败」；现在 message 不再被覆盖，需给出准确归因。
+			if (err.response?.status === 429) {
+				setMessage(t('auth.verifyEmail.resendTooFrequent'));
+			} else {
+				setMessage(err.response?.data?.message || t('auth.verifyEmail.sendFailed'));
+			}
 		} finally {
 			setResending(false);
 		}
