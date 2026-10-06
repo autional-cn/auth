@@ -22,11 +22,11 @@ vi.mock('@/lib/post-login-redirect', () => ({
 	getPostLoginTarget: vi.fn(() => '/demo/dashboard'),
 }));
 
-vi.mock('@autional-cn/shared', () => ({
+vi.mock('@autional/shared', () => ({
 	loginWithTokens: vi.fn(),
 }));
 
-vi.mock('@autional-cn/shared/generated/api', () => ({
+vi.mock('@autional/shared/generated/api', () => ({
 	authQrLoginInitiatePost: vi.fn(),
 	authQrLoginStatus: vi.fn(),
 }));
@@ -39,7 +39,7 @@ vi.mock('qrcode', () => ({
 	default: { toDataURL: vi.fn(async () => 'data:image/png;base64,x') },
 }));
 
-vi.mock('@autional-cn/ui', async () => {
+vi.mock('@autional/ui', async () => {
 	const ReactMod = await import('react');
 	return {
 		Button: ({ children, onClick, isLoading, variant, fullWidth, disabled, ...rest }: any) =>
@@ -49,11 +49,11 @@ vi.mock('@autional-cn/ui', async () => {
 
 import QRLoginPanel from '@/components/auth/QRLoginPanel';
 import { anchorSessionFromToken } from '@/lib/anchor-session';
-import { loginWithTokens } from '@autional-cn/shared';
+import { loginWithTokens } from '@autional/shared';
 import {
 	authQrLoginInitiatePost,
 	authQrLoginStatus,
-} from '@autional-cn/shared/generated/api';
+} from '@autional/shared/generated/api';
 
 beforeEach(() => {
 	vi.clearAllMocks();

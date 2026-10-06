@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router';
-import { Button, ErrorState } from '@autional-cn/ui';
-import { authMe } from '@autional-cn/shared/generated/api';
+import { Button, ErrorState } from '@autional/ui';
+import { authMe } from '@autional/shared/generated/api';
 import {
 	loginWithTokens,
 	decodeJwtPayload,
@@ -14,7 +14,7 @@ import {
 	SECURITY_DASHBOARD_URL,
 	usePublicTenantSlugs,
 	type User,
-} from '@autional-cn/shared';
+} from '@autional/shared';
 import { loadAuthExtras } from '@/lib/api';
 import { anchorSessionFromToken } from '@/lib/anchor-session';
 import { getDashboardSlug } from '@/lib/dashboard-slug';

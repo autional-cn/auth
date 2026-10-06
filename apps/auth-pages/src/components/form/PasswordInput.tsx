@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Input, type InputProps } from '@autional-cn/ui';
+import { Input, type InputProps } from '@autional/ui';
 import { useI18n } from '@/lib/i18n';
 import {
 	calculateStrength,
@@ -105,7 +105,7 @@ function getBreachColor(status: BreachStatus): string {
  * 密码输入框组件
  * 带显示/隐藏切换，可选密码强度条（支持外部传入或策略感知），
  * 可选泄露密码检查（本地黑名单 O(1) + HIBP API）。
- * 继承自 @autional-cn/ui 的 Input，保持统一样式
+ * 继承自 @autional/ui 的 Input，保持统一样式
  */
 export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
 	(

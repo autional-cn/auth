@@ -16,8 +16,8 @@ import App from '@/App';
 
 const { mockFetch } = vi.hoisted(() => ({ mockFetch: vi.fn() }));
 
-vi.mock('@autional-cn/shared', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@autional-cn/shared')>();
+vi.mock('@autional/shared', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@autional/shared')>();
 	return {
 		...actual,
 		RequireAuth: () => <div data-testid="auth-gate" />,
@@ -26,7 +26,7 @@ vi.mock('@autional-cn/shared', async (importOriginal) => {
 	};
 });
 
-vi.mock('@autional-cn/shared/generated/api', () => ({
+vi.mock('@autional/shared/generated/api', () => ({
 	tenantPublicTenantsByTenants: vi.fn(() => Promise.resolve(null)),
 }));
 

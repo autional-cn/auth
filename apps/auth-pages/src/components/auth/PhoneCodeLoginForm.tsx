@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router';
-import { Button, Input, Label } from '@autional-cn/ui';
+import { Button, Input, Label } from '@autional/ui';
 import {
 	authLoginPhoneCodePost,
 	authRegisterPhoneCodePost,
 	authSendSmsCodePost,
-} from '@autional-cn/shared/generated/api';
-import { loginWithTokens } from '@autional-cn/shared';
+} from '@autional/shared/generated/api';
+import { loginWithTokens } from '@autional/shared';
 import { loadAuthExtras } from '@/lib/api';
 import { anchorSessionFromToken } from '@/lib/anchor-session';
 import { getPostLoginTarget } from '@/lib/post-login-redirect';

@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PrivacyPage from '../privacy/page';
-import { compliancePublicLegalDocuments } from '@autional-cn/shared/generated/api';
+import { compliancePublicLegalDocuments } from '@autional/shared/generated/api';
 
 vi.mock('react-i18next', () => ({
 	useTranslation: () => ({
@@ -52,8 +52,8 @@ vi.mock('@/hooks/use-page-title', () => ({
 	usePageTitle: vi.fn(),
 }));
 
-vi.mock('@autional-cn/shared/generated/api', async () => {
-	const actual = await vi.importActual('@autional-cn/shared/generated/api');
+vi.mock('@autional/shared/generated/api', async () => {
+	const actual = await vi.importActual('@autional/shared/generated/api');
 	return {
 		...actual,
 		compliancePublicLegalDocuments: vi.fn(),

@@ -19,8 +19,8 @@ import App from '@/App';
 
 const { mockFetch } = vi.hoisted(() => ({ mockFetch: vi.fn() }));
 
-vi.mock('@autional-cn/shared', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@autional-cn/shared')>();
+vi.mock('@autional/shared', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@autional/shared')>();
 	return {
 		...actual,
 		// 守卫放行后的落点哨兵：只证明「到达 /:tenantSlug/dashboard 路由」，不渲染真实页面
@@ -30,7 +30,7 @@ vi.mock('@autional-cn/shared', async (importOriginal) => {
 	};
 });
 
-vi.mock('@autional-cn/shared/generated/api', () => ({
+vi.mock('@autional/shared/generated/api', () => ({
 	tenantPublicTenantsByTenants: vi.fn(() => Promise.resolve(null)),
 }));
 

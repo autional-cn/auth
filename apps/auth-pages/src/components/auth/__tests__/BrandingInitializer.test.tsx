@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
-// 实现已并入 @autional-cn/shared/branding：被测的是 auth 的薄封装
+// 实现已并入 @autional/shared/branding：被测的是 auth 的薄封装
 // AuthBrandingInitializer，共享组件与共享 store 都走真实实现——断言直接读 store，
 // 不去打桩 setBranding。理由：打桩拦不住「组件根本没接线」这类错，读状态可以。
 // 而且走子路径而不是桶入口：桶入口会把整个应用层（api client / react-query / i18n…）
@@ -15,7 +15,7 @@ vi.mock('@/hooks/use-tenant-auth-config', () => ({
 
 import { AuthBrandingInitializer } from '@/components/auth/AuthBrandingInitializer';
 import { useTenantAuthConfigBySlug } from '@/hooks/use-tenant-auth-config';
-import { useTenantBrandingStore } from '@autional-cn/shared/branding';
+import { useTenantBrandingStore } from '@autional/shared/branding';
 
 const queryClient = new QueryClient({
 	defaultOptions: { queries: { retry: false } },

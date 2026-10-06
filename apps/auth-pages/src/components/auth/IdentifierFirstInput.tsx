@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Button, Input, Label } from '@autional-cn/ui';
+import { Button, Input, Label } from '@autional/ui';
 import { useI18n } from '@/lib/i18n';
-import { PublicAuthConfigByAuthConfig } from '@autional-cn/shared/generated/api';
+import { PublicAuthConfigByAuthConfig } from '@autional/shared/generated/api';
 
 interface TenantMatch {
 	tenant_id: string;

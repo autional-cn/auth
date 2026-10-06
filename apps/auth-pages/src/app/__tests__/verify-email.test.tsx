@@ -29,7 +29,7 @@ vi.mock('react-router', async () => {
 const mockAuthVerifyEmailPost = vi.fn();
 const mockAuthResendVerificationEmailPost = vi.fn();
 
-vi.mock('@autional-cn/shared/generated/api', () => ({
+vi.mock('@autional/shared/generated/api', () => ({
 	authVerifyEmailPost: (...args: any[]) => mockAuthVerifyEmailPost(...args),
 	authResendVerificationEmailPost: (...args: any[]) => mockAuthResendVerificationEmailPost(...args),
 }));

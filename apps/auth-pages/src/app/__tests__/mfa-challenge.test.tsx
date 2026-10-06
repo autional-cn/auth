@@ -23,7 +23,7 @@ vi.mock('react-router', async () => {
 });
 
 const mockLoginWithTokens = vi.fn();
-vi.mock('@autional-cn/shared', () => ({
+vi.mock('@autional/shared', () => ({
 	loginWithTokens: (...args: any[]) => mockLoginWithTokens(...args),
 	decodeJwtPayload: (token: string) => {
 		try {

@@ -21,7 +21,7 @@ vi.mock('react-router', async () => {
 
 const mockAuthForgotPasswordPost = vi.fn();
 
-vi.mock('@autional-cn/shared/generated/api', () => ({
+vi.mock('@autional/shared/generated/api', () => ({
 	authForgotPasswordPost: (...args: any[]) => mockAuthForgotPasswordPost(...args),
 }));
 

@@ -1,5 +1,5 @@
 {
-  "name": "@autional-cn/auth-pages",
+  "name": "@autional/auth-pages",
   "version": "0.1.0",
   "private": true,
   "description": "Auth Pages - Login, Register, Forgot Password, MFA (Vite + React Router)",
@@ -14,10 +14,10 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@autional-cn/shared": "0.1.0-rc.31",
-    "@autional-cn/tailwind-preset": "0.1.0-rc.4",
-    "@autional-cn/tokens": "0.1.0-rc.9",
-    "@autional-cn/ui": "0.1.0-rc.41",
+    "@autional/shared": "0.1.0-rc.32",
+    "@autional/tailwind-preset": "0.1.0-rc.4",
+    "@autional/tokens": "0.1.0-rc.10",
+    "@autional/ui": "0.1.0-rc.42",
     "@hookform/resolvers": "3.10.0",
     "@tanstack/react-query": "5.100.9",
     "@zxcvbn-ts/core": "3.0.4",
@@ -36,7 +36,7 @@
     "zustand": "5.0.13"
   },
   "devDependencies": {
-    "@autional-cn/tsconfig": "0.1.0-rc",
+    "@autional/tsconfig": "0.1.0-rc",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "4.4.0",

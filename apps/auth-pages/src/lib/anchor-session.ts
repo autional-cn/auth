@@ -1,4 +1,4 @@
-import { decodeJwtPayload, useAuthStore } from '@autional-cn/shared';
+import { decodeJwtPayload, useAuthStore } from '@autional/shared';
 import { setDashboardSlug } from './dashboard-slug';
 import { resolveTenantSlug } from './tenant-store';
 

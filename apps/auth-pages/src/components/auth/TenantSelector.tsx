@@ -2,9 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { Input, Label } from '@autional-cn/ui';
-import { apiClient } from '@autional-cn/shared';
-import { PublicAuthConfigByAuthConfig } from '@autional-cn/shared/generated/api';
+import { Input, Label } from '@autional/ui';
+import { apiClient } from '@autional/shared';
+import { PublicAuthConfigByAuthConfig } from '@autional/shared/generated/api';
 import { useI18n } from '@/lib/i18n';
 import { ChevronDown } from 'lucide-react';
 import type { TenantOption } from '@/hooks/use-public-tenants';

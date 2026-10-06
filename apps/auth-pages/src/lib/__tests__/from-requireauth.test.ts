@@ -19,7 +19,7 @@ vi.mock('../page-init-cache', async (importOriginal) => ({
 	getCached: (...args: any[]) => mockGetCached(...args),
 }));
 
-vi.mock('@autional-cn/shared', () => ({
+vi.mock('@autional/shared', () => ({
 	fetchOAuthClientIdBySlug: (...args: any[]) => mockFetchBySlug(...args),
 }));
 

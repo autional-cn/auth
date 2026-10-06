@@ -5,7 +5,7 @@ import { Link, useLocation, useParams } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Label, Input } from '@autional-cn/ui';
+import { Button, Label, Input } from '@autional/ui';
 import {
 	authRegisterPost,
 	authRegisterCheckUsernamePost,
@@ -14,11 +14,11 @@ import {
 	authMeConsentPost,
 	tenantPublicTenants,
 	authCaptchaChallenge,
-} from '@autional-cn/shared/generated/api';
+} from '@autional/shared/generated/api';
 import { checkPasswordBreached } from '@/lib/breach-check';
 import { fetchLegalDocumentVersion } from '@/lib/legal-document';
 import { loadAuthExtras } from '@/lib/api';
-import { loginWithTokens, bffLogin, isBFFAvailable, useAuthStore, navigateTo } from '@autional-cn/shared';
+import { loginWithTokens, bffLogin, isBFFAvailable, useAuthStore, navigateTo } from '@autional/shared';
 import { anchorSessionFromToken } from '@/lib/anchor-session';
 import { processPasswordForTransmission } from '@/lib/password-transmission';
 import { createRegisterSchema } from '@/lib/validators';
@@ -39,7 +39,7 @@ import EmailCodeLoginForm from '@/components/auth/EmailCodeLoginForm';
 import PhoneCodeLoginForm from '@/components/auth/PhoneCodeLoginForm';
 import { type PasswordPolicy } from '@/hooks/use-tenant-auth-config';
 import { Lock, Mail, Smartphone, Inbox } from 'lucide-react';
-import { useTenantBrandingStore } from '@autional-cn/shared/branding';
+import { useTenantBrandingStore } from '@autional/shared/branding';
 
 type CheckStatus = 'idle' | 'checking' | 'available' | 'taken';
 

@@ -27,9 +27,9 @@ vi.mock('@/lib/i18n', () => ({
 
 // AUTH-50①：生效 slug 经 useEffectiveTenantSlug（useParams + 公开名单 + 会话回落）解析——
 // 不再 mock react-router 的 useParams（mock 会绕过真实路由，脏 slug/无 param 全测不出）。
-vi.mock('@autional-cn/shared', async () => {
+vi.mock('@autional/shared', async () => {
 	const actual =
-		await vi.importActual<typeof import('@autional-cn/shared')>('@autional-cn/shared');
+		await vi.importActual<typeof import('@autional/shared')>('@autional/shared');
 	return {
 		...actual,
 		usePublicTenantSlugs: () => ({ data: [{ name: 'my-org' }, { name: 'custom' }] }),

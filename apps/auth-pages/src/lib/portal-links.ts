@@ -1,4 +1,4 @@
-import { END_USER_PORTAL_URL, crossAppUrl } from '@autional-cn/shared';
+import { END_USER_PORTAL_URL, crossAppUrl } from '@autional/shared';
 
 /**
  * 用户门户（账户中心）深链（AUTH-41）：必须带租户 slug —— 裸链

@@ -30,9 +30,9 @@ vi.mock('react-router', async () => {
 	return { ...actual, useNavigate: () => mockNavigate };
 });
 
-vi.mock('@autional-cn/shared', async () => {
+vi.mock('@autional/shared', async () => {
 	// decodeJwtPayload 取真实现（useSessionTimeout 据它解 exp）：白名单 mock 其余键保持隔离
-	const actual = await vi.importActual<typeof import('@autional-cn/shared')>('@autional-cn/shared');
+	const actual = await vi.importActual<typeof import('@autional/shared')>('@autional/shared');
 	return {
 		decodeJwtPayload: actual.decodeJwtPayload,
 		AuthService: { refreshToken: mockRefresh },

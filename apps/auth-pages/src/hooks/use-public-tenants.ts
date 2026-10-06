@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { tenantPublicTenants } from '@autional-cn/shared/generated/api';
-import { extractList } from '@autional-cn/shared';
+import { tenantPublicTenants } from '@autional/shared/generated/api';
+import { extractList } from '@autional/shared';
 
 export interface TenantOption {
 	id: string;

@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useLocation } from 'react-router';
-import { BrandingInitializer, extractBranding } from '@autional-cn/shared/branding';
+import { BrandingInitializer, extractBranding } from '@autional/shared/branding';
 import { tenantSlugFromPath } from '@/lib/tenant-store';
 import { useTenantAuthConfigBySlug } from '@/hooks/use-tenant-auth-config';
 
@@ -10,7 +10,7 @@ import { useTenantAuthConfigBySlug } from '@/hooks/use-tenant-auth-config';
  * auth 站专属的品牌接线。
  *
  * 实现本身（按 slug 拉公开品牌 → 写共享 store → 落到 CSS 变量 / favicon / customCss）
- * 已并入 @autional-cn/shared 的 branding 模块，本站不再各留一份——此前这里有一整套
+ * 已并入 @autional/shared 的 branding 模块，本站不再各留一份——此前这里有一整套
  * 自己的 useBranding / BrandingInitializer / brand-color 与共享版并行维护。
  *
  * 这里只补两件**确实属于 auth** 的事：

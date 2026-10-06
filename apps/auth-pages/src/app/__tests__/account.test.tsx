@@ -19,7 +19,7 @@ vi.mock('react-router', async () => {
 	};
 });
 
-vi.mock('@autional-cn/shared', () => ({
+vi.mock('@autional/shared', () => ({
 	END_USER_PORTAL_URL: () => 'http://user.example.com',
 	crossAppUrl: (base: string, path?: string) => base + (path || ''),
 }));

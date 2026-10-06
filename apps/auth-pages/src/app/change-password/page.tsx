@@ -5,9 +5,9 @@ import { useNavigate, useSearchParams, Link, useParams } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Label } from '@autional-cn/ui';
-import { useAuthStore, isValidRedirect } from '@autional-cn/shared';
-import { authMePasswordPut } from '@autional-cn/shared/generated/api';
+import { Button, Label } from '@autional/ui';
+import { useAuthStore, isValidRedirect } from '@autional/shared';
+import { authMePasswordPut } from '@autional/shared/generated/api';
 import { checkPasswordBreached } from '@/lib/breach-check';
 import {
 	processPasswordForTransmission,

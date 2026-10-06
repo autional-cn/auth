@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Input, Label } from '@autional-cn/ui';
-import { extractApiError, useAuth } from '@autional-cn/shared';
+import { Button, Input, Label } from '@autional/ui';
+import { extractApiError, useAuth } from '@autional/shared';
 import {
 	enableMFA,
 	verifyTOTPMFA,

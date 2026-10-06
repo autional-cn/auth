@@ -1,5 +1,5 @@
 import { useParams, useLocation } from 'react-router';
-import { useAuthStore, usePublicTenantSlugs } from '@autional-cn/shared';
+import { useAuthStore, usePublicTenantSlugs } from '@autional/shared';
 import { pickSessionSlug, tenantSlugFromPath } from '@/lib/tenant-store';
 
 /**

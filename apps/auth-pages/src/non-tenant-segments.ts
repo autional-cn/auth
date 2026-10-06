@@ -13,7 +13,7 @@
  *
  * 由 main.tsx 以副作用方式 import，保证在首次渲染前完成注册。
  */
-import { registerNonTenantSegments } from '@autional-cn/shared';
+import { registerNonTenantSegments } from '@autional/shared';
 
 export const NON_TENANT_SEGMENTS = [
 	'account',

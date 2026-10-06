@@ -1,4 +1,4 @@
-# @autional-cn/api-generated
+# @autional/api-generated
 
 Auto-generated TypeScript API client for Autional — generated from Swagger JSON annotations.
 
@@ -7,14 +7,14 @@ Auto-generated TypeScript API client for Autional — generated from Swagger JSO
 ## Installation
 
 ```bash
-npm install @autional-cn/api-generated
+npm install @autional/api-generated
 ```
 
 ## Usage
 
 ```ts
-import { login, register } from '@autional-cn/api-generated';
-import type { LoginRequest, LoginResponse } from '@autional-cn/api-generated/types';
+import { login, register } from '@autional/api-generated';
+import type { LoginRequest, LoginResponse } from '@autional/api-generated/types';
 
 const res = await login({ username: 'admin', password: '...' });
 ```

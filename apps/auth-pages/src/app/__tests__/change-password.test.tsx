@@ -32,7 +32,7 @@ vi.mock('react-router', async () => {
 	};
 });
 
-vi.mock('@autional-cn/shared', () => ({
+vi.mock('@autional/shared', () => ({
 	apiClient: {
 		put: vi.fn().mockImplementation((...args: any[]) => (mockApiClientPut as any)(...args)),
 		get: vi.fn(() => Promise.resolve({ data: { items: [] } })),
@@ -52,7 +52,7 @@ vi.mock('@autional-cn/shared', () => ({
 	}),
 }));
 
-vi.mock('@autional-cn/shared/generated/api', () => ({
+vi.mock('@autional/shared/generated/api', () => ({
 	authMePasswordPut: (...args: any[]) => (mockAuthMePasswordPut as any)(...args),
 	PublicAuthConfigByAuthConfig: vi.fn(() =>
 		Promise.resolve({ passwordPolicy: { passwordTransmission: 'plain' } }),
@@ -83,7 +83,7 @@ vi.mock('@/lib/breach-check', () => ({
 		.mockImplementation((...args: any[]) => (mockCheckBreached as any)(...args)),
 }));
 
-vi.mock('@autional-cn/ui', () => ({
+vi.mock('@autional/ui', () => ({
 	Button: ({ children, isLoading, ...props }: any) => (
 		<button disabled={isLoading} {...props}>
 			{children}

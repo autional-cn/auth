@@ -4,7 +4,7 @@
 
 // @ts-nocheck — auto-generated; validated by check-generated-api.py
 import type * as Types from './types';
-import { apiClient as api } from '@autional-cn/shared';
+import { apiClient as api } from '@autional/shared';
 
 // ============================================================
 // Audit Service

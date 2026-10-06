@@ -3,8 +3,8 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ErrorState } from '@autional-cn/ui';
-import { compliancePublicLegalDocuments } from '@autional-cn/shared/generated/api';
+import { ErrorState } from '@autional/ui';
+import { compliancePublicLegalDocuments } from '@autional/shared/generated/api';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { useI18n } from '@/lib/i18n';

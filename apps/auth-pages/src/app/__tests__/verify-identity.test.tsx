@@ -56,8 +56,8 @@ const mockVerificationConsentPost = vi.fn();
 const mockVerificationMeDetail = vi.fn();
 const mockVerificationOcrPost = vi.fn();
 const mockVerificationVerifyPost = vi.fn();
-vi.mock('@autional-cn/shared/generated/api', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@autional-cn/shared/generated/api')>();
+vi.mock('@autional/shared/generated/api', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@autional/shared/generated/api')>();
 	return {
 		...actual,
 		authMeConsentPost: (...args: any[]) => mockAuthMeConsentPost(...args),

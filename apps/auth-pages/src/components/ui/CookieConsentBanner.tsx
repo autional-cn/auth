@@ -21,7 +21,7 @@
 import React, { useEffect, useState } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Button } from '@autional-cn/ui';
+import { Button } from '@autional/ui';
 import { useI18n } from '@/lib/i18n';
 import { X } from 'lucide-react';
 

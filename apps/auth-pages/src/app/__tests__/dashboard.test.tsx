@@ -70,7 +70,7 @@ vi.mock('react-i18next', () => ({
 	I18nextProvider: ({ children }: any) => children,
 }));
 
-// 仅保留 Provider 透传：页面数据管线已全部由 @autional-cn/shared mock 提供
+// 仅保留 Provider 透传：页面数据管线已全部由 @autional/shared mock 提供
 vi.mock('@tanstack/react-query', () => ({
 	QueryClient: class {
 		clear = vi.fn();
@@ -89,10 +89,10 @@ vi.mock('react-router', async () => {
 	};
 });
 
-vi.mock('@autional-cn/shared', async () => {
+vi.mock('@autional/shared', async () => {
 	// extractList 取真实现：页面数据管线（sessions/memberships 装载）依赖其信封解包语义
 	const actual =
-		await vi.importActual<typeof import('@autional-cn/shared')>('@autional-cn/shared');
+		await vi.importActual<typeof import('@autional/shared')>('@autional/shared');
 	const portalUrl = (code: string) => `http://${code}.example.com`;
 	return {
 		extractList: actual.extractList,
@@ -152,7 +152,7 @@ vi.mock('@autional-cn/shared', async () => {
 	};
 });
 
-vi.mock('@autional-cn/shared/generated/api', () => ({
+vi.mock('@autional/shared/generated/api', () => ({
 	authMeMemberships: (...args: any[]) => (mockAuthMeMemberships as any)(...args),
 	authMeSessions: (...args: any[]) => (mockAuthMeSessions as any)(...args),
 	authMePut: vi.fn(() => Promise.resolve({})),

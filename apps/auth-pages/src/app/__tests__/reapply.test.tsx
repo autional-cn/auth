@@ -24,13 +24,13 @@ vi.mock('react-router', async () => {
 	};
 });
 
-vi.mock('@autional-cn/shared', () => ({
+vi.mock('@autional/shared', () => ({
 	apiClient: {
 		post: (...args: any[]) => mockApiClientPost(...args),
 	},
 }));
 
-vi.mock('@autional-cn/shared/generated/api', () => ({
+vi.mock('@autional/shared/generated/api', () => ({
 	authRegisterReapplyPost: (...args: any[]) => mockAuthRegisterReapplyPost(...args),
 }));
 
@@ -48,7 +48,7 @@ vi.mock('@/hooks/use-page-title', () => ({
 	usePageTitle: vi.fn(),
 }));
 
-vi.mock('@autional-cn/ui', () => ({
+vi.mock('@autional/ui', () => ({
 	Button: ({ children, type, fullWidth, isLoading, ...props }: any) => (
 		<button type={type || 'submit'} data-testid="submit-btn" disabled={isLoading} {...props}>
 			{children}

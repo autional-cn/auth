@@ -3,8 +3,8 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Button, Input, Label } from '@autional-cn/ui';
-import { extractApiError } from '@autional-cn/shared';
+import { Button, Input, Label } from '@autional/ui';
+import { extractApiError } from '@autional/shared';
 import { initiateSSO } from '@/lib/api.generated';
 import { useI18n } from '@/lib/i18n';
 import { AuthCard } from '@/components/auth/AuthCard';

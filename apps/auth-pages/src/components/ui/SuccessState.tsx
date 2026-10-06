@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button } from '@autional-cn/ui';
+import { Button } from '@autional/ui';
 
 interface SuccessStateProps {
 	/** 成功标题 */

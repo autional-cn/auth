@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
-import { useAccessToken, AuthService, buildLoginUrl, decodeJwtPayload } from '@autional-cn/shared';
+import { useAccessToken, AuthService, buildLoginUrl, decodeJwtPayload } from '@autional/shared';
 
 /**
  * onWarning：预警点（到期前 60 秒）**静默续期失败**时回调——会话此刻仍有效，

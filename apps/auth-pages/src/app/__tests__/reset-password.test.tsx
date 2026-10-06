@@ -28,7 +28,7 @@ vi.mock('react-router', async () => {
 const mockAuthVerifyResetCodePost = vi.fn();
 const mockAuthResetPasswordPost = vi.fn();
 
-vi.mock('@autional-cn/shared/generated/api', () => ({
+vi.mock('@autional/shared/generated/api', () => ({
 	authVerifyResetCodePost: (...args: any[]) => mockAuthVerifyResetCodePost(...args),
 	authResetPasswordPost: (...args: any[]) => mockAuthResetPasswordPost(...args),
 	PublicAuthConfigByAuthConfig: vi.fn(() =>

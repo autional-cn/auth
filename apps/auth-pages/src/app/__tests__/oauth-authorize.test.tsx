@@ -30,9 +30,9 @@ vi.mock('react-router', async () => {
 	};
 });
 
-vi.mock('@autional-cn/shared', async () => {
+vi.mock('@autional/shared', async () => {
 	// decodeJwtPayload 取真实现（授权页据它解析 claim）：白名单 mock 其余键保持隔离
-	const actual = await vi.importActual<typeof import('@autional-cn/shared')>('@autional-cn/shared');
+	const actual = await vi.importActual<typeof import('@autional/shared')>('@autional/shared');
 	return {
 		decodeJwtPayload: actual.decodeJwtPayload,
 		getAccessToken: vi.fn(() => 'mock-token'),
@@ -42,8 +42,8 @@ vi.mock('@autional-cn/shared', async () => {
 	};
 });
 
-vi.mock('@autional-cn/shared/generated/api', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@autional-cn/shared/generated/api')>();
+vi.mock('@autional/shared/generated/api', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@autional/shared/generated/api')>();
 	return {
 		...actual,
 		PublicAuthConfigByAuthConfig: vi.fn(() => Promise.resolve({ data: {} })),

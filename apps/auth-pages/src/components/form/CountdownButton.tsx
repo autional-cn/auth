@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button, type ButtonProps } from '@autional-cn/ui';
+import { Button, type ButtonProps } from '@autional/ui';
 
 interface CountdownButtonProps extends Omit<ButtonProps, 'onClick'> {
 	/** 冷却时长（秒），默认 60 */

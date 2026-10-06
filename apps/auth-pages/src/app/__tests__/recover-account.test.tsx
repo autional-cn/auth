@@ -18,10 +18,10 @@ import type { ReactNode } from 'react';
  * - @/lib/i18n       整模块 mock（t:(k,opts)=>k/JSON）
  * - @/hooks/use-page-title 空 mock
  * - react-router     importOriginal spread + Link 透传 <a href>；useParams 可控 mockParams
- * - @autional-cn/shared/generated/api  importOriginal spread + 覆盖 authRecoverAccountPost /
+ * - @autional/shared/generated/api  importOriginal spread + 覆盖 authRecoverAccountPost /
  *   authRecoverAccountResetPost / PublicAuthConfigBySlugByBySlug
- * - @autional-cn/shared          processPasswordForTransmission（恒等价 plain 透传）
- * - @autional-cn/shared/branding useTenantBrandingStore（branding: null）
+ * - @autional/shared          processPasswordForTransmission（恒等价 plain 透传）
+ * - @autional/shared/branding useTenantBrandingStore（branding: null）
  * - @/lib/check-hibp 防御性 mock（PasswordInput 内部 HIBP，零出网）
  */
 
@@ -63,8 +63,8 @@ vi.mock('@/hooks/use-page-title', () => ({
 	usePageTitle: vi.fn(),
 }));
 
-vi.mock('@autional-cn/shared/generated/api', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@autional-cn/shared/generated/api')>();
+vi.mock('@autional/shared/generated/api', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@autional/shared/generated/api')>();
 	return {
 		...actual,
 		authRecoverAccountPost: (data: unknown) => mockRecoverRequestPost(data),
@@ -73,8 +73,8 @@ vi.mock('@autional-cn/shared/generated/api', async (importOriginal) => {
 	};
 });
 
-vi.mock('@autional-cn/shared', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@autional-cn/shared')>();
+vi.mock('@autional/shared', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@autional/shared')>();
 	return {
 		...actual,
 		processPasswordForTransmission: async (password: string, mode?: string) => ({
@@ -84,7 +84,7 @@ vi.mock('@autional-cn/shared', async (importOriginal) => {
 	};
 });
 
-vi.mock('@autional-cn/shared/branding', () => ({
+vi.mock('@autional/shared/branding', () => ({
 	useTenantBrandingStore: (selector: (state: { branding: null }) => unknown) =>
 		selector({ branding: null }),
 }));

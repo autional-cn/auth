@@ -9,7 +9,7 @@
  * 仍拿不到 → 返回 null，调用方停住不循环（ADR-04 的最保守行为）。
  */
 
-import { fetchOAuthClientIdBySlug } from '@autional-cn/shared';
+import { fetchOAuthClientIdBySlug } from '@autional/shared';
 import { getPreloaded, getCached, CACHE_KEYS } from './page-init-cache';
 
 export async function resolveClientIdForRequireAuth(slug: string): Promise<string | null> {

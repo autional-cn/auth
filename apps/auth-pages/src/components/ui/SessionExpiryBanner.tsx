@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useSessionTimeout } from '@/hooks/use-session-timeout';
 import { useI18n } from '@/lib/i18n';
-import { AuthService, getAccessToken, useAccessToken } from '@autional-cn/shared';
+import { AuthService, getAccessToken, useAccessToken } from '@autional/shared';
 
 export function SessionExpiryBanner() {
 	const { t } = useI18n();

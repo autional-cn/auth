@@ -2,13 +2,13 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router';
-import { Button } from '@autional-cn/ui';
+import { Button } from '@autional/ui';
 import {
 	loginWithTokens,
 	extractApiError,
 	decodeJwtPayload,
 	usePublicTenantSlugs,
-} from '@autional-cn/shared';
+} from '@autional/shared';
 import { loadAuthExtras } from '@/lib/api';
 import { anchorSessionFromToken } from '@/lib/anchor-session';
 import { exchangeCodeForToken } from '@/lib/api.generated';

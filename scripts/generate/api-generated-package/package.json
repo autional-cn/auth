@@ -1,5 +1,5 @@
 {
-  "name": "@autional-cn/api-generated",
+  "name": "@autional/api-generated",
   "version": "1.0.20260628.01",
   "description": "Auto-generated TypeScript API client for Autional — generated from Swagger JSON annotations. Provides type-safe API functions, TypeScript types, and TanStack Query hooks for all 24 microservices.",
   "type": "module",

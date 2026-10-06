@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@autional-cn/ui';
+import { Button } from '@autional/ui';
 import { Fingerprint } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
-import { extractApiError } from '@autional-cn/shared';
+import { extractApiError } from '@autional/shared';
 import { beginPasskeyRegister, completePasskeyRegister } from '@/lib/api.generated';
 import { preparePasswordForTenant } from '@/lib/password-transmission';
 

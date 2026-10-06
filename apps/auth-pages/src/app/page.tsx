@@ -5,10 +5,10 @@ import { useNavigate, useParams, useSearchParams, Link } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Input, Label } from '@autional-cn/ui';
-import { authLoginPost, authCaptchaChallenge, authMe } from '@autional-cn/shared/generated/api';
+import { Button, Input, Label } from '@autional/ui';
+import { authLoginPost, authCaptchaChallenge, authMe } from '@autional/shared/generated/api';
 import { loadAuthExtras } from '@/lib/api';
-import { loginWithTokens, useAuthStore, getAccessToken, isValidRedirect, initiateOAuthLogin, extractSlugFromPath, getPortalUrl, getRootDomain, API_BASE_URL, crossAppUrl, TRUST_CENTER_URL } from '@autional-cn/shared';
+import { loginWithTokens, useAuthStore, getAccessToken, isValidRedirect, initiateOAuthLogin, extractSlugFromPath, getPortalUrl, getRootDomain, API_BASE_URL, crossAppUrl, TRUST_CENTER_URL } from '@autional/shared';
 import { useResolvedTenantSlug } from '@/hooks/use-tenant-slug';
 import { createLoginSchema } from '@/lib/validators';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
@@ -39,7 +39,7 @@ import { anchorSessionFromToken } from '@/lib/anchor-session';
 import { PasskeyLoginButton } from '@/components/auth/PasskeyLoginButton';
 import { MagicLinkForm } from '@/components/auth/MagicLinkForm';
 import { PasswordInput } from '@/components/form/PasswordInput';
-import { useTenantBrandingStore } from '@autional-cn/shared/branding';
+import { useTenantBrandingStore } from '@autional/shared/branding';
 
 const ERROR_CODE_MAP: Record<string, string> = {
 	'40000001': 'login.error.credentials',

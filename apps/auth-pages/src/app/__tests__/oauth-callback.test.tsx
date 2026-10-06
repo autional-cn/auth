@@ -27,9 +27,9 @@ vi.mock('@/lib/api', () => ({ loadAuthExtras: vi.fn().mockResolvedValue({}) }));
 vi.mock('@/lib/anchor-session', () => ({ anchorSessionFromToken: vi.fn() }));
 
 // extractApiError / decodeJwtPayload 取真实现（AUTH-46 i18n_key 透出 + JWT 解析是本次修复面）
-vi.mock('@autional-cn/shared', async () => {
+vi.mock('@autional/shared', async () => {
 	const actual =
-		await vi.importActual<typeof import('@autional-cn/shared')>('@autional-cn/shared');
+		await vi.importActual<typeof import('@autional/shared')>('@autional/shared');
 	return {
 		...actual,
 		loginWithTokens: vi.fn(),

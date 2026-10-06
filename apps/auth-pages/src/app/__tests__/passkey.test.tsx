@@ -16,7 +16,7 @@ vi.mock('react-router', async () => {
 	return { ...actual, useNavigate: () => mockNavigate };
 });
 
-vi.mock('@autional-cn/shared', () => ({
+vi.mock('@autional/shared', () => ({
 	loginWithTokens: vi.fn(),
 	extractApiError: vi.fn((_err: unknown, fallback: string) => ({ message: fallback })),
 	crossAppUrl: (base: string, path?: string) => base + (path || ''),

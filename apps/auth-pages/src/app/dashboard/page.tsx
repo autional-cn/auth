@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Link } from 'react-router';
-import { useAuth, extractList } from '@autional-cn/shared';
-import { authMeSessions, authMeMemberships, authMePut } from '@autional-cn/shared/generated/api';
+import { useAuth, extractList } from '@autional/shared';
+import { authMeSessions, authMeMemberships, authMePut } from '@autional/shared/generated/api';
 import { getMe } from '@/lib/api';
 import { AuthCard } from '@/components/auth/AuthCard';
 import {
@@ -13,7 +13,7 @@ import {
 	usePortalCatalog,
 	getCurrentTenantId,
 	usePublicTenantSlugs,
-} from '@autional-cn/shared';
+} from '@autional/shared';
 import {
 	Shield,
 	LogIn,

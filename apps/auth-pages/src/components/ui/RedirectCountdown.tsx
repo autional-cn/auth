@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Button } from '@autional-cn/ui';
+import { Button } from '@autional/ui';
 import { useCountdown } from '@/hooks/use-countdown';
 
 interface RedirectCountdownProps {

@@ -22,11 +22,11 @@ vi.mock('@/lib/post-login-redirect', () => ({
 	getPostLoginTarget: vi.fn(() => '/demo/dashboard'),
 }));
 
-vi.mock('@autional-cn/shared', () => ({
+vi.mock('@autional/shared', () => ({
 	loginWithTokens: vi.fn(),
 }));
 
-vi.mock('@autional-cn/shared/generated/api', () => ({
+vi.mock('@autional/shared/generated/api', () => ({
 	authLoginPhoneCodePost: vi.fn(),
 	authRegisterPhoneCodePost: vi.fn(),
 	authSendSmsCodePost: vi.fn(),
@@ -36,7 +36,7 @@ vi.mock('@/hooks/use-countdown', () => ({
 	useCountdown: () => ({ seconds: 60, isActive: false, start: vi.fn(), reset: vi.fn() }),
 }));
 
-vi.mock('@autional-cn/ui', async () => {
+vi.mock('@autional/ui', async () => {
 	const ReactMod = await import('react');
 	return {
 		Button: ({ children, onClick, isLoading, variant, fullWidth, disabled, ...rest }: any) =>
@@ -48,11 +48,11 @@ vi.mock('@autional-cn/ui', async () => {
 
 import PhoneCodeLoginForm from '@/components/auth/PhoneCodeLoginForm';
 import { anchorSessionFromToken } from '@/lib/anchor-session';
-import { loginWithTokens } from '@autional-cn/shared';
+import { loginWithTokens } from '@autional/shared';
 import {
 	authLoginPhoneCodePost,
 	authSendSmsCodePost,
-} from '@autional-cn/shared/generated/api';
+} from '@autional/shared/generated/api';
 
 beforeEach(() => {
 	vi.clearAllMocks();

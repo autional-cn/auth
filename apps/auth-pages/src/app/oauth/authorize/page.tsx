@@ -2,10 +2,10 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'react-router';
-import { Button } from '@autional-cn/ui';
-import { getAccessToken, apiClient, extractItem, decodeJwtPayload } from '@autional-cn/shared';
+import { Button } from '@autional/ui';
+import { getAccessToken, apiClient, extractItem, decodeJwtPayload } from '@autional/shared';
 import { getOAuthClient } from '@/lib/api.generated';
-import { PublicAuthConfigByAuthConfig } from '@autional-cn/shared/generated/api';
+import { PublicAuthConfigByAuthConfig } from '@autional/shared/generated/api';
 import { buildTenantLoginUrl, fetchTenantSlugByClientId } from '@/lib/oauth-cold-start';
 import { oauthErrorText } from '@/lib/oauth-error-text';
 import { useI18n } from '@/lib/i18n';

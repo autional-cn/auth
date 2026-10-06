@@ -1,9 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router';
-import { useAuthStore, RequireAuth, TenantIndexGuard, useLogout, OAuthCallbackPage as OAuthLoginCallbackPage, useBranding } from '@autional-cn/shared';
+import { useAuthStore, RequireAuth, TenantIndexGuard, useLogout, OAuthCallbackPage as OAuthLoginCallbackPage, useBranding } from '@autional/shared';
 import { useEffect, lazy, Suspense } from 'react';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { clearDashboardSlug, getDashboardSlug } from '@/lib/dashboard-slug';
-import { ThemeProvider, ThemeToggle, LanguageSwitcher, ErrorBoundary } from '@autional-cn/ui';
+import { ThemeProvider, ThemeToggle, LanguageSwitcher, ErrorBoundary } from '@autional/ui';
 import { AuthBrandingInitializer } from '@/components/auth/AuthBrandingInitializer';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { EntryRouter } from '@/components/EntryRouter';

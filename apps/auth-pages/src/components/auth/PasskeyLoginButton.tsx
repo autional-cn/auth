@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router';
-import { Button } from '@autional-cn/ui';
+import { Button } from '@autional/ui';
 import { Fingerprint } from 'lucide-react';
-import { apiClient, loginWithTokens } from '@autional-cn/shared';
+import { apiClient, loginWithTokens } from '@autional/shared';
 import {
 	authWebauthnAuthenticateBeginPost,
 	authWebauthnAuthenticateCompletePost,
-} from '@autional-cn/shared/generated/api';
+} from '@autional/shared/generated/api';
 import { loadAuthExtras } from '@/lib/api';
 import { anchorSessionFromToken } from '@/lib/anchor-session';
 import { getPostLoginTarget } from '@/lib/post-login-redirect';

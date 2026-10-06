@@ -4,5 +4,5 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark mode variables are defined in @autional-cn/tailwind-preset/tokens.css (.dark selector).
+/* Dark mode variables are defined in @autional/tailwind-preset/tokens.css (.dark selector).
    ThemeProvider (packages/ui) toggles the `.dark` class + `data-theme="dark"` on <html>. */

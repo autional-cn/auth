@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { Mail } from 'lucide-react';
-import { Button, Input, Label } from '@autional-cn/ui';
-import { authMagicLinkRequestPost } from '@autional-cn/shared/generated/api';
+import { Button, Input, Label } from '@autional/ui';
+import { authMagicLinkRequestPost } from '@autional/shared/generated/api';
 
 interface MagicLinkFormProps {
 	tenantId?: string;

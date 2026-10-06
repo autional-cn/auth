@@ -26,7 +26,7 @@ vi.mock('react-router', async () => {
 const mockLoginWithTokens = vi.fn();
 const mockGetAccessToken = vi.fn(() => null);
 
-vi.mock('@autional-cn/shared', () => ({
+vi.mock('@autional/shared', () => ({
 	loginWithTokens: (...args: any[]) => mockLoginWithTokens(...args),
 	getAccessToken: () => mockGetAccessToken(),
 	bffLogin: vi.fn(() => Promise.resolve({ code: 1, message: 'BFF unavailable' })),
@@ -53,8 +53,8 @@ vi.mock('@autional-cn/shared', () => ({
 const mockAuthLoginPost = vi.fn();
 const mockAuthOauthProviders = vi.fn((_opts?: any) => Promise.resolve({ providers: [] }));
 
-vi.mock('@autional-cn/shared/generated/api', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@autional-cn/shared/generated/api')>();
+vi.mock('@autional/shared/generated/api', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@autional/shared/generated/api')>();
 	return {
 		...actual,
 		authLoginPost: (...args: any[]) => mockAuthLoginPost(...args),

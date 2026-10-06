@@ -5,7 +5,7 @@ import {
 	ADMIN_CONSOLE_URL,
 	SECURITY_DASHBOARD_URL,
 	getPortalUrl,
-} from '@autional-cn/shared';
+} from '@autional/shared';
 
 export function getPostLoginTarget(opts: {
 	tenantSlug?: string | null;

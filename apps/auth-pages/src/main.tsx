@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ROUTER_BASENAME } from '@autional-cn/shared';
+import { ROUTER_BASENAME } from '@autional/shared';
 import App from './App';
 import './non-tenant-segments';
 import './app/globals.css';

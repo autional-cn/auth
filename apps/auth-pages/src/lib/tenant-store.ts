@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { extractSlugFromPath } from '@autional-cn/shared/slug-from-url';
-import { useTenantBrandingStore } from '@autional-cn/shared/branding';
+import { extractSlugFromPath } from '@autional/shared/slug-from-url';
+import { useTenantBrandingStore } from '@autional/shared/branding';
 import { getDashboardSlug } from './dashboard-slug';
 
 interface Tenant {

@@ -5,7 +5,7 @@ import { EntryRouter } from '@/components/EntryRouter';
 
 // ============================================================
 // 波 3：auth 入口路由（裸根 `/` 与 `/login`）三分支收口
-// mock 面局部：react-router / @autional-cn/shared / generated/api
+// mock 面局部：react-router / @autional/shared / generated/api
 // extractSlugFromPath 走真实实现（importOriginal 保留），slug 名单校验走 mock API
 // ============================================================
 
@@ -47,8 +47,8 @@ vi.mock('react-router', async () => {
 	};
 });
 
-vi.mock('@autional-cn/shared', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@autional-cn/shared')>();
+vi.mock('@autional/shared', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@autional/shared')>();
 	return {
 		...actual,
 		getAccessToken: () => mockSession.token,

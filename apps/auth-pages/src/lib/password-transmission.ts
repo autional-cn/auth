@@ -1,8 +1,8 @@
-import { PublicAuthConfigByAuthConfig } from '@autional-cn/shared/generated/api';
-import { processPasswordForTransmission as processPassword } from '@autional-cn/shared';
+import { PublicAuthConfigByAuthConfig } from '@autional/shared/generated/api';
+import { processPasswordForTransmission as processPassword } from '@autional/shared';
 
-export { processPasswordForTransmission, hashPasswordForTransmission } from '@autional-cn/shared';
-export type { TransmissionResult } from '@autional-cn/shared';
+export { processPasswordForTransmission, hashPasswordForTransmission } from '@autional/shared';
+export type { TransmissionResult } from '@autional/shared';
 
 /**
  * 解析租户密码传输模式（契约单点：change-password / account-deletion / 登录共用）。

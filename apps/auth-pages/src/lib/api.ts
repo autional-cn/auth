@@ -1,10 +1,10 @@
 /**
  * Auth Pages API 函数
- * 使用 @autional-cn/shared 的统一 apiClient（自动 unwrap + camelCase 转换）
+ * 使用 @autional/shared 的统一 apiClient（自动 unwrap + camelCase 转换）
  */
 
-import { useAuthStore } from '@autional-cn/shared';
-import { authMePermissions, authMeTenants } from '@autional-cn/shared/generated/api';
+import { useAuthStore } from '@autional/shared';
+import { authMePermissions, authMeTenants } from '@autional/shared/generated/api';
 
 /**
  * 登录后加载权限和租户信息到 auth store。
@@ -24,11 +24,11 @@ export async function loadAuthExtras(): Promise<void> {
 	}
 }
 
-export type { LoginRequest } from '@autional-cn/shared/generated/types';
-export type { RegisterRequest } from '@autional-cn/shared/generated/types';
+export type { LoginRequest } from '@autional/shared/generated/types';
+export type { RegisterRequest } from '@autional/shared/generated/types';
 
 // ApiError & LoginResponse removed (dead code — never imported anywhere).
-// Use LoginResponse from @autional-cn/shared/generated/types or ExtractedApiError from @autional-cn/shared.
+// Use LoginResponse from @autional/shared/generated/types or ExtractedApiError from @autional/shared.
 
 // All API functions migrated to ./api.generated.ts
 // Re-export for backward compat:

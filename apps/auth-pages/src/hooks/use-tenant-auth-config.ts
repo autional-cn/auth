@@ -1,11 +1,11 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@autional-cn/shared';
+import { apiClient } from '@autional/shared';
 import {
 	PublicAuthConfigByAuthConfig,
 	PublicAuthConfigBySlugByBySlug,
-} from '@autional-cn/shared/generated/api';
+} from '@autional/shared/generated/api';
 import { getCached, setCached, CACHE_KEYS, TTL } from '@/lib/page-init-cache';
 
 export interface PasswordPolicy {

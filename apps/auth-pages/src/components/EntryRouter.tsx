@@ -12,7 +12,7 @@ import {
 	traceRedirect,
 	useCurrentTenantId,
 	usePublicTenantSlugs,
-} from '@autional-cn/shared';
+} from '@autional/shared';
 import { pickSessionSlug } from '@/lib/tenant-store';
 
 /**

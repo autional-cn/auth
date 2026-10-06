@@ -16,8 +16,8 @@ import { useParams, Link } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Input, Label, showToast, ToastProvider, StatusBadge } from '@autional-cn/ui';
-import { extractApiError } from '@autional-cn/shared';
+import { Button, Input, Label, showToast, ToastProvider, StatusBadge } from '@autional/ui';
+import { extractApiError } from '@autional/shared';
 import { useI18n } from '@/lib/i18n';
 import { createVerifyIdentityConfirmSchema } from '@/lib/validators';
 import {
@@ -26,7 +26,7 @@ import {
 	verificationMeDetail,
 	verificationOcrPost,
 	verificationVerifyPost,
-} from '@autional-cn/shared/generated/api';
+} from '@autional/shared/generated/api';
 import { fetchLegalDocumentVersion } from '@/lib/legal-document';
 import { AuthCard } from '@/components/auth/AuthCard';
 

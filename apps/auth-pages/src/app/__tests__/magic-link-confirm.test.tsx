@@ -36,7 +36,7 @@ vi.mock('react-router', async () => {
 	};
 });
 
-vi.mock('@autional-cn/shared', () => ({
+vi.mock('@autional/shared', () => ({
 	loginWithTokens: (...args: any[]) => mockState.loginWithTokens(...args),
 	decodeJwtPayload: (...args: any[]) => mockState.decodeJwtPayload(...args),
 	getCurrentRole: () => mockState.role,
@@ -47,7 +47,7 @@ vi.mock('@autional-cn/shared', () => ({
 	usePublicTenantSlugs: () => ({ data: mockState.knownTenants, isSuccess: true }),
 }));
 
-vi.mock('@autional-cn/shared/generated/api', () => ({
+vi.mock('@autional/shared/generated/api', () => ({
 	authMe: (...args: any[]) => mockState.authMe(...args),
 }));
 
@@ -69,7 +69,7 @@ vi.mock('@/lib/i18n', () => ({
 	defaultLang: 'zh-CN',
 }));
 
-vi.mock('@autional-cn/ui', () => ({
+vi.mock('@autional/ui', () => ({
 	Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
 	ErrorState: ({ title, description, onRetry }: any) => (
 		<div>

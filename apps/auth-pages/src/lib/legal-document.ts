@@ -1,4 +1,4 @@
-import { compliancePublicLegalDocuments } from '@autional-cn/shared/generated/api';
+import { compliancePublicLegalDocuments } from '@autional/shared/generated/api';
 
 export type LegalDocType = 'terms' | 'privacy';
 

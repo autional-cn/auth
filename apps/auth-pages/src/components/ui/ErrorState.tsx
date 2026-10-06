@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button } from '@autional-cn/ui';
+import { Button } from '@autional/ui';
 
 interface ErrorStateProps {
 	/** 错误标题 */

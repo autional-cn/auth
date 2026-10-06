@@ -2,10 +2,10 @@
 
 import { useSearchParams } from 'react-router';
 import { ArrowLeftRight } from 'lucide-react';
-import { getPortalUrl, isValidRedirect } from '@autional-cn/shared';
+import { getPortalUrl, isValidRedirect } from '@autional/shared';
 import { useI18n } from '@/lib/i18n';
 import { useEffectiveTenantSlugFromPath } from '@/hooks/use-tenant-slug';
-import { useTenantBrandingStore } from '@autional-cn/shared/branding';
+import { useTenantBrandingStore } from '@autional/shared/branding';
 
 /**
  * 顶部 chrome 的「切换组织」出口（与主题/语言同排），仅在租户段页面渲染。

@@ -1,15 +1,15 @@
 {
-  "name": "@autional-cn/auth",
+  "name": "@autional/auth",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter @autional-cn/auth-pages dev",
-    "build": "pnpm --filter @autional-cn/auth-pages... build",
-    "preview": "pnpm --filter @autional-cn/auth-pages preview",
-    "typecheck": "pnpm --filter @autional-cn/auth-pages typecheck",
-    "lint": "pnpm --filter @autional-cn/auth-pages lint",
-    "test": "pnpm --filter @autional-cn/auth-pages test"
+    "dev": "pnpm --filter @autional/auth-pages dev",
+    "build": "pnpm --filter @autional/auth-pages... build",
+    "preview": "pnpm --filter @autional/auth-pages preview",
+    "typecheck": "pnpm --filter @autional/auth-pages typecheck",
+    "lint": "pnpm --filter @autional/auth-pages lint",
+    "test": "pnpm --filter @autional/auth-pages test"
   },
   "packageManager": "pnpm@11.0.8",
   "engines": {

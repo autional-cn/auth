@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { deriveDarkColor, deriveDarkHover, pickOnColor, hexToOklch, oklchToHex } from '@autional-cn/shared/branding';
+import { deriveDarkColor, deriveDarkHover, pickOnColor, hexToOklch, oklchToHex } from '@autional/shared/branding';
 
 // ── WCAG 2.x 对比度 helper（测试内自实现，与 brand-color.ts 内部逻辑一致）──
 function hexToRgb(hex: string): [number, number, number] {

@@ -24,7 +24,7 @@ vi.mock('react-router', async () => {
 });
 
 const mockLoginWithTokens = vi.fn();
-vi.mock('@autional-cn/shared', () => ({
+vi.mock('@autional/shared', () => ({
 	loginWithTokens: (...args: any[]) => mockLoginWithTokens(...args),
 	bffLogin: vi.fn(() => Promise.resolve({ code: 1, message: 'BFF unavailable' })),
 	isBFFAvailable: () => false,
@@ -54,8 +54,8 @@ const mockAuthLoginPost = vi.fn();
 const mockAuthMeConsentPost = vi.fn();
 const mockCompliancePublicLegalDocuments = vi.fn();
 
-vi.mock('@autional-cn/shared/generated/api', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@autional-cn/shared/generated/api')>();
+vi.mock('@autional/shared/generated/api', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@autional/shared/generated/api')>();
 	return {
 		...actual,
 		authRegisterPost: (...args: any[]) => mockAuthRegisterPost(...args),

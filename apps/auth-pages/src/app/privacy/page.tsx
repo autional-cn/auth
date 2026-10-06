@@ -3,13 +3,13 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ErrorState } from '@autional-cn/ui';
+import { ErrorState } from '@autional/ui';
 import { AuthCard } from '@/components/auth/AuthCard';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { useI18n } from '@/lib/i18n';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { useResolvedTenantSlug } from '@/hooks/use-tenant-slug';
-import { compliancePublicLegalDocuments } from '@autional-cn/shared/generated/api';
+import { compliancePublicLegalDocuments } from '@autional/shared/generated/api';
 
 /**
  * 服务端隐私政策的一节。

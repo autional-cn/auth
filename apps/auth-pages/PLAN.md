@@ -26,7 +26,7 @@ Auth Pages 是 Autional 五大 UI 产品之一，属于**流程轻量型**（单
 - `/register` — 注册页
 - `/forgot-password` — 忘记密码页
 
-**技术栈已确定**：Next.js 15 (App Router) + React 19 + TypeScript + Tailwind CSS + `@autional-cn/ui` + React Hook Form + Zod + Zustand + TanStack Query + Axios
+**技术栈已确定**：Next.js 15 (App Router) + React 19 + TypeScript + Tailwind CSS + `@autional/ui` + React Hook Form + Zod + Zustand + TanStack Query + Axios
 
 ---
 
@@ -773,7 +773,7 @@ Auth Pages 采用 **Mobile-first** 设计：
 | react / react-dom | 19.2.5 | UI 框架 |
 | typescript | 5.8.3 | 类型安全 |
 | tailwindcss | 3.4.17 | 样式 |
-| @autional-cn/ui | workspace | 共享 UI 组件（Button / Input / Label） |
+| @autional/ui | workspace | 共享 UI 组件（Button / Input / Label） |
 | @tanstack/react-query | 5.75.0 | Server State 管理 |
 | zustand | 5.0.13 | Client State 管理 |
 | react-hook-form | 7.75.0 | 表单管理 |

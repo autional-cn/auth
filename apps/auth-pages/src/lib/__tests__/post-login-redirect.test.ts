@@ -4,7 +4,7 @@ const mockGetCurrentRole = vi.fn();
 const mockIsValidRedirect = vi.fn();
 const mockCrossAppUrl = vi.fn((path: string) => path);
 
-vi.mock('@autional-cn/shared', () => ({
+vi.mock('@autional/shared', () => ({
 	getCurrentRole: () => mockGetCurrentRole(),
 	isValidRedirect: (url: string) => mockIsValidRedirect(url),
 	crossAppUrl: (path: string) => mockCrossAppUrl(path),

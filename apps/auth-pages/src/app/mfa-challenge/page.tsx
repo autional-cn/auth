@@ -5,13 +5,13 @@ import { useNavigate, useParams, Link } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Input, Label } from '@autional-cn/ui';
+import { Button, Input, Label } from '@autional/ui';
 import {
 	loginWithTokens,
 	decodeJwtPayload,
 	extractApiError,
 	usePublicTenantSlugs,
-} from '@autional-cn/shared';
+} from '@autional/shared';
 import { createMfaTOTPSchema, createMfaSMSSchema } from '@/lib/validators';
 import type { MFATOTPFormData, MFASMSFormData } from '@/lib/validators';
 import { verifyMFAChallenge } from '@/lib/api.generated';

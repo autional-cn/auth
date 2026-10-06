@@ -26,7 +26,7 @@ vi.mock('react-router', async () => {
 });
 
 const mockLogout = vi.fn();
-vi.mock('@autional-cn/shared', () => ({
+vi.mock('@autional/shared', () => ({
 	useAuthStore: (selector?: any) => {
 		const state = {
 			user: mockAccessToken ? { id: '1', username: 'test', email: 'test@example.com' } : null,
@@ -67,7 +67,7 @@ vi.mock('@autional-cn/shared', () => ({
 	SECURITY_DASHBOARD_URL: () => '/security',
 }));
 
-vi.mock('@autional-cn/shared/generated/api', () => ({
+vi.mock('@autional/shared/generated/api', () => ({
 	sessionsUserSessionsByUser: vi.fn(() => Promise.resolve({ data: { items: [] } })),
 	authMeMemberships: vi.fn(() => Promise.resolve({ items: [] })),
 }));
