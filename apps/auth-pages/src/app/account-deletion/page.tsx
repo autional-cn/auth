@@ -181,7 +181,7 @@ export default function AccountDeletionPage() {
 
 			{showModal && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-					<div className="w-full max-w-sm rounded-lg bg-[var(--color-bg-surface)] p-6 shadow-lg">
+					<div className="w-full max-w-sm rounded-lg bg-[var(--color-bg-surface)] p-6 shadow-card">
 						<h2 className="text-lg font-bold text-[var(--color-text-primary)]">
 							{t('deletion.modalTitle')}
 						</h2>

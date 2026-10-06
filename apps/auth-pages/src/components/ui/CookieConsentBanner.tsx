@@ -61,7 +61,7 @@ export function CookieConsentBanner() {
 
 	return (
 		<>
-			<div className="fixed bottom-0 left-0 z-50 w-full border-t border-neutral-200 bg-white px-4 py-4 shadow-lg dark:border-neutral-700 dark:bg-neutral-900 sm:px-6">
+			<div className="fixed bottom-0 left-0 z-50 w-full border-t border-neutral-200 bg-white px-4 py-4 shadow-brand dark:border-neutral-700 dark:bg-neutral-900 sm:px-6">
 				<div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex items-start gap-3">
 						<svg
@@ -138,7 +138,7 @@ function CookieSettingsPanel({
 
 	return (
 		<div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 sm:items-center">
-			<div className="relative w-full max-w-md rounded-t-xl bg-white p-6 shadow-xl dark:bg-neutral-900 sm:rounded-xl">
+			<div className="relative w-full max-w-md rounded-t-xl bg-white p-6 shadow-card dark:bg-neutral-900 sm:rounded-xl">
 				<div className="flex items-center justify-between">
 					<h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
 						{t('cookie.title')}
@@ -192,7 +192,7 @@ function CookieSettingsPanel({
 							}`}
 						>
 							<span
-								className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${
+								className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-soft transition ${
 									analytics ? 'translate-x-[18px]' : 'translate-x-[2px]'
 								}`}
 							/>

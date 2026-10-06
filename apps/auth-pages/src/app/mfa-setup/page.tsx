@@ -623,7 +623,7 @@ export default function MFASetupPage() {
 									}}
 									className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
 										target === m
-											? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-sm'
+											? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-card'
 											: 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
 									}`}
 								>

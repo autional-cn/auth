@@ -583,7 +583,7 @@ export default function RegisterPage() {
 						onClick={() => setRegisterMethod(key as typeof registerMethod)}
 						className={`flex flex-col items-center gap-0.5 rounded-md px-1 py-2 text-xs font-medium transition-all duration-200 ${
 							registerMethod === key
-								? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-sm'
+								? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-card'
 								: 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
 						}`}
 					>

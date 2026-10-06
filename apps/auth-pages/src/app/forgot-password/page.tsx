@@ -100,7 +100,7 @@ export default function ForgotPasswordPage() {
 							type="button"
 							className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
 								channel === 'email'
-									? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-sm'
+									? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-card'
 									: 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
 							}`}
 							onClick={() => switchChannel('email')}
@@ -112,7 +112,7 @@ export default function ForgotPasswordPage() {
 							type="button"
 							className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
 								channel === 'phone'
-									? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-sm'
+									? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-card'
 									: 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
 							}`}
 							onClick={() => switchChannel('phone')}

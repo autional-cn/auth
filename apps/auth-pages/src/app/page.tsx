@@ -855,7 +855,7 @@ export default function LoginPage() {
 	if (slugNeedsPick) {
 		return (
 			<div className="flex min-h-screen items-center justify-center px-4 py-8">
-				<div className="w-full max-w-sm space-y-6 rounded-md bg-[var(--color-bg-surface)] p-8 shadow-lg">
+				<div className="w-full max-w-sm space-y-6 rounded-md bg-[var(--color-bg-surface)] p-8 shadow-card">
 					{cardHeader}
 					<div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
 						{t('login.tenantNotFound') || '未找到该组织的配置，请手动选择租户'}
@@ -876,7 +876,7 @@ export default function LoginPage() {
 
 	return (
 		<div className="flex min-h-screen items-center justify-center px-4 py-8">
-			<div className="w-full max-w-sm space-y-6 rounded-md bg-[var(--color-bg-surface)] p-8 shadow-lg">
+			<div className="w-full max-w-sm space-y-6 rounded-md bg-[var(--color-bg-surface)] p-8 shadow-card">
 				{cardHeader}
 
 				{accountDeleted && (
@@ -976,7 +976,7 @@ export default function LoginPage() {
 									onClick={() => setLoginMethod(key as typeof loginMethod)}
 									className={`flex flex-1 flex-col items-center gap-0.5 rounded-md px-1 py-2 text-xs font-medium transition-all duration-200 ${
 										loginMethod === key
-											? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-sm'
+											? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-card'
 											: 'text-[var(--color-text-muted)] hover:bg-surface/50 hover:text-[var(--color-text-secondary)]'
 									}`}
 								>

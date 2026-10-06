@@ -44,7 +44,7 @@ export function SessionExpiryBanner() {
 	if (!warning) return null;
 
 	return (
-		<div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 shadow-lg max-w-sm w-full">
+		<div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 shadow-brand max-w-sm w-full">
 			<p className="text-sm font-medium text-amber-800">{t('dashboard.sessionExpiringTitle')}</p>
 			<p className="text-xs text-amber-600 mt-1">{t('dashboard.sessionExpiringDesc')}</p>
 			<div className="mt-2 flex gap-2">

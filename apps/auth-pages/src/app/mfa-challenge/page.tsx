@@ -225,7 +225,7 @@ export default function MFAChallengePage() {
 							}}
 							className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
 								activeTab === key
-									? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-sm'
+									? 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] shadow-card'
 									: 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
 							}`}
 						>
