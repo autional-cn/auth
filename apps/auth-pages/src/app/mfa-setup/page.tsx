@@ -543,7 +543,7 @@ export default function MFASetupPage() {
 							<input
 								type="checkbox"
 								id="saved-check"
-								className="mt-0.5 h-4 w-4 rounded border-[var(--color-border-subtle)]"
+								className="mt-0.5 h-4 w-4 rounded-xs border-[var(--color-border-subtle)]"
 								checked={saved}
 								onChange={(e) => setSaved(e.target.checked)}
 							/>

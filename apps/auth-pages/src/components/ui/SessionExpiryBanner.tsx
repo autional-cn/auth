@@ -57,7 +57,7 @@ export function SessionExpiryBanner() {
 						setWarning(false);
 						if (!newToken) goToSessionExpired();
 					}}
-					className="text-xs bg-amber-600 text-white px-3 py-1 rounded hover:bg-amber-700"
+					className="text-xs bg-amber-600 text-white px-3 py-1 rounded-xs hover:bg-amber-700"
 				>
 					{t('dashboard.extendSession')}
 				</button>

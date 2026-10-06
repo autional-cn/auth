@@ -43,7 +43,7 @@ export function MembershipStatusCard({ memberships, loading = false }: Membershi
 	if (loading) {
 		return (
 			<div className="space-y-3 rounded-lg border border-neutral-200 p-4">
-				<div className="h-5 w-32 animate-pulse rounded bg-neutral-200" />
+				<div className="h-5 w-32 animate-pulse rounded-xs bg-neutral-200" />
 				{[1, 2, 3].map((i) => (
 					<div key={i} className="h-14 animate-pulse rounded-md bg-neutral-100" />
 				))}

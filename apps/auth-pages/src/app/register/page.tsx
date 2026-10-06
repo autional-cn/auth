@@ -745,7 +745,7 @@ export default function RegisterPage() {
 								id="agreeTerms"
 								name="agreeTerms"
 								type="checkbox"
-								className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-[var(--color-brand)] focus:ring-[var(--color-brand)] transition-all duration-200 checked:scale-110"
+								className="mt-0.5 h-4 w-4 rounded-xs border-neutral-300 text-[var(--color-brand)] focus:ring-[var(--color-brand)] transition-all duration-200 checked:scale-110"
 								checked={watchedAgreeTerms || false}
 								onChange={(e) =>
 									setValue('agreeTerms' as any, e.target.checked as true, { shouldValidate: true })

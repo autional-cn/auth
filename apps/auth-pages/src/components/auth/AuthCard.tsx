@@ -49,7 +49,7 @@ export function AuthCard({
 	return (
 		<div className="flex min-h-screen items-center justify-center px-4 py-8">
 			<div
-				className={`w-full ${MAX_WIDTH_CLASSES[maxWidth]} space-y-6 rounded-2xl bg-[var(--color-bg-surface)] p-8 shadow-lg`}
+				className={`w-full ${MAX_WIDTH_CLASSES[maxWidth]} space-y-6 rounded-md bg-[var(--color-bg-surface)] p-8 shadow-lg`}
 			>
 				{(title || logoUrl) && (
 					<AuthHeader title={title || ''} subtitle={subtitle} logoUrl={logoUrl} />

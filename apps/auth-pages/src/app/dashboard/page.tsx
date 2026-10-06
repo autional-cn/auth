@@ -447,7 +447,7 @@ export default function DashboardPage() {
 								<select
 									value={prefs.default}
 									onChange={(e) => setPrefs({ ...prefs, default: e.target.value })}
-									className="text-xs border border-[var(--color-border-subtle)] rounded px-2 py-1"
+									className="text-xs border border-[var(--color-border-subtle)] rounded-xs px-2 py-1"
 								>
 									<option value="">{t('dashboard.roleDefault', '角色决定')}</option>
 									{catalogAllPortals.map((app) => (

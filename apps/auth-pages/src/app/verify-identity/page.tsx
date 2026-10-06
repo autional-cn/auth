@@ -457,7 +457,7 @@ function VerifyIdentityContent() {
 						</div>
 						{idx < 3 && (
 							<div
-								className={`h-0.5 w-6 rounded ${isDone ? 'bg-success/50' : 'bg-[var(--color-border-subtle)]'}`}
+								className={`h-0.5 w-6 rounded-xs ${isDone ? 'bg-success/50' : 'bg-[var(--color-border-subtle)]'}`}
 							/>
 						)}
 					</div>
@@ -688,7 +688,7 @@ function VerifyIdentityContent() {
 							type="checkbox"
 							checked={consents[key]}
 							onChange={() => toggleConsent(key)}
-							className="mt-0.5 h-4 w-4 rounded border-[var(--color-border-subtle)] text-[var(--color-brand)] focus:ring-[var(--color-brand)]"
+							className="mt-0.5 h-4 w-4 rounded-xs border-[var(--color-border-subtle)] text-[var(--color-brand)] focus:ring-[var(--color-brand)]"
 						/>
 						<div>
 							<p className="text-sm font-medium text-[var(--color-text-primary)]">

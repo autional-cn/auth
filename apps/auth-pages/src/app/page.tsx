@@ -855,7 +855,7 @@ export default function LoginPage() {
 	if (slugNeedsPick) {
 		return (
 			<div className="flex min-h-screen items-center justify-center px-4 py-8">
-				<div className="w-full max-w-sm space-y-6 rounded-2xl bg-[var(--color-bg-surface)] p-8 shadow-lg">
+				<div className="w-full max-w-sm space-y-6 rounded-md bg-[var(--color-bg-surface)] p-8 shadow-lg">
 					{cardHeader}
 					<div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
 						{t('login.tenantNotFound') || '未找到该组织的配置，请手动选择租户'}
@@ -876,7 +876,7 @@ export default function LoginPage() {
 
 	return (
 		<div className="flex min-h-screen items-center justify-center px-4 py-8">
-			<div className="w-full max-w-sm space-y-6 rounded-2xl bg-[var(--color-bg-surface)] p-8 shadow-lg">
+			<div className="w-full max-w-sm space-y-6 rounded-md bg-[var(--color-bg-surface)] p-8 shadow-lg">
 				{cardHeader}
 
 				{accountDeleted && (
@@ -1077,7 +1077,7 @@ export default function LoginPage() {
 								<label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
 									<input
 										type="checkbox"
-										className="h-4 w-4 rounded border-[var(--color-border-subtle)] text-[var(--color-brand)] focus:ring-[var(--color-brand)] transition-all duration-200 checked:scale-110"
+										className="h-4 w-4 rounded-xs border-[var(--color-border-subtle)] text-[var(--color-brand)] focus:ring-[var(--color-brand)] transition-all duration-200 checked:scale-110"
 										{...register('rememberMe')}
 										checked={rememberMe}
 									/>
@@ -1147,7 +1147,7 @@ export default function LoginPage() {
 											<div className="flex flex-col items-center gap-2">
 												<span>{captchaProgressText || '正在进行安全检测...'}</span>
 												<progress
-													className="w-full h-1.5 rounded"
+													className="w-full h-1.5 rounded-xs"
 													value={captchaProgressRef.current.current}
 													max={captchaProgressRef.current.max || 1}
 												/>
