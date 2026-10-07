@@ -21,7 +21,7 @@ const statusConfig: Record<
 	{ icon: typeof CheckCircle; className: string; labelKey: string }
 > = {
 	active: { icon: CheckCircle, className: 'text-success-text', labelKey: 'membership.statusActive' },
-	pending: { icon: Clock, className: 'text-amber-600', labelKey: 'membership.statusPending' },
+	pending: { icon: Clock, className: 'text-warning-text', labelKey: 'membership.statusPending' },
 	disabled: { icon: XCircle, className: 'text-danger-text', labelKey: 'membership.statusDisabled' },
 };
 
