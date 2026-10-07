@@ -180,7 +180,7 @@ export default function AccountDeletionPage() {
 			</AuthCard>
 
 			{showModal && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/50 px-4">
 					<div className="w-full max-w-sm rounded-lg bg-[var(--color-bg-surface)] p-6 shadow-card">
 						<h2 className="text-lg font-bold text-[var(--color-text-primary)]">
 							{t('deletion.modalTitle')}

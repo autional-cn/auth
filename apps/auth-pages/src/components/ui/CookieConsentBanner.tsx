@@ -137,7 +137,7 @@ function CookieSettingsPanel({
 	const [hasInteracted, setHasInteracted] = useState(false);
 
 	return (
-		<div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 sm:items-center">
+		<div className="fixed inset-0 z-[60] flex items-end justify-center bg-scrim/50 sm:items-center">
 			<div className="relative w-full max-w-md rounded-t-xl bg-white p-6 shadow-card dark:bg-neutral-900 sm:rounded-xl">
 				<div className="flex items-center justify-between">
 					<h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
