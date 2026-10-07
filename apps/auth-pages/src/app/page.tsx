@@ -1162,7 +1162,7 @@ export default function LoginPage() {
 								type="submit"
 								fullWidth
 								isLoading={loading}
-								className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+								className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card"
 								disabled={!tenantSelected || (rateLimitStep >= 1 && captchaStatus !== 'solved')}
 							>
 								{!tenantSelected
@@ -1200,7 +1200,7 @@ export default function LoginPage() {
 										key={provider.type}
 										variant="outline"
 										onClick={() => handleOAuthLogin(provider.type)}
-										className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-brand"
+										className="transition-all duration-200 hover:-translate-y-0.5 hover:border-brand"
 									>
 										{provider.type === 'google' && (
 											<svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
