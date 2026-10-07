@@ -101,7 +101,7 @@ export function CookieConsentBanner() {
 						</Button>
 						<button
 							onClick={() => setConsent({ analytics: false })}
-							className="ml-1 rounded-xs p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+							className="ml-1 rounded-xs p-1 text-[var(--color-text-muted)] hover:text-neutral-600 dark:hover:text-neutral-300"
 							aria-label={t('cookie.close') ?? 'Close'}
 						>
 							<X size={18} />
@@ -145,7 +145,7 @@ function CookieSettingsPanel({
 					</h3>
 					<button
 						onClick={onClose}
-						className="rounded-xs p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+						className="rounded-xs p-1 text-[var(--color-text-muted)] hover:text-neutral-600 dark:hover:text-neutral-300"
 					>
 						<X size={20} />
 					</button>

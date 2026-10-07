@@ -20,14 +20,14 @@ const statusConfig: Record<
 	string,
 	{ icon: typeof CheckCircle; className: string; labelKey: string }
 > = {
-	active: { icon: CheckCircle, className: 'text-green-600', labelKey: 'membership.statusActive' },
+	active: { icon: CheckCircle, className: 'text-success-text', labelKey: 'membership.statusActive' },
 	pending: { icon: Clock, className: 'text-amber-600', labelKey: 'membership.statusPending' },
-	disabled: { icon: XCircle, className: 'text-red-600', labelKey: 'membership.statusDisabled' },
+	disabled: { icon: XCircle, className: 'text-danger-text', labelKey: 'membership.statusDisabled' },
 };
 
 const defaultStatusConfig = {
 	icon: Clock,
-	className: 'text-gray-400',
+	className: 'text-[var(--color-text-muted)]',
 	labelKey: 'membership.statusUnknown',
 };
 
@@ -81,10 +81,10 @@ export function MembershipStatusCard({ memberships, loading = false }: Membershi
 							<span
 								className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
 									m.status === 'active'
-										? 'bg-green-50 text-green-700'
+										? 'bg-success-soft text-success-text'
 										: m.status === 'pending'
 											? 'bg-amber-50 text-amber-700'
-											: 'bg-red-50 text-red-700'
+											: 'bg-danger-soft text-danger-text'
 								}`}
 							>
 								{t(cfg.labelKey) || m.status}

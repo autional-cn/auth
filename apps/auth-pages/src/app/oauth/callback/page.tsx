@@ -155,7 +155,7 @@ function OAuthCallbackContent() {
 
 			{status === 'error' && (
 				<div className="text-center space-y-6">
-					<div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-3xl">
+					<div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-danger-soft text-3xl">
 						❌
 					</div>
 					<AuthHeader

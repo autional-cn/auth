@@ -111,7 +111,7 @@ function PolicyChecklist({
 				return (
 					<div key={req.key} className="flex items-center gap-2 transition-all duration-300">
 						<span
-							className={`transition-all duration-300 ${satisfied ? 'text-success-text' : 'text-neutral-400'}`}
+							className={`transition-all duration-300 ${satisfied ? 'text-success-text' : 'text-[var(--color-text-muted)]'}`}
 						>
 							{satisfied ? (
 								<svg
@@ -653,7 +653,7 @@ export default function RegisterPage() {
 
 					{/* Membership mode notice */}
 					{membershipMode && (
-						<div className="rounded-md border border-blue-100 bg-blue-50 p-3 text-xs text-blue-800">
+						<div className="rounded-md border border-info-soft bg-info-soft p-3 text-xs text-info-text">
 							{membershipMode === 'approval_required' && <p>{t('register.approvalNotice')}</p>}
 							{membershipMode === 'invitation_only' && <p>{t('register.invitationOnly')}</p>}
 							{membershipMode === 'open' && <p>{t('auth.register.openRegistration')}</p>}
