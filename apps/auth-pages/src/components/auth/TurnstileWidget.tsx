@@ -103,7 +103,7 @@ export function TurnstileWidget({
 
 	return (
 		<div className="flex justify-center">
-			{loading && <div className="text-sm text-muted-foreground">Loading verification...</div>}
+			{loading && <div className="text-sm text-[var(--color-text-muted)]">Loading verification...</div>}
 			<div ref={containerRef} />
 		</div>
 	);

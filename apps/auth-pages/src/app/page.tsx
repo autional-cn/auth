@@ -804,7 +804,7 @@ export default function LoginPage() {
 
 	// 页脚法律/信任链：按「已解析租户」拼链（脏 slug 回落绝对链），与 AuthCard 页脚同口径
 	const legalFooter = (
-		<div className="flex flex-wrap justify-center gap-x-4 gap-y-1 pt-4 text-xs text-muted-foreground">
+		<div className="flex flex-wrap justify-center gap-x-4 gap-y-1 pt-4 text-xs text-[var(--color-text-muted)]">
 			<Link
 				to={resolvedSlug ? `/${resolvedSlug}/privacy` : '/privacy'}
 				className="hover:underline"

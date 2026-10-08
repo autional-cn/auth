@@ -56,7 +56,7 @@ export function AuthCard({
 				)}
 				{children}
 				{showFooter && (
-					<div className="flex justify-center gap-4 pt-4 text-xs text-muted-foreground">
+					<div className="flex justify-center gap-4 pt-4 text-xs text-[var(--color-text-muted)]">
 						<Link to={tenantSlug ? `/${tenantSlug}/privacy` : '/privacy'} className="hover:underline">
 							{t('auth.privacyPolicy')}
 						</Link>
